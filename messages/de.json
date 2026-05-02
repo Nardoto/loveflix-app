@@ -1,0 +1,65 @@
+{
+  "app": {
+    "name": "LOVEFLIX",
+    "tagline": "Liebesgeschichten zum Hören, Sehen und Lesen.",
+    "loading": "Lädt..."
+  },
+  "nav": {
+    "home": "Startseite",
+    "myList": "Meine Liste",
+    "genres": "Genres",
+    "originals": "Originale",
+    "search": "Suche",
+    "account": "Konto",
+    "studio": "Studio",
+    "signIn": "Anmelden",
+    "signOut": "Abmelden"
+  },
+  "home": {
+    "hero": {
+      "watchNow": "Jetzt ansehen",
+      "addToList": "Zur Liste hinzufügen",
+      "moreInfo": "Mehr Infos"
+    },
+    "rows": {
+      "trending": "Im Trend",
+      "topTen": "Top 10 dieser Woche",
+      "newReleases": "Neuerscheinungen",
+      "continueWatching": "Weiter schauen",
+      "byGenre": "Nach Genre",
+      "hot": "Gerade angesagt"
+    },
+    "comingSoon": "Bald verfügbar"
+  },
+  "player": {
+    "modes": {
+      "video": "Video",
+      "audio": "Hörbuch",
+      "ebook": "E-Book"
+    },
+    "languages": {
+      "en": "English",
+      "de": "Deutsch",
+      "fr": "Français",
+      "es": "Español"
+    },
+    "back": "Zurück",
+    "sleepTimer": "Sleep-Timer",
+    "speed": "Geschwindigkeit"
+  },
+  "auth": {
+    "signInWithApple": "Mit Apple anmelden",
+    "signInWithGoogle": "Mit Google anmelden",
+    "emailPlaceholder": "Ihre E-Mail",
+    "magicLink": "Link senden",
+    "checkInbox": "Schauen Sie in Ihrem Posteingang nach"
+  },
+  "subscribe": {
+    "title": "Voller Zugang. Ein einfacher Preis.",
+    "priceOld": "$19.99",
+    "price": "$14.99",
+    "perMonth": "/Monat",
+    "cta": "Jetzt abonnieren",
+    "freeStories": "Hören Sie unsere kostenlosen Geschichten — ohne Konto."
+  }
+}

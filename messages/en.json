@@ -1,0 +1,65 @@
+{
+  "app": {
+    "name": "LOVEFLIX",
+    "tagline": "Romance stories you can listen, watch and read.",
+    "loading": "Loading..."
+  },
+  "nav": {
+    "home": "Home",
+    "myList": "My List",
+    "genres": "Genres",
+    "originals": "Originals",
+    "search": "Search",
+    "account": "Account",
+    "studio": "Studio",
+    "signIn": "Sign in",
+    "signOut": "Sign out"
+  },
+  "home": {
+    "hero": {
+      "watchNow": "Watch now",
+      "addToList": "Add to list",
+      "moreInfo": "More info"
+    },
+    "rows": {
+      "trending": "Trending",
+      "topTen": "Top 10 this week",
+      "newReleases": "New releases",
+      "continueWatching": "Continue watching",
+      "byGenre": "Browse by genre",
+      "hot": "Hot right now"
+    },
+    "comingSoon": "Coming soon"
+  },
+  "player": {
+    "modes": {
+      "video": "Video",
+      "audio": "Audiobook",
+      "ebook": "E-book"
+    },
+    "languages": {
+      "en": "English",
+      "de": "Deutsch",
+      "fr": "Français",
+      "es": "Español"
+    },
+    "back": "Back",
+    "sleepTimer": "Sleep timer",
+    "speed": "Speed"
+  },
+  "auth": {
+    "signInWithApple": "Sign in with Apple",
+    "signInWithGoogle": "Sign in with Google",
+    "emailPlaceholder": "Your email",
+    "magicLink": "Send me a link",
+    "checkInbox": "Check your inbox for a sign-in link"
+  },
+  "subscribe": {
+    "title": "All access. One simple price.",
+    "priceOld": "$19.99",
+    "price": "$14.99",
+    "perMonth": "/month",
+    "cta": "Subscribe now",
+    "freeStories": "Listen to our free stories anytime — no account needed."
+  }
+}

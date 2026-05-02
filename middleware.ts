@@ -1,0 +1,34 @@
+// Combines next-intl routing + Supabase session refresh.
+import createMiddleware from 'next-intl/middleware';
+import { type NextRequest, NextResponse } from 'next/server';
+import { locales, defaultLocale } from './lib/i18n';
+import { updateSession } from './lib/supabase/middleware';
+
+const intlMiddleware = createMiddleware({
+  locales,
+  defaultLocale,
+  localePrefix: 'as-needed', // /en is implicit; /de explicit
+});
+
+export async function middleware(request: NextRequest) {
+  // 1) Refresh Supabase session cookies
+  const supaResponse = await updateSession(request);
+
+  // 2) Run i18n routing — if it returns a redirect, honor it; otherwise return supaResponse
+  const intlResponse = intlMiddleware(request);
+  if (intlResponse && intlResponse.headers.get('x-middleware-rewrite')) {
+    // i18n rewrote the URL — merge supabase cookies into it
+    supaResponse.cookies.getAll().forEach((c) => intlResponse.cookies.set(c.name, c.value));
+    intlResponse.headers.forEach((value, key) => {
+      if (!supaResponse.headers.has(key)) supaResponse.headers.set(key, value);
+    });
+  }
+  return supaResponse;
+}
+
+export const config = {
+  matcher: [
+    // Run on all paths EXCEPT next internals, static files, and API routes that don't need session
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|m3u8|ts)$).*)',
+  ],
+};
