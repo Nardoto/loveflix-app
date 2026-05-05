@@ -81,14 +81,19 @@ export default async function StudioPage({
                     {s.genre.replace('_', ' ')}
                   </td>
                   <td className="px-4 py-3">
-                    {s.isFree || s.videoSrc ? (
+                    {s.videoKey || s.videoSrc ? (
                       <Badge variant="free">Published</Badge>
+                    ) : s.isComingSoon ? (
+                      <Badge variant="comingSoon">Coming Soon</Badge>
                     ) : (
                       <Badge variant="comingSoon">Draft</Badge>
                     )}
                   </td>
                   <td className="px-4 py-3 text-text-dim hidden lg:table-cell">
-                    {s.audioByLocale ? '4/4' : '—'}
+                    {(() => {
+                      const langs = Object.keys(s.audioKeyByLocale ?? s.audioByLocale ?? {});
+                      return langs.length > 0 ? `${langs.length}/4` : '—';
+                    })()}
                   </td>
                   <td className="px-4 py-3 text-text-dim hidden lg:table-cell">
                     {s.hasEbook ? '53 pages' : '—'}

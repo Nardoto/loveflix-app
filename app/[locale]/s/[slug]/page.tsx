@@ -35,8 +35,8 @@ export default async function StoryDetailPage({
   const story = findStory(slug);
   if (!story) notFound();
 
-  const hasVideo = !!story.videoSrc;
-  const hasAudio = !!story.audioByLocale;
+  const hasVideo = !!(story.videoSrc || story.videoKey);
+  const hasAudio = !!(story.audioByLocale || story.audioKeyByLocale);
   const hasEbook = !!story.hasEbook;
   const hasAnyMedia = hasVideo || hasAudio || hasEbook;
 

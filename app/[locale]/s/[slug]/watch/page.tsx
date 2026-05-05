@@ -16,7 +16,7 @@ export default async function WatchPage({
 
   const story = findStory(slug);
   if (!story) notFound();
-  if (!story.videoSrc && !story.audioByLocale) notFound();
+  if (!story.videoSrc && !story.audioByLocale && !story.videoKey && !story.audioKeyByLocale) notFound();
 
   const initialMode = mode === 'video' ? 'video' : 'audio';
 
