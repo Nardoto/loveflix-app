@@ -55,8 +55,12 @@ export function TopBar() {
       <header
         className={`fixed inset-x-0 top-0 z-40 transition-all duration-300 ${
           scrolled
-            ? 'bg-bg-deep/90 backdrop-blur-xl shadow-lg shadow-black/30'
-            : 'bg-gradient-to-b from-bg-deep via-bg-deep/70 to-transparent'
+            ? // Fully opaque once the user scrolls — story-page titles and
+              // catalog covers were bleeding through the 90% bg before.
+              'bg-bg-deep shadow-lg shadow-black/40 border-b border-white/5'
+            : // At the very top, the gradient lets the hero image breathe
+              // behind the bar (Netflix/Disney+ pattern).
+              'bg-gradient-to-b from-bg-deep via-bg-deep/70 to-transparent'
         }`}
       >
         <div className="flex h-16 md:h-18 items-center gap-2 md:gap-4 px-3 md:px-10">
