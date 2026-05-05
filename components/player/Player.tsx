@@ -87,6 +87,11 @@ export function Player({
   const [showControls, setShowControls] = useState(true);
   const [sleepMinutes, setSleepMinutes] = useState(0);
   const [sleepRemaining, setSleepRemaining] = useState(0);
+  // True until the active media has fired `canplay`. We show a fake loading
+  // overlay during this window — and to give the audience the perception of an
+  // instant start we also show it for at least 600ms after mount even when the
+  // network is fast.
+  const [loading, setLoading] = useState(true);
 
   const activeMedia = mode === 'video' ? videoRef.current : audioRef.current;
 
@@ -99,6 +104,33 @@ export function Player({
       document.body.style.overflow = prevOverflow;
     };
   }, []);
+
+  // Autoplay on mount + every time the active media element changes (i.e. when
+  // switching modes or audio language). The Watch button is the user gesture
+  // that authorizes autoplay with sound — browsers honor it. If autoplay does
+  // get blocked (very old Safari, etc.), the loading overlay turns into a Tap
+  // to play prompt because `setIsPlaying(false)` after the failed promise.
+  useEffect(() => {
+    const m = activeMedia;
+    if (!m) return;
+    const minLoadingTimer = setTimeout(() => {
+      // Even on instant-cached media, hold the loading state for 600ms so the
+      // user sees a smooth "preparing" beat before the cover snaps to playback.
+      if (m.readyState >= 3) setLoading(false);
+    }, 600);
+    const onCanPlay = () => {
+      setLoading(false);
+      m.play()
+        .then(() => setIsPlaying(true))
+        .catch(() => setIsPlaying(false));
+    };
+    if (m.readyState >= 3) onCanPlay();
+    else m.addEventListener('canplay', onCanPlay);
+    return () => {
+      clearTimeout(minLoadingTimer);
+      m.removeEventListener('canplay', onCanPlay);
+    };
+  }, [activeMedia]);
 
   // Hide controls on inactivity
   useEffect(() => {
@@ -148,19 +180,30 @@ export function Player({
     return () => clearInterval(id);
   }, [sleepMinutes, activeMedia]);
 
-  // Sync state when switching modes — keep playback position
+  // Switch modes seamlessly — like turning the screen off, audio keeps playing.
+  // We pre-sync `currentTime` on the target element BEFORE swapping the active
+  // mode so the user doesn't hear a gap. The current element is paused after
+  // the new one is already running.
   const switchMode = (newMode: Mode) => {
     if (newMode === mode) return;
-    const currentTime = activeMedia?.currentTime ?? 0;
-    activeMedia?.pause();
-    setMode(newMode);
-    setTimeout(() => {
-      const next = newMode === 'video' ? videoRef.current : audioRef.current;
-      if (next) {
+    const prev = activeMedia;
+    const currentTime = prev?.currentTime ?? 0;
+    const wasPlaying = !!prev && !prev.paused;
+    const next = newMode === 'video' ? videoRef.current : audioRef.current;
+
+    if (next) {
+      try {
         next.currentTime = currentTime;
-        if (isPlaying) next.play().catch(() => {});
+      } catch {
+        // Some browsers throw if the new media's metadata isn't loaded yet —
+        // the autoplay effect below will catch up once `canplay` fires.
       }
-    }, 50);
+      if (wasPlaying) {
+        next.play().catch(() => {});
+      }
+    }
+    setMode(newMode);
+    if (prev && prev !== next) prev.pause();
   };
 
   const switchLocale = (newLocale: string) => {
@@ -274,8 +317,15 @@ export function Player({
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
           onEnded={() => setIsPlaying(false)}
-          preload="metadata"
+          preload="auto"
         />
+      )}
+
+      {/* Loading veil — mounts on top of cover/video while we wait for canplay. */}
+      {loading && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm pointer-events-none">
+          <div className="size-14 rounded-full border-4 border-white/15 border-t-rose animate-spin" />
+        </div>
       )}
 
       {/* Audiobook mode visual: pulsing cover + title */}
