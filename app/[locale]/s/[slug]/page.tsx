@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Row } from '@/components/catalog/Row';
 import { findStory, allStories } from '@/lib/data/stories';
 import { getAuthorFor } from '@/lib/data/authors';
-import { generateCommentsForStory } from '@/lib/data/comments';
+import { getCommentsForStory } from '@/lib/data/comments-server';
 import { StoryComments } from '@/components/story/StoryComments';
 import { isStoryHot } from '@/lib/data/hot';
 import { FlameIcon } from '@/components/icons/FlameIcon';
@@ -41,10 +41,11 @@ export default async function StoryDetailPage({
   const hasEbook = !!story.hasEbook;
   const hasAnyMedia = hasVideo || hasAudio || hasEbook;
 
-  // Deterministic mock rating + comments per story (Sprint 1 swaps for Supabase aggregate).
-  // Generator lives in lib/data/comments.ts — picks 0-9 unique comments per story
-  // from a tagged template pool, varied avatars/names, ~70% of stories show comments.
-  const { comments: storyComments, ratingAvg, ratingCount } = generateCommentsForStory(story);
+  // Comments + aggregate rating. Tries Supabase first; falls back to seeded
+  // mocks when (a) env vars are missing, (b) the schema hasn't been run yet,
+  // or (c) the story has fewer than 3 real comments — then we mix mocks in
+  // to avoid an empty page. See lib/data/comments-server.ts for the merge rules.
+  const { comments: storyComments, ratingAvg, ratingCount } = await getCommentsForStory(story);
 
   const author = getAuthorFor(story);
 
@@ -222,6 +223,7 @@ export default async function StoryDetailPage({
       <StoryComments
         storyId={story.id}
         storyTitle={story.title}
+        storySlug={story.slug}
         comments={storyComments}
         initialAverage={ratingAvg}
         initialCount={ratingCount}

@@ -1,11 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import Image from 'next/image';
-import { Star, Heart, MessageCircle, Send } from 'lucide-react';
+import { Star, Heart, MessageCircle, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { StoryComment } from '@/lib/data/comments';
+import {
+  postComment,
+  toggleLike as toggleLikeAction,
+  postReply as postReplyAction,
+} from '@/app/actions/comments';
 
 type LocalReply = {
   id: string;
@@ -18,8 +23,14 @@ type UserComment = {
   stars: number;
 };
 
+// Real Supabase IDs are UUIDs. Mock IDs are short strings like "045-c2".
+// Only attempt server actions for real comments — mock likes/replies stay local.
+const isRealCommentId = (id: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
 export function StoryComments({
   storyTitle,
+  storySlug,
   comments,
   initialAverage,
   initialCount,
@@ -27,6 +38,7 @@ export function StoryComments({
 }: {
   storyId: string;
   storyTitle: string;
+  storySlug: string;
   comments: StoryComment[];
   initialAverage: number;
   initialCount: number;
@@ -37,8 +49,10 @@ export function StoryComments({
   const [hoverRating, setHoverRating] = useState(0);
   const [draft, setDraft] = useState('');
   const [posted, setPosted] = useState<UserComment[]>([]);
+  const [postError, setPostError] = useState<string | null>(null);
+  const [isPosting, startPosting] = useTransition();
 
-  // ── Like state per comment (toggle, with deterministic seed kept in mock) ─
+  // ── Like state per comment (toggle, optimistic) ─────────────────────────
   const [likes, setLikes] = useState<Record<string, { count: number; liked: boolean }>>(
     () =>
       Object.fromEntries(
@@ -48,10 +62,11 @@ export function StoryComments({
 
   // ── Reply state per comment (open/closed + draft + submitted replies) ───
   const [replies, setReplies] = useState<
-    Record<string, { open: boolean; draft: string; items: LocalReply[] }>
+    Record<string, { open: boolean; draft: string; items: LocalReply[]; sending: boolean }>
   >({});
 
   const toggleLike = (id: string) => {
+    // Optimistic flip
     setLikes((prev) => {
       const cur = prev[id] ?? { count: 0, liked: false };
       return {
@@ -61,35 +76,85 @@ export function StoryComments({
           : { count: cur.count + 1, liked: true },
       };
     });
+
+    // Mock comments don't have a UUID — keep them local-only
+    if (!isRealCommentId(id)) return;
+
+    // Fire and forget; on failure, revert
+    toggleLikeAction({ commentId: id, storySlug }).then((res) => {
+      if (!res.ok) {
+        setLikes((prev) => {
+          const cur = prev[id] ?? { count: 0, liked: false };
+          return {
+            ...prev,
+            [id]: cur.liked
+              ? { count: cur.count - 1, liked: false }
+              : { count: cur.count + 1, liked: true },
+          };
+        });
+      }
+    });
   };
 
   const toggleReplyBox = (id: string) => {
     setReplies((prev) => {
-      const cur = prev[id] ?? { open: false, draft: '', items: [] };
+      const cur = prev[id] ?? { open: false, draft: '', items: [], sending: false };
       return { ...prev, [id]: { ...cur, open: !cur.open } };
     });
   };
 
   const setReplyDraft = (id: string, value: string) => {
     setReplies((prev) => {
-      const cur = prev[id] ?? { open: true, draft: '', items: [] };
+      const cur = prev[id] ?? { open: true, draft: '', items: [], sending: false };
       return { ...prev, [id]: { ...cur, draft: value } };
     });
   };
 
   const submitReply = (id: string) => {
-    setReplies((prev) => {
-      const cur = prev[id] ?? { open: true, draft: '', items: [] };
-      const text = cur.draft.trim();
-      if (!text) return prev;
-      const newReply: LocalReply = {
-        id: `${id}-r${cur.items.length}`,
-        body: text,
-      };
-      return {
+    const cur = replies[id] ?? { open: true, draft: '', items: [], sending: false };
+    const text = cur.draft.trim();
+    if (!text) return;
+
+    // Optimistic insert
+    const optimisticReply: LocalReply = {
+      id: `${id}-r${cur.items.length}-${Date.now()}`,
+      body: text,
+    };
+    setReplies((prev) => ({
+      ...prev,
+      [id]: {
+        open: true,
+        draft: '',
+        items: [...(prev[id]?.items ?? []), optimisticReply],
+        sending: true,
+      },
+    }));
+
+    if (!isRealCommentId(id)) {
+      // Mock comment — keep reply local only
+      setReplies((prev) => ({
         ...prev,
-        [id]: { open: true, draft: '', items: [...cur.items, newReply] },
-      };
+        [id]: { ...(prev[id] ?? optimisticEmpty()), sending: false },
+      }));
+      return;
+    }
+
+    postReplyAction({ parentId: id, storySlug, body: text }).then((res) => {
+      setReplies((prev) => {
+        const state = prev[id] ?? optimisticEmpty();
+        if (!res.ok) {
+          // Roll back the optimistic reply
+          return {
+            ...prev,
+            [id]: {
+              ...state,
+              items: state.items.filter((r) => r.id !== optimisticReply.id),
+              sending: false,
+            },
+          };
+        }
+        return { ...prev, [id]: { ...state, sending: false } };
+      });
     });
   };
 
@@ -100,14 +165,34 @@ export function StoryComments({
     if (!text) return;
     if (!isComingSoon && userRating === 0) return;
 
-    const newComment: UserComment = {
+    setPostError(null);
+    const optimistic: UserComment = {
       id: `you-${posted.length}-${Date.now()}`,
       body: text,
       stars: isComingSoon ? 0 : userRating,
     };
-    setPosted((prev) => [newComment, ...prev]);
+
+    // Optimistic insert at top
+    setPosted((prev) => [optimistic, ...prev]);
+    const savedDraft = draft;
+    const savedRating = userRating;
     setDraft('');
     setUserRating(0);
+
+    startPosting(async () => {
+      const res = await postComment({
+        storySlug,
+        body: text,
+        stars: isComingSoon ? null : userRating,
+      });
+      if (!res.ok) {
+        // Rollback
+        setPosted((prev) => prev.filter((p) => p.id !== optimistic.id));
+        setDraft(savedDraft);
+        setUserRating(savedRating);
+        setPostError(res.error);
+      }
+    });
   };
 
   const hasComments = comments.length > 0 || posted.length > 0;
@@ -206,19 +291,31 @@ export function StoryComments({
         />
         <div className="flex items-center justify-between mt-3 gap-3">
           <p className="text-xs text-text-mute">
-            {isComingSoon
-              ? 'Posted as Demo User'
+            {postError
+              ? <span className="text-rose-bright">{postError}</span>
+              : isComingSoon
+              ? 'Posted as guest'
               : userRating === 0
               ? 'Rate the story above before posting.'
-              : 'Posted as Demo User'}
+              : 'Posted as guest'}
           </p>
           <Button
             variant="rose"
-            disabled={!draft.trim() || (!isComingSoon && userRating === 0)}
+            disabled={
+              !draft.trim() || (!isComingSoon && userRating === 0) || isPosting
+            }
             onClick={submit}
             size="sm"
           >
-            <Send className="size-4" /> Post
+            {isPosting ? (
+              <>
+                <Loader2 className="size-4 animate-spin" /> Posting…
+              </>
+            ) : (
+              <>
+                <Send className="size-4" /> Post
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -260,10 +357,11 @@ export function StoryComments({
             </article>
           ))}
 
-          {/* Pre-seeded comments */}
+          {/* Pre-seeded / real comments */}
           {comments.map((c) => {
             const likeState = likes[c.id] ?? { count: c.likes, liked: false };
-            const replyState = replies[c.id] ?? { open: false, draft: '', items: [] };
+            const replyState =
+              replies[c.id] ?? { open: false, draft: '', items: [], sending: false };
 
             return (
               <article
@@ -366,10 +464,18 @@ export function StoryComments({
                         <Button
                           variant="rose"
                           size="sm"
-                          disabled={!replyState.draft.trim()}
+                          disabled={!replyState.draft.trim() || replyState.sending}
                           onClick={() => submitReply(c.id)}
                         >
-                          <Send className="size-3.5" /> Reply
+                          {replyState.sending ? (
+                            <>
+                              <Loader2 className="size-3.5 animate-spin" /> Sending
+                            </>
+                          ) : (
+                            <>
+                              <Send className="size-3.5" /> Reply
+                            </>
+                          )}
                         </Button>
                       </div>
                     </div>
@@ -390,4 +496,8 @@ export function StoryComments({
       )}
     </section>
   );
+}
+
+function optimisticEmpty() {
+  return { open: true, draft: '', items: [] as LocalReply[], sending: false };
 }
