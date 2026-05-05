@@ -29,8 +29,8 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     // Run on all paths EXCEPT next internals, static files, and `/api/*`.
-    // The next-intl router was rewriting /api/upload/* into locale-prefixed
-    // paths and producing 404s; route handlers must bypass it entirely.
+    // next-intl routing must NOT rewrite the upload route handlers — otherwise
+    // POST /api/upload/presign gets redirected to /en/api/upload/presign and 404s.
     '/((?!api/|_next/static|_next/image|favicon.ico|covers/|media/|ebook/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp3|mp4|m4a|wav|ogg|m3u8|ts|vtt|srt)$).*)',
   ],
 };

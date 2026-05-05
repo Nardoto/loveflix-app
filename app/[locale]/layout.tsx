@@ -16,6 +16,7 @@ import { PostHogProvider } from '@/lib/posthog';
 import { TopBar } from '@/components/layout/TopBar';
 import { BottomTabBar } from '@/components/layout/BottomTabBar';
 import { SearchProvider } from '@/components/layout/SearchProvider';
+import { PWASupport } from '@/components/layout/PWASupport';
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
@@ -104,6 +105,7 @@ export default async function LocaleLayout({
                 </p>
               </footer>
               <BottomTabBar />
+              <PWASupport />
             </SearchProvider>
           </PostHogProvider>
         </NextIntlClientProvider>

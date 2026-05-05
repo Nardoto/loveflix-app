@@ -2,6 +2,7 @@
 
 // Soft "Add to Home Screen" banner. Two flavors in one component:
 //
+<<<<<<< HEAD
 //   • Android Chrome: listens for `beforeinstallprompt`, captures the
 //     event, and exposes a single Install button that fires the native
 //     install dialog. Triggers the standalone PWA mode (no browser bar).
@@ -15,6 +16,21 @@
 //   • Hidden if user dismissed (X button) — sticky via localStorage.
 //   • Visible only after 60s on Android, 30s on iOS, on visit ≥ 2.
 //   • Hidden on lg screens (this is a phone-only feature).
+=======
+//   - Android Chrome: listens for `beforeinstallprompt`, captures the
+//     event, and exposes a single Install button that fires the native
+//     install dialog. Triggers the standalone PWA mode (no browser bar).
+//
+//   - iOS Safari: Apple does not implement `beforeinstallprompt`, so we
+//     show a textual instruction (Share -> Add to Home Screen) instead.
+//
+// Gates per the older-adult UX research:
+//   - Hidden on first visit (no cold-start pop-up).
+//   - Hidden if already in standalone mode.
+//   - Hidden if user dismissed (X button) - sticky via localStorage.
+//   - Visible only after 60s on Android, 30s on iOS, on visit >= 2.
+//   - Hidden on lg screens (this is a phone-only feature).
+>>>>>>> feat/55plus-redesign-pwa
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
@@ -44,7 +60,11 @@ const COPY: Record<
 > = {
   en: {
     title: 'Install AllureTV',
+<<<<<<< HEAD
     desc: 'Add to your home screen — opens fast, full screen, no browser bar.',
+=======
+    desc: 'Add to your home screen - opens fast, full screen, no browser bar.',
+>>>>>>> feat/55plus-redesign-pwa
     install: 'Install',
     dismiss: 'Dismiss',
     iosShare: 'Share',
@@ -52,14 +72,21 @@ const COPY: Record<
   },
   de: {
     title: 'AllureTV installieren',
+<<<<<<< HEAD
     desc: 'Zum Startbildschirm hinzufügen — schneller, Vollbild, ohne Browserleiste.',
     install: 'Installieren',
     dismiss: 'Schließen',
+=======
+    desc: 'Zum Startbildschirm hinzufuegen - schneller, Vollbild, ohne Browserleiste.',
+    install: 'Installieren',
+    dismiss: 'Schliessen',
+>>>>>>> feat/55plus-redesign-pwa
     iosShare: 'Teilen',
     iosAdd: 'Zum Home-Bildschirm',
   },
   fr: {
     title: 'Installer AllureTV',
+<<<<<<< HEAD
     desc: 'Ajouter à l’écran d’accueil — rapide, plein écran, sans barre.',
     install: 'Installer',
     dismiss: 'Fermer',
@@ -73,6 +100,21 @@ const COPY: Record<
     dismiss: 'Cerrar',
     iosShare: 'Compartir',
     iosAdd: 'Añadir a Inicio',
+=======
+    desc: "Ajouter a l'ecran d'accueil - rapide, plein ecran, sans barre.",
+    install: 'Installer',
+    dismiss: 'Fermer',
+    iosShare: 'Partager',
+    iosAdd: "Sur l'ecran d'accueil",
+  },
+  es: {
+    title: 'Instalar AllureTV',
+    desc: 'Anade a la pantalla de inicio - rapido, pantalla completa, sin barra.',
+    install: 'Instalar',
+    dismiss: 'Cerrar',
+    iosShare: 'Compartir',
+    iosAdd: 'Anadir a Inicio',
+>>>>>>> feat/55plus-redesign-pwa
   },
 };
 
@@ -83,6 +125,7 @@ export function InstallBanner() {
   const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
+<<<<<<< HEAD
     // Already running as a standalone PWA? No banner needed.
     if (window.matchMedia('(display-mode: standalone)').matches) return;
     // iOS legacy "standalone" flag.
@@ -91,12 +134,21 @@ export function InstallBanner() {
     if (localStorage.getItem(DISMISSED_KEY) === '1') return;
 
     // Visit-counter gating (research: never on first visit).
+=======
+    if (window.matchMedia('(display-mode: standalone)').matches) return;
+    if ((window.navigator as { standalone?: boolean }).standalone) return;
+    if (localStorage.getItem(DISMISSED_KEY) === '1') return;
+
+>>>>>>> feat/55plus-redesign-pwa
     const visits = parseInt(localStorage.getItem(VISITS_KEY) || '0', 10) + 1;
     localStorage.setItem(VISITS_KEY, String(visits));
     if (visits < 2) return;
 
+<<<<<<< HEAD
     // iOS detection — covers iPhone/iPod + iPad-on-iOS-13+ which reports as
     // MacIntel with touch points.
+=======
+>>>>>>> feat/55plus-redesign-pwa
     const ua = navigator.userAgent;
     const ios =
       /iPad|iPhone|iPod/.test(ua) ||
@@ -104,13 +156,19 @@ export function InstallBanner() {
     setIsIOS(ios);
 
     if (ios) {
+<<<<<<< HEAD
       // No `beforeinstallprompt` on iOS — just delay-then-show.
+=======
+>>>>>>> feat/55plus-redesign-pwa
       const t = setTimeout(() => setShow(true), IOS_DELAY_MS);
       return () => clearTimeout(t);
     }
 
+<<<<<<< HEAD
     // Android Chrome path. Capture the prompt event, hold it, then show
     // the banner once the activity timer fires.
+=======
+>>>>>>> feat/55plus-redesign-pwa
     let captured: BIPEvent | null = null;
     let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -174,7 +232,11 @@ export function InstallBanner() {
             <p className="text-xs text-text-dim mt-1 leading-snug flex items-center gap-1 flex-wrap">
               <Share className="inline-block size-3.5 text-rose-bright shrink-0" />
               <span>
+<<<<<<< HEAD
                 {t.iosShare} → <span className="text-text-soft">{t.iosAdd}</span>
+=======
+                {t.iosShare} {'->'} <span className="text-text-soft">{t.iosAdd}</span>
+>>>>>>> feat/55plus-redesign-pwa
               </span>
             </p>
           ) : (
