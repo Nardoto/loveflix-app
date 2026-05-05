@@ -1,6 +1,7 @@
-// Mocked catalog data for the 45 covers from the prototype.
-// Replace with Supabase queries in Sprint 1.
-// Synopses come from apresentacao-app/SINOPSES.md.
+// Mocked catalog data — 40 imported stories (with R2 keys) + 45 prototype
+// placeholders (Coming Soon). Replace with Supabase queries in Sprint 1.
+
+import { placeholders } from './placeholders';
 
 export type Genre =
   | 'mafia'
@@ -160,7 +161,9 @@ export const magnata: Story = {
   hasEbook: false,
 };
 
-export const allStories = [fazendeiro, magnata, ...stories];
+// 45 prototype-era stories with artwork + synopses but no playable media yet.
+// Listed last so the rows fill with the real (videoKey) entries first.
+export const allStories = [fazendeiro, magnata, ...stories, ...placeholders];
 
 export const findStory = (slug: string): Story | undefined =>
   allStories.find((s) => s.slug === slug);

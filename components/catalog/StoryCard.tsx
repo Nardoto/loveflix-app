@@ -13,18 +13,22 @@ import { SparkleIcon } from '@/components/icons/SparkleIcon';
 
 export function StoryCard({ story }: { story: Story }) {
   const author = getAuthorFor(story);
+  // Languages with playable audio for this story (badge in the corner of the cover).
+  const audioLocales = Object.keys(
+    story.audioKeyByLocale ?? story.audioByLocale ?? {},
+  );
 
   return (
     <Link
       href={`/s/${story.slug}` as never}
-      className="group shrink-0 w-40 sm:w-44 lg:w-56 snap-start active:opacity-90 transition-opacity"
+      className="group shrink-0 w-56 sm:w-64 lg:w-80 snap-start active:opacity-90 transition-opacity"
     >
-      <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-bg-card shadow-lg shadow-black/40 ring-1 ring-white/5">
+      <div className="relative aspect-video rounded-2xl overflow-hidden bg-bg-card shadow-lg shadow-black/40 ring-1 ring-white/5">
         <Image
           src={story.cover}
           alt={story.title}
           fill
-          sizes="(max-width: 640px) 160px, (max-width: 1024px) 180px, 224px"
+          sizes="(max-width: 640px) 224px, (max-width: 1024px) 256px, 320px"
           className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
         {/* Bottom dim so when the cover happens to be very bright the
@@ -41,6 +45,15 @@ export function StoryCard({ story }: { story: Story }) {
         {story.isComingSoon && (
           <span className="absolute top-2 left-2 inline-flex items-center px-2 py-0.5 rounded-full bg-bg-deep/85 backdrop-blur text-[10px] font-bold uppercase tracking-widest text-text-dim shadow shadow-black/40">
             Soon
+          </span>
+        )}
+
+        {audioLocales.length > 0 && (
+          <span className="absolute bottom-2 right-2 inline-flex items-center gap-0.5 px-1.5 py-1 rounded-full bg-bg-deep/85 backdrop-blur text-xs leading-none shadow shadow-black/40">
+            {audioLocales.includes('en') && <span title="English">🇺🇸</span>}
+            {audioLocales.includes('de') && <span title="Deutsch">🇩🇪</span>}
+            {audioLocales.includes('fr') && <span title="Français">🇫🇷</span>}
+            {audioLocales.includes('es') && <span title="Español">🇪🇸</span>}
           </span>
         )}
       </div>
