@@ -100,6 +100,9 @@ export default {
 } satisfies ExportedHandler<Env>;
 
 function isFreeKey(key: string, freePrefixes: string | undefined): boolean {
+  // Cover images are public metadata — never gated, even for premium tracks.
+  // Otherwise the catalog page can't render thumbnails for paid stories.
+  if (/\/cover\.(jpe?g|png|webp)$/i.test(key)) return true;
   if (!freePrefixes) return false;
   const list = freePrefixes
     .split(',')
