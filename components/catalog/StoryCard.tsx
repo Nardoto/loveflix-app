@@ -17,6 +17,12 @@ import { FlameIcon } from '@/components/icons/FlameIcon';
 export function StoryCard({ story }: { story: Story }) {
   const author = getAuthorFor(story);
   const hot = isStoryHot(story);
+  // Audio locales available for this story — surfaced below the title so
+  // the user knows up front which language the audiobook is in. Uppercase
+  // ISO codes (EN/DE/FR/ES), no emoji flags.
+  const audioLocales = Object.keys(
+    story.audioKeyByLocale ?? story.audioByLocale ?? {},
+  );
 
   return (
     <Link
@@ -74,6 +80,11 @@ export function StoryCard({ story }: { story: Story }) {
             {creatorName(author)}
           </span>
         </p>
+        {audioLocales.length > 0 && (
+          <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-text-mute">
+            {audioLocales.map((l) => l.toUpperCase()).join(' · ')}
+          </p>
+        )}
       </div>
     </Link>
   );
