@@ -9,6 +9,7 @@ import { Row } from '@/components/catalog/Row';
 import { findStory, allStories } from '@/lib/data/stories';
 import { getAuthorFor } from '@/lib/data/authors';
 import { getCommentsForStory } from '@/lib/data/comments-server';
+import { getUser } from '@/lib/auth-helpers';
 import { StoryComments } from '@/components/story/StoryComments';
 import { isStoryHot } from '@/lib/data/hot';
 import { FlameIcon } from '@/components/icons/FlameIcon';
@@ -45,7 +46,8 @@ export default async function StoryDetailPage({
   // mocks when (a) env vars are missing, (b) the schema hasn't been run yet,
   // or (c) the story has fewer than 3 real comments — then we mix mocks in
   // to avoid an empty page. See lib/data/comments-server.ts for the merge rules.
-  const { comments: storyComments, ratingAvg, ratingCount } = await getCommentsForStory(story);
+  const [{ comments: storyComments, ratingAvg, ratingCount }, currentUser] =
+    await Promise.all([getCommentsForStory(story), getUser()]);
 
   const author = getAuthorFor(story);
 
@@ -228,6 +230,7 @@ export default async function StoryDetailPage({
         initialAverage={ratingAvg}
         initialCount={ratingCount}
         isComingSoon={!!story.isComingSoon}
+        isSignedIn={!!currentUser}
       />
 
       {related.length > 0 && (

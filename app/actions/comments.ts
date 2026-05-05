@@ -6,15 +6,10 @@
 // applies — the policies in supabase/migrations/0002_comments.sql require
 // auth.uid() = user_id for any insert/update/delete. Reads are public.
 //
-// When the user has no session yet, we sign them in anonymously (one-shot,
-// stored in cookies). That gives them a stable auth.uid() so likes/replies
-// pass the RLS check. They can still upgrade to a real account later — the
-// anonymous user_id remains theirs.
-//
-// IMPORTANT: anonymous sign-in needs to be ENABLED in
-//   Supabase → Authentication → Providers → Anonymous Sign-Ins.
-// If it's disabled, ensureSession returns null and the client falls back
-// to the local-only optimistic UI.
+// Auth model: viewers MUST be logged in to interact (like/reply/post). When
+// the request comes from an unauthenticated session, the action returns
+// `{ ok: false, requiresLogin: true }` and the client renders a "Sign in to
+// comment" prompt instead of trying again. There is no anonymous sign-in.
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
@@ -22,25 +17,30 @@ import type { User } from '@supabase/supabase-js';
 
 type Result<T = void> =
   | { ok: true; data: T }
-  | { ok: false; error: string };
+  | { ok: false; error: string; requiresLogin?: boolean };
 
 const SUPABASE_CONFIGURED = !!(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-/** Resolve current user, signing in anonymously if missing. Null = auth disabled. */
-async function ensureSession(): Promise<User | null> {
+/** Resolve current user. Returns null when not signed in. Never auto-creates. */
+async function getSignedInUser(): Promise<User | null> {
   if (!SUPABASE_CONFIGURED) return null;
-
-  const supabase = await createClient();
-  const { data: existing } = await supabase.auth.getUser();
-  if (existing.user) return existing.user;
-
-  // No session — try anonymous sign-in
-  const { data, error } = await supabase.auth.signInAnonymously();
-  if (error || !data.user) return null;
-  return data.user;
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) return null;
+    return data.user;
+  } catch {
+    return null;
+  }
 }
+
+const NOT_SIGNED_IN: Result<never> = {
+  ok: false,
+  error: 'Sign in to interact',
+  requiresLogin: true,
+};
 
 
 // ============================================================
@@ -58,8 +58,8 @@ export async function postComment(input: {
     return { ok: false, error: 'Invalid rating' };
   }
 
-  const user = await ensureSession();
-  if (!user) return { ok: false, error: 'Could not sign in. Try again later.' };
+  const user = await getSignedInUser();
+  if (!user) return NOT_SIGNED_IN;
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -89,8 +89,8 @@ export async function toggleLike(input: {
   commentId: string;
   storySlug: string;
 }): Promise<Result<{ liked: boolean }>> {
-  const user = await ensureSession();
-  if (!user) return { ok: false, error: 'Could not sign in. Try again later.' };
+  const user = await getSignedInUser();
+  if (!user) return NOT_SIGNED_IN;
 
   const supabase = await createClient();
 
@@ -131,8 +131,8 @@ export async function postReply(input: {
   if (!text) return { ok: false, error: 'Reply cannot be empty' };
   if (text.length > 2000) return { ok: false, error: 'Reply is too long' };
 
-  const user = await ensureSession();
-  if (!user) return { ok: false, error: 'Could not sign in. Try again later.' };
+  const user = await getSignedInUser();
+  if (!user) return NOT_SIGNED_IN;
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -161,8 +161,8 @@ export async function deleteComment(input: {
   commentId: string;
   storySlug: string;
 }): Promise<Result> {
-  const user = await ensureSession();
-  if (!user) return { ok: false, error: 'Not signed in' };
+  const user = await getSignedInUser();
+  if (!user) return NOT_SIGNED_IN;
 
   const supabase = await createClient();
   const { error } = await supabase

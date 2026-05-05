@@ -28,9 +28,10 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Run on all paths EXCEPT next internals, static files, and `/api/*`.
-    // next-intl routing must NOT rewrite the upload route handlers — otherwise
-    // POST /api/upload/presign gets redirected to /en/api/upload/presign and 404s.
-    '/((?!api/|_next/static|_next/image|favicon.ico|covers/|media/|ebook/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp3|mp4|m4a|wav|ogg|m3u8|ts|vtt|srt)$).*)',
+    // Run on all paths EXCEPT next internals, static files, `/api/*`, and `/auth/*`.
+    // next-intl must NOT rewrite the upload route handlers (POST /api/upload/* would
+    // become /en/api/upload/* and 404), nor the OAuth/magic-link callback at
+    // /auth/callback (Supabase needs the exact path it was given).
+    '/((?!api/|auth/|_next/static|_next/image|favicon.ico|covers/|media/|ebook/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp3|mp4|m4a|wav|ogg|m3u8|ts|vtt|srt)$).*)',
   ],
 };

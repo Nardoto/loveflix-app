@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import Image from 'next/image';
-import { Star, Heart, MessageCircle, Send, Loader2 } from 'lucide-react';
+import { Star, Heart, MessageCircle, Send, Loader2, LogIn } from 'lucide-react';
+import { Link } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { StoryComment } from '@/lib/data/comments';
@@ -35,6 +36,7 @@ export function StoryComments({
   initialAverage,
   initialCount,
   isComingSoon = false,
+  isSignedIn = false,
 }: {
   storyId: string;
   storyTitle: string;
@@ -43,6 +45,7 @@ export function StoryComments({
   initialAverage: number;
   initialCount: number;
   isComingSoon?: boolean;
+  isSignedIn?: boolean;
 }) {
   // ── New top-level comment from the viewer ───────────────────────────────
   const [userRating, setUserRating] = useState(0);
@@ -51,6 +54,13 @@ export function StoryComments({
   const [posted, setPosted] = useState<UserComment[]>([]);
   const [postError, setPostError] = useState<string | null>(null);
   const [isPosting, startPosting] = useTransition();
+  const [signInPromptFor, setSignInPromptFor] = useState<
+    'post' | 'like' | 'reply' | null
+  >(null);
+
+  // Build a "Sign in & come back" link with returnTo param so the user
+  // lands back on this story after authenticating.
+  const signInHref = `/login?returnTo=${encodeURIComponent(`/s/${storySlug}`)}`;
 
   // ── Like state per comment (toggle, optimistic) ─────────────────────────
   const [likes, setLikes] = useState<Record<string, { count: number; liked: boolean }>>(
@@ -66,6 +76,11 @@ export function StoryComments({
   >({});
 
   const toggleLike = (id: string) => {
+    if (!isSignedIn) {
+      setSignInPromptFor('like');
+      return;
+    }
+
     // Optimistic flip
     setLikes((prev) => {
       const cur = prev[id] ?? { count: 0, liked: false };
@@ -92,11 +107,18 @@ export function StoryComments({
               : { count: cur.count + 1, liked: true },
           };
         });
+        if ('requiresLogin' in res && res.requiresLogin) {
+          setSignInPromptFor('like');
+        }
       }
     });
   };
 
   const toggleReplyBox = (id: string) => {
+    if (!isSignedIn) {
+      setSignInPromptFor('reply');
+      return;
+    }
     setReplies((prev) => {
       const cur = prev[id] ?? { open: false, draft: '', items: [], sending: false };
       return { ...prev, [id]: { ...cur, open: !cur.open } };
@@ -114,6 +136,10 @@ export function StoryComments({
     const cur = replies[id] ?? { open: true, draft: '', items: [], sending: false };
     const text = cur.draft.trim();
     if (!text) return;
+    if (!isSignedIn) {
+      setSignInPromptFor('reply');
+      return;
+    }
 
     // Optimistic insert
     const optimisticReply: LocalReply = {
@@ -144,6 +170,9 @@ export function StoryComments({
         const state = prev[id] ?? optimisticEmpty();
         if (!res.ok) {
           // Roll back the optimistic reply
+          if ('requiresLogin' in res && res.requiresLogin) {
+            setSignInPromptFor('reply');
+          }
           return {
             ...prev,
             [id]: {
@@ -164,6 +193,10 @@ export function StoryComments({
     // Live stories: rating required.
     if (!text) return;
     if (!isComingSoon && userRating === 0) return;
+    if (!isSignedIn) {
+      setSignInPromptFor('post');
+      return;
+    }
 
     setPostError(null);
     const optimistic: UserComment = {
@@ -191,6 +224,9 @@ export function StoryComments({
         setDraft(savedDraft);
         setUserRating(savedRating);
         setPostError(res.error);
+        if ('requiresLogin' in res && res.requiresLogin) {
+          setSignInPromptFor('post');
+        }
       }
     });
   };
@@ -199,6 +235,44 @@ export function StoryComments({
 
   return (
     <section className="px-5 md:px-10 lg:px-14 mt-12 md:mt-16 max-w-5xl pb-20">
+      {/* Sign-in prompt modal — shown when guest tries to like/reply/post */}
+      {signInPromptFor && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm grid place-items-center px-4"
+          onClick={() => setSignInPromptFor(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-bg-card rounded-2xl p-6 md:p-8 max-w-sm w-full shadow-2xl shadow-black/70 border border-rose-bright/20"
+          >
+            <div className="grid place-items-center size-14 rounded-full bg-gradient-to-br from-rose to-rose-deep text-white mx-auto mb-4 shadow-lg shadow-rose/30">
+              <LogIn className="size-6" />
+            </div>
+            <h3 className="font-serif italic text-2xl font-bold text-white text-center mb-2">
+              Sign in to {signInPromptFor === 'like' ? 'like' : signInPromptFor === 'reply' ? 'reply' : 'comment'}
+            </h3>
+            <p className="text-text-dim text-center text-sm mb-6 leading-relaxed">
+              Join AllureTV — it&apos;s free and takes a minute. You&apos;ll be able to
+              comment, rate stories, and save your favorites.
+            </p>
+            <div className="flex flex-col gap-2">
+              <Button asChild variant="rose" className="w-full">
+                <Link href={signInHref as never}>
+                  <LogIn className="size-4" /> Sign in / Create account
+                </Link>
+              </Button>
+              <Button
+                variant="glass"
+                className="w-full"
+                onClick={() => setSignInPromptFor(null)}
+              >
+                Maybe later
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center gap-2 mb-6">
         <MessageCircle className="size-5 text-rose-bright" />
         <h2 className="font-serif italic text-2xl md:text-3xl font-bold text-white">
