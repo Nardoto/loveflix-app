@@ -1,0 +1,10 @@
+# Ignore R2 import staging — multi-GB temp files never needed at runtime
+scripts/r2-import/_workspace
+scripts/r2-import/node_modules
+
+# Worker is deployed separately via wrangler — Vercel doesn't need it
+worker-media
+
+# Local secrets
+.env.local
+.env*.local

@@ -1,5 +1,10 @@
 'use client';
 
+// Horizontal-scroll row of StoryCards. Mobile-first: 16px edge gutter,
+// 12px gap between cards, ~2 cards visible + ~30% peek so users SEE that
+// there's more to swipe. Desktop adds left/right scroll arrows that fade
+// in on hover. Title 22px/700 (per the 55+ accessibility research).
+
 import { useRef, useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { StoryCard } from './StoryCard';
@@ -9,10 +14,9 @@ type RowProps = {
   title: string;
   highlight?: string; // word inside title to render in italic rose
   stories: Story[];
-  numbered?: boolean;
 };
 
-export function Row({ title, highlight, stories, numbered = false }: RowProps) {
+export function Row({ title, highlight, stories }: RowProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -52,7 +56,7 @@ export function Row({ title, highlight, stories, numbered = false }: RowProps) {
     return (
       <>
         {title.slice(0, idx)}
-        <em className="text-rose not-italic font-serif italic">
+        <em className="text-rose-bright not-italic font-serif italic">
           {title.slice(idx, idx + highlight.length)}
         </em>
         {title.slice(idx + highlight.length)}
@@ -61,9 +65,9 @@ export function Row({ title, highlight, stories, numbered = false }: RowProps) {
   };
 
   return (
-    <section className="group relative px-4 md:px-10 mt-10 md:mt-14">
+    <section className="group relative px-4 md:px-10 mt-8 md:mt-12">
       <div className="mb-3 md:mb-4">
-        <h2 className="font-serif text-xl md:text-2xl lg:text-3xl font-extrabold text-white tracking-tight leading-none">
+        <h2 className="font-serif text-[22px] md:text-2xl lg:text-3xl font-extrabold text-white tracking-tight leading-tight">
           {renderTitle()}
         </h2>
         <span className="gold-flourish" aria-hidden="true" />
@@ -72,19 +76,14 @@ export function Row({ title, highlight, stories, numbered = false }: RowProps) {
       <div className="relative">
         <div
           ref={trackRef}
-          className="row-track flex gap-2.5 md:gap-3 overflow-x-auto -mx-4 md:-mx-10 px-4 md:px-10 snap-x snap-mandatory scroll-smooth"
+          className="row-track flex gap-3 md:gap-4 overflow-x-auto -mx-4 md:-mx-10 px-4 md:px-10 snap-x snap-mandatory scroll-smooth pb-2"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
-          {stories.map((story, i) => (
-            <StoryCard
-              key={story.id + '-' + i}
-              story={story}
-              rank={numbered ? i + 1 : undefined}
-            />
+          {stories.map((story) => (
+            <StoryCard key={story.id} story={story} />
           ))}
         </div>
 
-        {/* Side arrows — desktop only, fade in on hover */}
         {canScrollLeft && (
           <button
             aria-label="Scroll left"

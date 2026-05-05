@@ -30,12 +30,16 @@ function audioKeysObjectLiteral(keys: Partial<Record<Locale, string>>): string {
   return `{ ${entries.join(', ')} }`;
 }
 
+const MEDIA_DOMAIN = process.env.NEXT_PUBLIC_MEDIA_DOMAIN || 'media.alluretv.net';
+
 function storyToCallExpr(s: StoryEntry): string {
   const audioKeysObj = audioKeysObjectLiteral(s.targets.audioKeys);
+  const coverUrl = `https://${MEDIA_DOMAIN}/${s.targets.coverKey}`;
   // s(num, { ... }) — uses helper already in stories.ts
   const fields: string[] = [
     `slug: '${escapeString(s.slug)}'`,
     `title: '${escapeString(s.title)}'`,
+    `cover: '${escapeString(coverUrl)}'`,
     `genre: '${s.genre}'`,
     `tropes: ${tropesLiteral(s.tropes)}`,
     `synopsis: '${escapeString(s.synopsis || s.title)}'`,
@@ -49,12 +53,13 @@ function storyToCallExpr(s: StoryEntry): string {
 
 function magnataConst(m: StoryEntry): string {
   const audioKeysObj = audioKeysObjectLiteral(m.targets.audioKeys);
+  const coverUrl = `https://${MEDIA_DOMAIN}/${m.targets.coverKey}`;
   return `
 // Premium flagship — gated by Worker FREE_PREFIXES.
 export const magnata: Story = {
   id: 'magnata',
   slug: '${escapeString(m.slug)}',
-  cover: '/covers/magnata.jpg',
+  cover: '${escapeString(coverUrl)}',
   title: '${escapeString(m.title)}',
   genre: '${m.genre}',
   tropes: ${tropesLiteral(m.tropes)},

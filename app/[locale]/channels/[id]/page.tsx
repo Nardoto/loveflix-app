@@ -165,7 +165,6 @@ export default async function ChannelPage({
             title="Top stories"
             highlight="Top"
             stories={channelStories.slice(0, 10)}
-            numbered
           />
           {genres.map((g) => {
             const list = channelStories.filter((s) => s.genre === g);

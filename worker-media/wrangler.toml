@@ -2,24 +2,22 @@ name = "alluretv-worker-media"
 main = "src/index.ts"
 compatibility_date = "2025-04-01"
 
-# R2 bucket bound as `MEDIA` inside the Worker.
-[[r2_buckets]]
-binding = "MEDIA"
-bucket_name = "alluretv-media"
+# Custom domain — auto-provisioned on deploy (zone alluretv.net is already on Cloudflare).
+routes = [
+  { pattern = "media.alluretv.net", custom_domain = true },
+]
 
 # Tier metadata:
 #   - "active" / "trialing"  → can read everything
 #   - "free"                 → can read free books only (book1 of fazendeiro and free stories)
 # The Worker enforces this based on the JWT `tier` claim plus the requested key.
-
-# Custom domain. Set up after first deploy:
-#   wrangler.toml or via Cloudflare dashboard → Workers & Pages → alluretv-worker-media → Custom Domains.
-# routes = [
-#   { pattern = "media.alluretv.net/*", custom_domain = true },
-# ]
-
 [vars]
 # Comma-separated list of free key prefixes. Anything matching is served without
 # JWT validation. The 75 imported stories live under stories/<slug>/book1/...
 # and are free; the MAGNATA premium track lives under premium/... and stays gated.
 FREE_PREFIXES = "stories/"
+
+# R2 bucket bound as `MEDIA` inside the Worker.
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "alluretv-media"

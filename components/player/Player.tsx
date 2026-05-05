@@ -229,12 +229,13 @@ export function Player({
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col">
-      {/* Click-to-toggle layer covers media area only (excludes controls + top bar) */}
+      {/* Click-to-toggle layer covers media area only (excludes controls + top bar).
+          bottom-48 keeps clear of the taller mobile control stack. */}
       <button
         type="button"
         aria-label={isPlaying ? 'Pause' : 'Play'}
         onClick={togglePlay}
-        className="absolute inset-x-0 top-20 bottom-32 z-0 cursor-pointer"
+        className="absolute inset-x-0 top-20 bottom-48 z-0 cursor-pointer"
       />
 
       {/* Hidden media elements — we keep both and toggle visibility/active */}
@@ -328,11 +329,20 @@ export function Player({
         )}
       >
 
-        {/* Bottom controls */}
-        <div className="absolute bottom-0 inset-x-0 p-4 md:p-8 bg-gradient-to-t from-black/95 via-black/60 to-transparent pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-          {/* Progress */}
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs text-text-dim tabular-nums w-12 text-right">{formatTime(time)}</span>
+        {/* Bottom controls — mobile-first stacked rows.
+            Row 1: scrubber. Row 2: primary playback (skip / play / skip).
+            Row 3: secondary (mode toggle + lang + speed + sleep + extras).
+            Stops click propagation so taps on controls don't trigger the
+            click-to-toggle play overlay behind. */}
+        <div
+          className="absolute bottom-0 inset-x-0 px-3 md:px-8 pt-3 md:pt-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:pb-6 bg-gradient-to-t from-black/95 via-black/70 to-transparent pointer-events-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Scrubber */}
+          <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
+            <span className="text-[11px] md:text-xs text-text-dim tabular-nums w-10 md:w-12 text-right shrink-0">
+              {formatTime(time)}
+            </span>
             <Slider
               value={[time]}
               max={duration || 100}
@@ -343,138 +353,191 @@ export function Player({
               }}
               className="flex-1"
             />
-            <span className="text-xs text-text-dim tabular-nums w-12">{formatTime(duration)}</span>
+            <span className="text-[11px] md:text-xs text-text-dim tabular-nums w-10 md:w-12 shrink-0">
+              {formatTime(duration)}
+            </span>
           </div>
 
-          {/* Buttons */}
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" onClick={() => seekBy(-10)} aria-label="Skip back 10s">
-                <SkipBack />
-              </Button>
-              <Button variant="rose" size="icon" onClick={togglePlay} aria-label={isPlaying ? 'Pause' : 'Play'} className="size-14 [&_svg]:size-7">
-                {isPlaying ? <Pause className="fill-current" /> : <Play className="fill-current" />}
-              </Button>
-              <Button variant="ghost" size="icon" onClick={() => seekBy(10)} aria-label="Skip forward 10s">
-                <SkipForward />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={() => setMuted((m) => !m)} aria-label="Toggle mute" className="ml-2 hidden sm:inline-flex">
-                {muted || volume === 0 ? <VolumeX /> : <Volume2 />}
-              </Button>
-            </div>
-
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {/* Mode toggle */}
-              <div className="inline-flex items-center bg-white/10 rounded-full p-1">
-                {hasVideo && (
-                  <button
-                    onClick={() => switchMode('video')}
-                    className={cn(
-                      'px-3 h-9 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all',
-                      mode === 'video'
-                        ? 'bg-rose text-white shadow shadow-rose/40'
-                        : 'text-text-dim hover:text-white',
-                    )}
-                  >
-                    <Film className="size-3.5" /> Video
-                  </button>
-                )}
-                {hasAudio && (
-                  <button
-                    onClick={() => switchMode('audio')}
-                    className={cn(
-                      'px-3 h-9 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all',
-                      mode === 'audio'
-                        ? 'bg-rose text-white shadow shadow-rose/40'
-                        : 'text-text-dim hover:text-white',
-                    )}
-                  >
-                    <Headphones className="size-3.5" /> Audio
-                  </button>
-                )}
-                {hasEbook && (
-                  <Button asChild variant="ghost" size="sm" className="h-9 px-3 text-xs gap-1.5">
-                    <Link href={`/s/${story.slug}/read` as never}>
-                      <BookOpen className="size-3.5" />
-                      Read
-                    </Link>
-                  </Button>
-                )}
-              </div>
-
-              {/* Language */}
-              {hasAudio && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="glass" size="sm">
-                      🌐 {audioLocale.toUpperCase()}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" side="top">
-                    <DropdownMenuLabel>Audio language</DropdownMenuLabel>
-                    {Object.keys(story.audioKeyByLocale ?? story.audioByLocale ?? {}).map((code) => (
-                      <DropdownMenuCheckboxItem
-                        key={code}
-                        checked={code === audioLocale}
-                        onCheckedChange={() => switchLocale(code)}
-                      >
-                        {code === 'en' && '🇺🇸 English'}
-                        {code === 'de' && '🇩🇪 Deutsch'}
-                        {code === 'fr' && '🇫🇷 Français'}
-                        {code === 'es' && '🇪🇸 Español'}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+          {/* Primary playback row — centered on mobile, left-aligned on desktop */}
+          <div className="flex items-center justify-center md:justify-start gap-2 md:gap-1 mb-3 md:mb-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => seekBy(-10)}
+              aria-label="Skip back 10s"
+              className="size-11"
+            >
+              <SkipBack />
+            </Button>
+            <Button
+              variant="rose"
+              size="icon"
+              onClick={togglePlay}
+              aria-label={isPlaying ? 'Pause' : 'Play'}
+              className="size-14 md:size-14 [&_svg]:size-7 mx-1"
+            >
+              {isPlaying ? (
+                <Pause className="fill-current" />
+              ) : (
+                <Play className="fill-current" />
               )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => seekBy(10)}
+              aria-label="Skip forward 10s"
+              className="size-11"
+            >
+              <SkipForward />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMuted((m) => !m)}
+              aria-label="Toggle mute"
+              className="ml-1 hidden sm:inline-flex"
+            >
+              {muted || volume === 0 ? <VolumeX /> : <Volume2 />}
+            </Button>
+          </div>
 
-              {/* Speed */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="glass" size="sm">
-                    {speed}×
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" side="top">
-                  <DropdownMenuLabel>Speed</DropdownMenuLabel>
-                  {SPEED_OPTIONS.map((s) => (
-                    <DropdownMenuCheckboxItem
-                      key={s}
-                      checked={s === speed}
-                      onCheckedChange={() => setSpeed(s)}
-                    >
-                      {s}× {s === 1 && <span className="ml-auto text-xs text-text-mute">normal</span>}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Sleep timer */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="glass" size="sm" aria-label="Sleep timer">
-                    <Moon className="size-4" />
-                    {sleepMinutes > 0 && <span className="ml-1 text-rose-bright">{sleepMinutes}m</span>}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" side="top">
-                  <DropdownMenuLabel>Sleep timer</DropdownMenuLabel>
-                  {SLEEP_OPTIONS.map((opt) => (
-                    <DropdownMenuCheckboxItem
-                      key={opt.minutes}
-                      checked={opt.minutes === sleepMinutes}
-                      onCheckedChange={() => setSleepMinutes(opt.minutes)}
-                    >
-                      {opt.label}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <Button variant="ghost" size="icon" onClick={fullscreen} aria-label="Fullscreen" className="hidden sm:inline-flex">
-                <Maximize />
-              </Button>
+          {/* Secondary row — mode toggle + dropdowns. Single row on desktop
+              (right-aligned alongside primary controls); separate row on
+              mobile, scrolls horizontally if needed instead of wrapping. */}
+          <div className="md:absolute md:right-8 md:bottom-6 flex items-center gap-1.5 overflow-x-auto md:overflow-visible -mx-3 px-3 md:mx-0 md:px-0 md:flex-wrap md:justify-end md:max-w-[60%] no-scrollbar">
+            {/* Mode toggle — Video / Audio / Read */}
+            <div className="inline-flex items-center bg-white/10 rounded-full p-1 shrink-0">
+              {hasVideo && (
+                <button
+                  onClick={() => switchMode('video')}
+                  className={cn(
+                    'px-3 h-8 md:h-9 rounded-full text-[11px] md:text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all',
+                    mode === 'video'
+                      ? 'bg-rose text-white shadow shadow-rose/40'
+                      : 'text-text-dim hover:text-white',
+                  )}
+                >
+                  <Film className="size-3.5" /> Video
+                </button>
+              )}
+              {hasAudio && (
+                <button
+                  onClick={() => switchMode('audio')}
+                  className={cn(
+                    'px-3 h-8 md:h-9 rounded-full text-[11px] md:text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all',
+                    mode === 'audio'
+                      ? 'bg-rose text-white shadow shadow-rose/40'
+                      : 'text-text-dim hover:text-white',
+                  )}
+                >
+                  <Headphones className="size-3.5" /> Audio
+                </button>
+              )}
+              {hasEbook && (
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 md:h-9 px-3 text-[11px] md:text-xs gap-1.5"
+                >
+                  <Link href={`/s/${story.slug}/read` as never}>
+                    <BookOpen className="size-3.5" />
+                    Read
+                  </Link>
+                </Button>
+              )}
             </div>
+
+            {hasAudio && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="glass" size="sm" className="shrink-0 h-9">
+                    🌐 {audioLocale.toUpperCase()}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" side="top">
+                  <DropdownMenuLabel>Audio language</DropdownMenuLabel>
+                  {Object.keys(
+                    story.audioKeyByLocale ?? story.audioByLocale ?? {},
+                  ).map((code) => (
+                    <DropdownMenuCheckboxItem
+                      key={code}
+                      checked={code === audioLocale}
+                      onCheckedChange={() => switchLocale(code)}
+                    >
+                      {code === 'en' && '🇺🇸 English'}
+                      {code === 'de' && '🇩🇪 Deutsch'}
+                      {code === 'fr' && '🇫🇷 Français'}
+                      {code === 'es' && '🇪🇸 Español'}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="glass" size="sm" className="shrink-0 h-9">
+                  {speed}×
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" side="top">
+                <DropdownMenuLabel>Speed</DropdownMenuLabel>
+                {SPEED_OPTIONS.map((s) => (
+                  <DropdownMenuCheckboxItem
+                    key={s}
+                    checked={s === speed}
+                    onCheckedChange={() => setSpeed(s)}
+                  >
+                    {s}×{' '}
+                    {s === 1 && (
+                      <span className="ml-auto text-xs text-text-mute">
+                        normal
+                      </span>
+                    )}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="glass"
+                  size="sm"
+                  aria-label="Sleep timer"
+                  className="shrink-0 h-9"
+                >
+                  <Moon className="size-4" />
+                  {sleepMinutes > 0 && (
+                    <span className="ml-1 text-rose-bright">{sleepMinutes}m</span>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" side="top">
+                <DropdownMenuLabel>Sleep timer</DropdownMenuLabel>
+                {SLEEP_OPTIONS.map((opt) => (
+                  <DropdownMenuCheckboxItem
+                    key={opt.minutes}
+                    checked={opt.minutes === sleepMinutes}
+                    onCheckedChange={() => setSleepMinutes(opt.minutes)}
+                  >
+                    {opt.label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={fullscreen}
+              aria-label="Fullscreen"
+              className="shrink-0 h-9 w-9"
+            >
+              <Maximize />
+            </Button>
           </div>
         </div>
       </div>

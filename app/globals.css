@@ -96,7 +96,9 @@ body {
   background: var(--bg-deep);
   color: var(--text-soft);
   font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 16px;
+  /* 17px is the iOS body default and the floor recommended in the JMIR
+     systematic review on mobile design for older adults. */
+  font-size: 17px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -105,6 +107,10 @@ body {
 /* Hide horizontal scrollbar on catalog rows */
 .row-track::-webkit-scrollbar { display: none; }
 .row-track { scrollbar-width: none; -ms-overflow-style: none; }
+
+/* Generic "no-scrollbar" utility for any horizontal swipe row. */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 
 /* Touch optimizations for mobile */
 button, [role="button"], a {
