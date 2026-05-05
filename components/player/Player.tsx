@@ -90,6 +90,16 @@ export function Player({
 
   const activeMedia = mode === 'video' ? videoRef.current : audioRef.current;
 
+  // Lock body scroll while the player is mounted — prevents the underlying
+  // page from showing a phantom scrollbar behind the fixed-overlay player.
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, []);
+
   // Hide controls on inactivity
   useEffect(() => {
     let id: ReturnType<typeof setTimeout>;
