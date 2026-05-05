@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# r2-import pipeline staging (multi-GB temp files)
+/scripts/r2-import/_workspace
+/scripts/r2-import/node_modules

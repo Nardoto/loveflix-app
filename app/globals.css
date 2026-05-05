@@ -1,26 +1,468 @@
 @import "tailwindcss";
 
+/* AllureTV design tokens — palette derived from the official logo.
+   Soft dusty-rose script + warm gold + dark navy-black bg. The logo's
+   "Allure" sweep goes light rose → deep rose; "TV" is solid gold. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-deep: #0a0710;
+  --bg-card: #140d1a;
+  --bg-elevated: #1d1428;
+  --bg-row: #0d0712;
+
+  /* Rose: dusty, elegant, less neon than the prototype's #ff4d7e.
+     Tuned to match the wordmark's gradient. */
+  --rose: #e85d8a;
+  --rose-bright: #f4a8bd;
+  --rose-deep: #b65275;
+  --burgundy: #4a1428;
+
+  /* Gold: lifted from the "TV" letters and the underline of the wordmark. */
+  --gold: #d4b274;
+  --gold-bright: #f0cf95;
+  --gold-deep: #a8854d;
+
+  --text: #ffffff;
+  --text-soft: #ece4ea;
+  --text-dim: #a89aa3;
+  --text-mute: #6a5a64;
+
+  --border: rgba(255, 255, 255, 0.06);
+  --border-bright: rgba(232, 93, 138, 0.3);
+
+  --green: #2ed174;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  /* Make tokens available as Tailwind v4 utility colors:
+     bg-bg-deep, text-rose, border-border-bright etc. */
+  --color-bg-deep: var(--bg-deep);
+  --color-bg-card: var(--bg-card);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-row: var(--bg-row);
+
+  --color-rose: var(--rose);
+  --color-rose-bright: var(--rose-bright);
+  --color-rose-deep: var(--rose-deep);
+  --color-burgundy: var(--burgundy);
+
+  --color-gold: var(--gold);
+  --color-gold-bright: var(--gold-bright);
+  --color-gold-deep: var(--gold-deep);
+
+  --color-text: var(--text);
+  --color-text-soft: var(--text-soft);
+  --color-text-dim: var(--text-dim);
+  --color-text-mute: var(--text-mute);
+
+  --color-green-allure: var(--green);
+
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
   --font-mono: var(--font-geist-mono);
+
+  --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
+  --animate-hot-glow: hot-glow 2.5s ease-in-out infinite;
+  --animate-flame-flicker: flame-flicker 1.8s ease-in-out infinite;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(255, 77, 126, 0.3); }
+  50% { box-shadow: 0 0 35px rgba(255, 77, 126, 0.6); }
+}
+
+@keyframes hot-glow {
+  0%, 100% { box-shadow: 0 2px 12px rgba(220, 38, 38, 0.45); }
+  50% { box-shadow: 0 4px 22px rgba(255, 110, 50, 0.8); }
+}
+
+@keyframes flame-flicker {
+  0%, 100% { transform: scale(1) rotate(-2deg); filter: drop-shadow(0 0 4px rgba(255, 130, 50, 0.5)); }
+  50% { transform: scale(1.08) rotate(2deg); filter: drop-shadow(0 0 8px rgba(255, 80, 30, 0.8)); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hero-zoom {
+  from { transform: scale(1); }
+  to { transform: scale(1.06); }
+}
+
+html, body { height: 100%; }
+
+body {
+  background: var(--bg-deep);
+  color: var(--text-soft);
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Hide horizontal scrollbar on catalog rows */
+.row-track::-webkit-scrollbar { display: none; }
+.row-track { scrollbar-width: none; -ms-overflow-style: none; }
+
+/* Touch optimizations for mobile */
+button, [role="button"], a {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* AllureTV wordmark — replicated from the logo image:
+   "Allure" rose-bright → rose-deep gradient; "TV" solid gold. */
+.brand-allure {
+  background: linear-gradient(135deg, var(--rose-bright) 0%, var(--rose-deep) 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+.brand-tv {
+  color: var(--gold);
+}
+/* Subtle gold underline that runs under the full wordmark. */
+.brand-rule {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold) 25%, var(--gold) 75%, transparent);
+  opacity: 0.7;
+}
+
+/* Section flourish — small gold accent line shown under row/section titles. */
+.gold-flourish {
+  display: inline-block;
+  width: 32px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold) 0%, transparent 100%);
+  border-radius: 2px;
+  margin-top: 4px;
+}
+
+/* Card hover with elastic easing — matches prototype.
+   Scale stays conservative so cards don't get clipped by the row's overflow-x scroll
+   (CSS doesn't allow overflow-y: visible + overflow-x: scroll to coexist cleanly). */
+.card-hover {
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.35s ease,
+              outline-color 0.2s ease;
+  outline: 0 solid transparent;
+}
+.card-hover:hover {
+  transform: scale(1.04) translateY(-4px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85),
+              0 0 0 2px rgba(255, 77, 126, 0.5);
+  z-index: 5;
+}
+@media (min-width: 1024px) {
+  .card-hover:hover {
+    transform: scale(1.06) translateY(-6px);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Add vertical padding inside the scroll track so hover lift has room
+   without overflowing into the next row's title. */
+.row-track {
+  padding-block: 14px;
+  padding-inline-start: 1px; /* avoid clipping the focus ring of the first card */
+}
+
+/* Hero radial accent */
+.hero-overlay {
+  background:
+    radial-gradient(ellipse at 25% 50%, rgba(201, 87, 122, 0.25) 0%, transparent 55%),
+    linear-gradient(90deg, var(--bg-deep) 0%, transparent 55%, rgba(7, 5, 10, 0.7) 100%),
+    linear-gradient(180deg, transparent 60%, var(--bg-deep) 100%);
+}
+
+/* ====================================================================
+   E-BOOK READER — typography, drop cap, themes
+   Patterns: Apple Books + Galatea + Wattpad. Single-column scroll, max
+   measure ~38em, serif body (Lora), gold drop cap as a romance signature.
+   ==================================================================== */
+
+/* Theme variables — Apple Books-style trio. Default = dark. */
+.reader-shell {
+  --reader-bg: #0a0710;
+  --reader-paper: #110a18;
+  --reader-text: #ece4ea;
+  --reader-text-dim: #a89aa3;
+  --reader-text-mute: #6a5a64;
+  --reader-accent: var(--gold);
+  --reader-accent-soft: var(--gold-deep);
+  --reader-rose: var(--rose);
+  --reader-divider: rgba(212, 178, 116, 0.25);
+  --reader-fs: 18px;
+  --reader-lh: 1.75;
+}
+.reader-shell[data-reader-theme="sepia"] {
+  --reader-bg: #f4e8d0;
+  --reader-paper: #ede1c5;
+  --reader-text: #3a2a1c;
+  --reader-text-dim: #6b5a45;
+  --reader-text-mute: #8d7a62;
+  --reader-accent: #8b5a2e;
+  --reader-accent-soft: #b07a4a;
+  --reader-rose: #a8475e;
+  --reader-divider: rgba(139, 90, 46, 0.3);
+}
+.reader-shell[data-reader-theme="light"] {
+  --reader-bg: #fbf6ee;
+  --reader-paper: #f4f0e6;
+  --reader-text: #2a1f1a;
+  --reader-text-dim: #6a5a52;
+  --reader-text-mute: #9d8d82;
+  --reader-accent: #9c7530;
+  --reader-accent-soft: #c69a55;
+  --reader-rose: #b65275;
+  --reader-divider: rgba(156, 117, 48, 0.2);
+}
+.reader-shell[data-reader-fs="sm"] { --reader-fs: 16px; --reader-lh: 1.7; }
+.reader-shell[data-reader-fs="md"] { --reader-fs: 18px; --reader-lh: 1.75; }
+.reader-shell[data-reader-fs="lg"] { --reader-fs: 20px; --reader-lh: 1.8; }
+.reader-shell[data-reader-fs="xl"] { --reader-fs: 22px; --reader-lh: 1.85; }
+
+.reader-shell {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 100;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  background: var(--reader-bg);
+  color: var(--reader-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+/* Mount-time signal: lock body scroll so the reader is the only scroll. */
+body:has(.reader-shell) {
+  overflow: hidden;
+}
+
+/* The reading column. Capped at ~38em — what NN/g and Robert Bringhurst
+   converge on as the comfortable measure for long-form prose. */
+.prose-romance {
+  font-family: var(--font-reader, 'Lora'), 'Iowan Old Style', 'Charter',
+    Georgia, 'Times New Roman', serif;
+  font-size: var(--reader-fs);
+  line-height: var(--reader-lh);
+  letter-spacing: 0.005em;
+  color: var(--reader-text);
+  max-width: 38em;
+  margin-inline: auto;
+  text-align: left;
+  text-wrap: pretty;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+
+.prose-romance p {
+  margin: 0 0 1.1em;
+}
+/* Subsequent paragraphs use a book-style indent — far more elegant than the
+   "blog post" margin-only style and unmistakably "this is a book". */
+.prose-romance p + p {
+  text-indent: 1.6em;
+  margin-top: -0.2em;
+}
+
+.prose-romance em {
+  font-style: italic;
+  color: var(--reader-accent);
+}
+
+/* Drop cap — 2 lines tall, body font, gold tint. The first paragraph of
+   every chapter gets it via `> p:first-child`. */
+.prose-romance > p:first-child::first-letter {
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 3.4em;
+  line-height: 0.9;
+  float: left;
+  margin: 0.05em 0.08em 0 -0.02em;
+  padding-right: 0.04em;
+  color: var(--reader-accent);
+}
+
+/* Dialog opener — when the chapter starts with a quote we don't want the
+   drop cap on punctuation. Toggled via a class on the wrapper. */
+.prose-romance.no-dropcap > p:first-child::first-letter {
+  font-size: inherit;
+  float: none;
+  margin: 0;
+  padding: 0;
+  color: inherit;
+  font-weight: inherit;
+}
+
+/* Selection takes the rose accent — keeps the romance signature even on
+   plain text interaction. */
+.prose-romance ::selection {
+  background: color-mix(in srgb, var(--reader-rose) 35%, transparent);
+  color: var(--reader-text);
+}
+
+/* Chapter break flourish — the small ornamental divider between chapters.
+   Three diamonds is the trad-pub convention for scene breaks; we use a
+   single gold rule plus a centered diamond for chapter ends. */
+.reader-flourish {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 4em auto 3em;
+  max-width: 38em;
+  color: var(--reader-accent);
+  opacity: 0.65;
+}
+.reader-flourish::before,
+.reader-flourish::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--reader-divider) 25%,
+    var(--reader-divider) 75%,
+    transparent
+  );
+}
+.reader-flourish svg {
+  flex-shrink: 0;
+}
+
+/* Chapter eyebrow ("Chapter 4" / "Prologue") — small caps, tracked. */
+.reader-eyebrow {
+  font-family: var(--font-sans, sans-serif);
+  font-size: 0.72rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--reader-rose);
+  font-weight: 700;
+}
+
+/* Chapter title — display serif, italic. Uses the reader font in italic
+   and a heavier weight so it reads as a literary title, not a heading. */
+.reader-title {
+  font-family: var(--font-reader, 'Lora'), Georgia, serif;
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: var(--reader-text);
+  line-height: 1.1;
+}
+
+/* Top progress hairline — fixed at very top of the reader, full width. */
+.reader-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.04);
+  z-index: 60;
+  pointer-events: none;
+}
+.reader-progress-bar::after {
+  content: '';
+  display: block;
+  height: 100%;
+  width: var(--progress, 0%);
+  background: linear-gradient(90deg, var(--reader-rose), var(--reader-accent));
+  transition: width 0.18s ease-out;
+}
+
+/* Chrome (top + bottom bars + controls). Hidden by default once reading
+   starts; tap-to-toggle reveals them. */
+.reader-chrome {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+}
+.reader-chrome.is-hidden {
+  pointer-events: none;
+  opacity: 0;
+}
+.reader-chrome.top-chrome {
+  top: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--reader-bg) 96%, transparent) 0%,
+    color-mix(in srgb, var(--reader-bg) 80%, transparent) 75%,
+    transparent
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.reader-chrome.top-chrome.is-hidden {
+  transform: translateY(-100%);
+}
+.reader-chrome.bottom-chrome {
+  bottom: 0;
+  background: linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--reader-bg) 96%, transparent) 0%,
+    color-mix(in srgb, var(--reader-bg) 80%, transparent) 75%,
+    transparent
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.reader-chrome.bottom-chrome.is-hidden {
+  transform: translateY(100%);
+}
+
+/* Reader controls bottom-sheet panel. */
+.reader-sheet {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translate(-50%, 0);
+  width: min(440px, calc(100% - 24px));
+  background: var(--reader-paper);
+  color: var(--reader-text);
+  border: 1px solid var(--reader-divider);
+  border-bottom: none;
+  border-radius: 18px 18px 0 0;
+  padding: 16px 18px 24px;
+  box-shadow: 0 -16px 60px rgba(0, 0, 0, 0.4);
+  z-index: 70;
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-bottom: env(safe-area-inset-bottom);
+}
+.reader-sheet.is-hidden {
+  transform: translate(-50%, 110%);
+  pointer-events: none;
+}
+
+/* The chapter hero image — generous on mobile, capped on desktop. */
+.reader-hero {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--reader-paper);
+}
+@media (min-width: 768px) {
+  .reader-hero {
+    aspect-ratio: 21 / 9;
+    border-radius: 6px;
+  }
+}
+.reader-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 30%,
+    color-mix(in srgb, var(--reader-bg) 70%, transparent) 80%,
+    var(--reader-bg) 100%
+  );
+  pointer-events: none;
 }

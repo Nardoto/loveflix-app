@@ -1,84 +1,52 @@
-// Sprint 0 placeholder — Hello World with i18n + Supabase ping.
-// Sprint 1 replaces this with the real catalog home.
+import { setRequestLocale } from 'next-intl/server';
+import { getTranslations } from 'next-intl/server';
+import { HeroCarousel } from '@/components/catalog/HeroCarousel';
+import { Row } from '@/components/catalog/Row';
+import { AuthorPills } from '@/components/catalog/AuthorPills';
+import { HotShowcase } from '@/components/catalog/HotShowcase';
+import { allStories, fazendeiro, stories } from '@/lib/data/stories';
+import { hotStories } from '@/lib/data/hot';
 
-import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { createClient } from '@/lib/supabase/server';
-
-export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
+export default async function HomePage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations();
+  const t = await getTranslations('home.rows');
 
-  // Ping Supabase (just to confirm connection works once envs are set)
-  let supaStatus: 'ok' | 'unconfigured' | 'error' = 'unconfigured';
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    try {
-      const supabase = await createClient();
-      const { error } = await supabase.from('stories').select('id').limit(1);
-      supaStatus = error ? 'error' : 'ok';
-    } catch {
-      supaStatus = 'error';
-    }
-  }
+  // Pick 4 hero slides — flagship first, then 3 hottest from the catalog.
+  const heroStories = [
+    fazendeiro,
+    stories.find((s) => s.slug === 'the-mafias-bride')!,
+    stories.find((s) => s.slug === 'the-wrong-groom')!,
+    stories.find((s) => s.slug === 'boy-who-came-home-rich')!,
+  ].filter(Boolean);
+
+  // Build rows from the full catalog.
+  const freeRow = allStories.filter((s) => s.isFree);
+  const billionaireRow = stories.filter((s) => s.genre === 'billionaire');
+  const mafiaRow = stories.filter((s) => s.genre === 'mafia');
+  const forbiddenRow = stories.filter((s) => s.genre === 'forbidden');
+  const secretBabyRow = stories.filter((s) => s.genre === 'secret_baby');
+  const moodRow = stories.filter((s) => s.genre === 'mood');
+  const topTenRow = allStories.slice(0, 10);
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-8 text-center">
-      <h1 className="text-5xl md:text-7xl font-black italic bg-gradient-to-br from-rose-400 to-rose-700 bg-clip-text text-transparent mb-3">
-        {t('app.name')}
-      </h1>
-      <p className="text-lg md:text-xl text-zinc-400 mb-12">{t('app.tagline')}</p>
+    <>
+      <HeroCarousel stories={heroStories} />
 
-      <div className="grid gap-3 text-sm">
-        <StatusRow label="Next.js" ok={true} hint="Running" />
-        <StatusRow
-          label="Supabase"
-          ok={supaStatus === 'ok'}
-          hint={
-            supaStatus === 'unconfigured'
-              ? 'Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local'
-              : supaStatus === 'error'
-              ? 'Connected but query failed (table missing? run migrations)'
-              : 'Connected'
-          }
-        />
-        <StatusRow
-          label="Stripe"
-          ok={!!process.env.STRIPE_SECRET_KEY}
-          hint={process.env.STRIPE_SECRET_KEY ? 'Key set' : 'Add STRIPE_SECRET_KEY to .env.local'}
-        />
-        <StatusRow
-          label="Bunny Stream"
-          ok={!!process.env.BUNNY_API_KEY}
-          hint={process.env.BUNNY_API_KEY ? 'Key set' : 'Add BUNNY_API_KEY to .env.local'}
-        />
-        <StatusRow
-          label="PostHog"
-          ok={!!process.env.NEXT_PUBLIC_POSTHOG_KEY}
-          hint={
-            process.env.NEXT_PUBLIC_POSTHOG_KEY
-              ? 'Key set'
-              : 'Add NEXT_PUBLIC_POSTHOG_KEY to .env.local'
-          }
-        />
-      </div>
+      <AuthorPills />
 
-      <p className="mt-10 text-xs text-zinc-500">
-        Sprint 0 — {locale.toUpperCase()} ·{' '}
-        <a href="/en" className="hover:text-rose-400">EN</a> ·{' '}
-        <a href="/de" className="hover:text-rose-400">DE</a> ·{' '}
-        <a href="/fr" className="hover:text-rose-400">FR</a> ·{' '}
-        <a href="/es" className="hover:text-rose-400">ES</a>
-      </p>
-    </main>
-  );
-}
-
-function StatusRow({ label, ok, hint }: { label: string; ok: boolean; hint?: string }) {
-  return (
-    <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-800 min-w-[280px]">
-      <span className={ok ? 'text-emerald-400' : 'text-amber-400'}>{ok ? '●' : '○'}</span>
-      <span className="font-semibold w-24 text-left">{label}</span>
-      <span className="text-zinc-500 text-xs text-left flex-1">{hint}</span>
-    </div>
+      <HotShowcase stories={hotStories} />
+      <Row title={t('topTen')} highlight="Top 10" stories={topTenRow} numbered />
+      <Row title="Free to Listen" highlight="Free" stories={freeRow} />
+      <Row title="Billionaire Romance" highlight="Billionaire" stories={billionaireRow} />
+      <Row title="Mafia & Dark Romance" highlight="Mafia" stories={mafiaRow} />
+      <Row title="Forbidden Stories" highlight="Forbidden" stories={forbiddenRow} />
+      <Row title="Secret Baby" highlight="Secret" stories={secretBabyRow} />
+      <Row title="Short Mood Pieces" highlight="Mood" stories={moodRow} />
+    </>
   );
 }

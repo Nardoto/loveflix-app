@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AllureTV — Setup das contas (guia da cocriadora)</title>
+<style>
+  :root {
+    --bg-deep: #0d0710;
+    --bg-card: #1a0f1a;
+    --bg-elevated: #221525;
+    --rose: #ff4d7e;
+    --rose-bright: #ff7ea0;
+    --rose-deep: #c9577a;
+    --burgundy: #4a1428;
+    --gold: #d4af6f;
+    --gold-bright: #f0cf95;
+    --green: #2ed174;
+    --text: #ffffff;
+    --text-soft: #f5e9ef;
+    --text-dim: #aa9aa6;
+    --text-mute: #6a5a64;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-bright: rgba(255, 77, 126, 0.35);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(180deg, var(--bg-deep) 0%, #0a0508 100%);
+    color: var(--text-soft);
+    font-size: 18px;
+    line-height: 1.65;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  .container {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 0 20px 80px;
+  }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    padding: 60px 20px 50px;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(201, 87, 122, 0.25) 0%, transparent 60%),
+      linear-gradient(180deg, var(--burgundy) 0%, transparent 100%);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+
+  .logo {
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-weight: 900;
+    font-size: 2.2rem;
+    background: linear-gradient(135deg, var(--rose-bright) 0%, var(--gold) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -1px;
+    margin-bottom: 12px;
+  }
+
+  .header h1 {
+    font-family: Georgia, serif;
+    font-size: clamp(1.7rem, 4vw, 2.4rem);
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 16px;
+    line-height: 1.2;
+  }
+
+  .header p {
+    color: var(--text-dim);
+    max-width: 600px;
+    margin: 0 auto;
+    font-size: 1.05rem;
+  }
+
+  .header .heart {
+    display: inline-block;
+    color: var(--rose);
+    margin: 0 4px;
+  }
+
+  /* INTRO BOX */
+  .intro {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 40px;
+  }
+
+  .intro h2 {
+    font-family: Georgia, serif;
+    font-size: 1.4rem;
+    color: var(--rose-bright);
+    margin-bottom: 14px;
+  }
+
+  .intro p { margin-bottom: 12px; }
+  .intro p:last-child { margin-bottom: 0; }
+
+  /* SECTION HEADERS */
+  .section-title {
+    font-family: Georgia, serif;
+    font-size: 1.6rem;
+    color: var(--text);
+    margin: 50px 0 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--rose-deep);
+    font-weight: 700;
+  }
+
+  .section-title em {
+    color: var(--rose);
+    font-style: italic;
+  }
+
+  /* DECISION CARDS */
+  .decision-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin-bottom: 16px;
+  }
+
+  @media (min-width: 640px) {
+    .decision-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  .decision-card {
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    transition: all 0.25s ease;
+  }
+
+  .decision-card.recommended {
+    border-color: var(--rose-deep);
+    background: linear-gradient(180deg, rgba(201, 87, 122, 0.08) 0%, var(--bg-card) 100%);
+    position: relative;
+  }
+
+  .decision-card.recommended::before {
+    content: 'RECOMENDADO';
+    position: absolute;
+    top: -12px;
+    left: 20px;
+    background: linear-gradient(90deg, var(--rose) 0%, var(--rose-deep) 100%);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    padding: 4px 12px;
+    border-radius: 100px;
+  }
+
+  .decision-card h3 {
+    font-family: Georgia, serif;
+    font-size: 1.25rem;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+
+  .decision-card .label {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--gold);
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
+
+  .decision-card ul {
+    margin-top: 14px;
+    padding-left: 0;
+    list-style: none;
+  }
+
+  .decision-card ul li {
+    padding: 6px 0 6px 28px;
+    position: relative;
+    color: var(--text-dim);
+    font-size: 0.95rem;
+  }
+
+  .decision-card ul li.pro::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--green);
+    font-weight: 800;
+  }
+
+  .decision-card ul li.con::before {
+    content: '×';
+    position: absolute;
+    left: 4px;
+    color: var(--rose-deep);
+    font-weight: 800;
+    font-size: 1.2rem;
+    line-height: 1;
+  }
+
+  /* SERVICE CARD (details) */
+  .service {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    margin-bottom: 18px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .service[open] {
+    border-color: var(--border-bright);
+  }
+
+  .service summary {
+    padding: 22px 24px;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-height: 72px;
+    user-select: none;
+  }
+
+  .service summary::-webkit-details-marker { display: none; }
+
+  .service summary:hover {
+    background: var(--bg-elevated);
+  }
+
+  .service-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.4rem;
+    font-weight: 800;
+  }
+
+  .icon-supabase { background: linear-gradient(135deg, #3ecf8e, #1f7a5e); color: white; }
+  .icon-stripe { background: linear-gradient(135deg, #635bff, #3a3499); color: white; }
+  .icon-bunny { background: linear-gradient(135deg, #ff7a00, #c44d00); color: white; }
+  .icon-posthog { background: linear-gradient(135deg, #f9bd2b, #c98c00); color: #2d1c00; }
+  .icon-resend { background: linear-gradient(135deg, #000000, #444); color: white; border: 1px solid #555; }
+  .icon-onesignal { background: linear-gradient(135deg, #e54b4d, #a32d2f); color: white; }
+
+  .service-meta { flex: 1; }
+
+  .service-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .service-desc {
+    font-size: 0.88rem;
+    color: var(--text-dim);
+  }
+
+  .service-tag {
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    border-radius: 100px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .tag-essential { background: rgba(255, 77, 126, 0.15); color: var(--rose-bright); border: 1px solid rgba(255, 77, 126, 0.3); }
+  .tag-optional { background: rgba(212, 175, 111, 0.12); color: var(--gold-bright); border: 1px solid rgba(212, 175, 111, 0.3); }
+
+  .service-arrow {
+    font-size: 1.3rem;
+    color: var(--text-mute);
+    transition: transform 0.2s;
+    margin-left: 6px;
+  }
+
+  .service[open] .service-arrow { transform: rotate(180deg); color: var(--rose); }
+
+  .service-content {
+    padding: 0 24px 28px;
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+  }
+
+  .why-box {
+    background: rgba(212, 175, 111, 0.08);
+    border-left: 3px solid var(--gold);
+    padding: 14px 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    color: var(--text-soft);
+    font-size: 0.95rem;
+  }
+
+  .why-box strong { color: var(--gold-bright); }
+
+  /* STEPS */
+  ol.steps {
+    counter-reset: step;
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 24px;
+  }
+
+  ol.steps > li {
+    counter-increment: step;
+    position: relative;
+    padding: 14px 0 14px 50px;
+    border-bottom: 1px dashed var(--border);
+  }
+
+  ol.steps > li:last-child { border-bottom: none; }
+
+  ol.steps > li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 14px;
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--rose) 0%, var(--rose-deep) 100%);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.95rem;
+    box-shadow: 0 4px 12px rgba(201, 87, 122, 0.3);
+  }
+
+  ol.steps strong {
+    color: var(--rose-bright);
+    font-weight: 700;
+  }
+
+  ol.steps code {
+    background: var(--bg-elevated);
+    color: var(--gold-bright);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.92em;
+    border: 1px solid var(--border);
+    word-break: break-all;
+  }
+
+  /* BUTTONS / LINKS */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 24px;
+    min-height: 56px;
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--rose) 0%, var(--rose-deep) 100%);
+    color: white;
+    box-shadow: 0 6px 20px rgba(201, 87, 122, 0.35);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(201, 87, 122, 0.45);
+  }
+
+  .btn-ghost {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-soft);
+    border: 1px solid var(--border);
+  }
+
+  .btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  /* CHECKBOX (CSS only — visual, sem persistência) */
+  .keys-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .keys-list li {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .keys-list li:hover {
+    border-color: var(--border-bright);
+  }
+
+  .keys-list input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    border: 2px solid var(--border-bright);
+    border-radius: 6px;
+    background: var(--bg-deep);
+    cursor: pointer;
+    position: relative;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  .keys-list input[type="checkbox"]:checked {
+    background: linear-gradient(135deg, var(--rose) 0%, var(--rose-deep) 100%);
+    border-color: var(--rose);
+  }
+
+  .keys-list input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -52%);
+    color: white;
+    font-weight: 800;
+    font-size: 0.9rem;
+  }
+
+  .keys-list .key-info { flex: 1; min-width: 0; }
+
+  .keys-list .key-name {
+    font-weight: 700;
+    color: var(--text);
+    font-size: 0.95rem;
+    margin-bottom: 2px;
+  }
+
+  .keys-list .key-name code {
+    background: var(--bg-card);
+    color: var(--gold-bright);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85em;
+    border: 1px solid var(--border);
+  }
+
+  .keys-list .key-where {
+    font-size: 0.8rem;
+    color: var(--text-mute);
+    margin-top: 4px;
+  }
+
+  /* WARNING / NOTE BOX */
+  .note {
+    background: rgba(46, 209, 116, 0.06);
+    border: 1px solid rgba(46, 209, 116, 0.3);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 18px 0;
+    color: var(--text-soft);
+    font-size: 0.92rem;
+  }
+
+  .note strong { color: var(--green); }
+
+  .warning {
+    background: rgba(255, 77, 126, 0.06);
+    border: 1px solid rgba(255, 77, 126, 0.3);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 18px 0;
+    color: var(--text-soft);
+    font-size: 0.92rem;
+  }
+
+  .warning strong { color: var(--rose-bright); }
+
+  /* FOOTER */
+  .footer {
+    text-align: center;
+    margin-top: 60px;
+    padding: 30px 20px;
+    color: var(--text-mute);
+    font-size: 0.9rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .footer .heart-pulse {
+    color: var(--rose);
+    display: inline-block;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+  }
+
+  /* HELPER */
+  .anchor-nav {
+    position: sticky;
+    top: 0;
+    background: rgba(13, 7, 16, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    margin: -40px -20px 30px;
+    z-index: 10;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .anchor-nav a {
+    display: inline-block;
+    color: var(--text-dim);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 100px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-right: 6px;
+    transition: all 0.2s;
+  }
+
+  .anchor-nav a:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+  }
+
+  .send-card {
+    background: linear-gradient(135deg, var(--burgundy) 0%, var(--bg-card) 100%);
+    border: 1px solid var(--rose-deep);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 30px;
+  }
+
+  .send-card h3 {
+    font-family: Georgia, serif;
+    font-size: 1.3rem;
+    color: var(--rose-bright);
+    margin-bottom: 12px;
+  }
+
+  .send-card p { margin-bottom: 14px; }
+
+  .contact-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 18px;
+  }
+
+  /* MOBILE */
+  @media (max-width: 640px) {
+    body { font-size: 16px; }
+    .header { padding: 40px 16px 36px; }
+    .logo { font-size: 1.7rem; }
+    .container { padding: 0 14px 60px; }
+    .service summary { padding: 18px 16px; gap: 12px; }
+    .service-icon { width: 40px; height: 40px; font-size: 1.1rem; }
+    .service-name { font-size: 1.05rem; }
+    .service-desc { font-size: 0.82rem; }
+    .service-content { padding: 20px 16px 22px; }
+    ol.steps > li { padding: 12px 0 12px 44px; }
+    ol.steps > li::before { width: 30px; height: 30px; font-size: 0.85rem; }
+    .intro { padding: 20px; }
+    .decision-card { padding: 20px; }
+    .anchor-nav a { font-size: 0.78rem; padding: 5px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">AllureTV</div>
+  <h1>Bem-vinda, cocriadora <span class="heart">♥</span></h1>
+  <p>Esse é o passo a passo pra colocar o nosso app no ar. Vou te guiar em cada serviço, com exatamente o que clicar e o que copiar. Tudo bem se levar 2 horas — esse é o trabalho mais técnico do projeto e depois nunca mais.</p>
+</header>
+
+<div class="container">
+
+  <nav class="anchor-nav">
+    <a href="#decisao">Decisão</a>
+    <a href="#supabase">Supabase</a>
+    <a href="#stripe">Stripe</a>
+    <a href="#bunny">Bunny</a>
+    <a href="#posthog">PostHog</a>
+    <a href="#resend">Resend</a>
+    <a href="#onesignal">OneSignal</a>
+    <a href="#enviar">O que enviar</a>
+  </nav>
+
+  <!-- ═══════════════════════ INTRO ═══════════════════════ -->
+  <div class="intro">
+    <h2>O que você precisa saber antes</h2>
+    <p>O AllureTV usa <strong>6 serviços externos</strong> — cada um cuida de uma parte (banco de dados, pagamento, vídeo, etc.). Pra começar de verdade, só os <strong>3 primeiros são essenciais</strong> (Supabase, Stripe, Bunny). Os outros 3 (PostHog, Resend, OneSignal) você pode pular pra criar depois quando o app estiver no ar.</p>
+    <p>Você vai criar conta em cada um, pegar 2-4 chaves (textos longos, tipo senhas) e me enviar. Eu coloco no app. Pronto.</p>
+    <p><strong>Custo total mensal:</strong> $5 (só o Bunny é pago). O resto é grátis até a gente passar de 10 mil usuárias.</p>
+  </div>
+
+  <!-- ═══════════════════════ DECISÃO ═══════════════════════ -->
+  <h2 class="section-title" id="decisao">Antes de começar — <em>como prefere fazer?</em></h2>
+
+  <div class="decision-grid">
+
+    <div class="decision-card">
+      <span class="label">Opção A</span>
+      <h3>Eu mesma faço tudo</h3>
+      <p style="color: var(--text-dim); font-size: 0.95rem;">Você cria as contas, copia as chaves e me manda por WhatsApp ou e-mail.</p>
+      <ul>
+        <li class="pro">Você fica como dona de tudo (CNPJ no Stripe etc.)</li>
+        <li class="pro">Acesso total — vê pagamentos, dados, recebimentos</li>
+        <li class="con">Leva 1-2 horas seguindo o guia abaixo</li>
+        <li class="con">Tem que mandar 11 chaves diferentes</li>
+      </ul>
+    </div>
+
+    <div class="decision-card recommended">
+      <span class="label">Opção B</span>
+      <h3>Me adiciona como cocriador</h3>
+      <p style="color: var(--text-dim); font-size: 0.95rem;">Você cria a conta de cada serviço e me adiciona com o e-mail <code style="background:var(--bg-elevated);padding:2px 8px;border-radius:4px;color:var(--gold-bright);font-size:0.85em;">lucasburque93@gmail.com</code>. Eu pego as chaves direto.</p>
+      <ul>
+        <li class="pro">Mais rápido — você só clica em "Convidar"</li>
+        <li class="pro">Não precisa copiar/colar chave nenhuma</li>
+        <li class="pro">Você continua sendo a dona; eu sou cocriador</li>
+        <li class="con">Eu vejo os mesmos dados que você</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div class="note">
+    <strong>Dica:</strong> Você pode misturar — fazer Opção A pro Stripe (que é onde está o dinheiro) e Opção B pros outros (mais técnicos). Em cada serviço abaixo eu deixo as duas instruções.
+  </div>
+
+  <!-- ═══════════════════════ SUPABASE ═══════════════════════ -->
+  <h2 class="section-title">Os <em>3 essenciais</em> — pra app começar a funcionar</h2>
+
+  <details class="service" id="supabase" open>
+    <summary>
+      <div class="service-icon icon-supabase">S</div>
+      <div class="service-meta">
+        <div class="service-name">Supabase — banco de dados + login</div>
+        <div class="service-desc">Onde ficam os usuários, histórias e pagamentos</div>
+      </div>
+      <span class="service-tag tag-essential">Essencial</span>
+      <span class="service-arrow">▾</span>
+    </summary>
+
+    <div class="service-content">
+      <div class="why-box">
+        <strong>Pra que serve:</strong> é o "cérebro" do app. Guarda quem está cadastrada, quais histórias existem, quem assinou, quem favoritou o quê. Grátis até 50 mil usuárias por mês.
+      </div>
+
+      <p style="margin-bottom: 18px;">
+        <a href="https://app.supabase.com" target="_blank" rel="noopener" class="btn btn-primary">
+          Abrir Supabase →
+        </a>
+      </p>
+
+      <h4 style="font-family: Georgia, serif; color: var(--gold-bright); margin: 24px 0 12px; font-size: 1.1rem;">Opção A — fazer eu mesma</h4>
+
+      <ol class="steps">
+        <li>Clica em <strong>"Start your project"</strong> e faz login com GitHub (mais fácil) ou cria conta com e-mail.</li>
+        <li>Clica em <strong>"New Project"</strong>.</li>
+        <li>Nome do projeto: <code>alluretv-prod</code></li>
+        <li><strong>Senha do banco:</strong> deixa o Supabase gerar uma forte e <strong>SALVA num bloco de notas</strong>. Você vai precisar.</li>
+        <li>Região: <code>East US (North Virginia)</code> — é a mais perto das nossas usuárias.</li>
+        <li>Clica em <strong>"Create new project"</strong> e espera ~2 minutos pra ele criar.</li>
+        <li>Quando abrir, no menu da esquerda clica em <strong>"SQL Editor"</strong>. Vou te mandar um arquivo chamado <code>0001_init.sql</code> — abre ele num bloco de notas, copia tudo, cola no SQL Editor e clica em <strong>"Run"</strong> (ou Ctrl+Enter). Vai aparecer <em>"Success. No rows returned"</em>.</li>
+        <li>Volta pro menu, clica na <strong>engrenagem (Project Settings)</strong> → <strong>"API"</strong>.</li>
+        <li>Copia esses 3 valores e me manda:
+          <ul style="margin-top: 10px; padding-left: 18px; color: var(--text-dim);">
+            <li><strong>Project URL</strong> (algo como <code>https://abc123xyz.supabase.co</code>)</li>
+            <li>Chave <strong>anon public</strong> (texto enorme começando com <code>eyJ...</code>)</li>
+            <li>Chave <strong>service_role secret</strong> ⚠️ <em>essa é tipo senha de banco, não compartilha com mais ninguém</em></li>
+          </ul>
+        </li>
+      </ol>
+
+      <h4 style="font-family: Georgia, serif; color: var(--gold-bright); margin: 24px 0 12px; font-size: 1.1rem;">Opção B — me adicionar como cocriador</h4>
+
+      <ol class="steps">
+        <li>Faz tudo até o passo 7 acima (criar projeto + rodar o SQL).</li>
+        <li>No menu da esquerda, clica na <strong>engrenagem</strong> → <strong>"Team"</strong>.</li>
+        <li>Clica em <strong>"Invite a member"</strong>, digita <code>lucasburque93@gmail.com</code>, escolhe role <strong>"Owner"</strong>.</li>
+        <li>Pronto, eu pego as chaves direto.</li>
+      </ol>
+    </div>
+  </details>
+
+  <!-- ═══════════════════════ STRIPE ═══════════════════════ -->
+  <details class="service" id="stripe">
+    <summary>
+      <div class="service-icon icon-stripe">$</div>
+      <div class="service-meta">
+        <div class="service-name">Stripe Brasil — onde a gente recebe os pagamentos</div>
+        <div class="service-desc">$14,99/mês das assinantes cai aqui (CNPJ seu)</div>
+      </div>
+      <span class="service-tag tag-essential">Essencial</span>
+      <span class="service-arrow">▾</span>
+    </summary>
+
+    <div class="service-content">
+      <div class="why-box">
+        <strong>Pra que serve:</strong> é onde processamos cartão de crédito, Apple Pay e Google Pay. O dinheiro cai na sua conta bancária pelo CNPJ que você já tem. Stripe tira uma porcentagem (~3,5%) por transação.
+      </div>
+
+      <div class="warning">
+        <strong>Importante:</strong> Stripe Brasil pede CNPJ. Como você já tem, é tranquilo. Eles aprovam em ~24h. Enquanto não aprova, podemos usar em modo TEST (com cartões falsos pra a gente testar).
+      </div>
+
+      <p style="margin-bottom: 18px;">
+        <a href="https://dashboard.stripe.com/register" target="_blank" rel="noopener" class="btn btn-primary">
+          Abrir Stripe →
+        </a>
+      </p>
+
+      <h4 style="font-family: Georgia, serif; color: var(--gold-bright); margin: 24px 0 12px; font-size: 1.1rem;">Opção A — fazer eu mesma</h4>
+
+      <ol class="steps">
+        <li>Cria conta em <strong>dashboard.stripe.com</strong> com seu e-mail. Escolhe país <strong>Brasil</strong>.</li>
+        <li>Preenche os dados do CNPJ (vai pedir documento, conta bancária — dá pra completar depois). Aprovação leva até 24h.</li>
+        <li>Enquanto isso, no canto superior esquerdo certifica que tá no modo <strong>"Test mode"</strong> (botãozinho ligado).</li>
+        <li>No menu, vai em <strong>"Products"</strong> → <strong>"Add product"</strong>.</li>
+        <li>Nome: <code>AllureTV Monthly</code>. Preço: <code>14.99 USD</code>, recorrência <strong>Monthly</strong>. Save.</li>
+        <li>Vai abrir uma página com o produto. Copia o <strong>Price ID</strong> (algo como <code>price_1AbcDef...</code>) e me manda.</li>
+        <li>Vai em <strong>"Developers" → "API keys"</strong>. Copia:
+          <ul style="margin-top: 10px; padding-left: 18px; color: var(--text-dim);">
+            <li><strong>Publishable key</strong> (começa com <code>pk_test_...</code>)</li>
+            <li><strong>Secret key</strong> (começa com <code>sk_test_...</code>) — clica em "Reveal" pra mostrar</li>
+          </ul>
+        </li>
+        <li>O <strong>Webhook Secret</strong> a gente configura depois quando o app tiver domínio. Por agora, ignore.</li>
+      </ol>
+
+      <h4 style="font-family: Georgia, serif; color: var(--gold-bright); margin: 24px 0 12px; font-size: 1.1rem;">Opção B — me adicionar como cocriador</h4>
+
+      <ol class="steps">
+        <li>Faz tudo até o passo 5 acima (criar produto).</li>
+        <li>Clica no seu nome (canto superior direito) → <strong>"Team and Security"</strong> → <strong>"Team"</strong>.</li>
+        <li>Clica em <strong>"+ New member"</strong>, digita <code>lucasburque93@gmail.com</code>, role <strong>"Developer"</strong>.</li>
+        <li>Pronto. Eu pego as chaves direto.</li>
+      </ol>
+    </div>
+  </details>
+
+  <!-- ═══════════════════════ BUNNY ═══════════════════════ -->
+  <details class="service" id="bunny">
+    <summary>
+      <div class="service-icon icon-bunny">B</div>
+      <div class="service-meta">
+        <div class="service-name">Bunny Stream — onde os vídeos vão ficar</div>
+        <div class="service-desc">$5/mês — seus vídeos hospedados rapidíssimo no mundo todo</div>
+      </div>
+      <span class="service-tag tag-essential">Essencial</span>
+      <span class="service-arrow">▾</span>
+    </summary>
+
+    <div class="service-content">
+      <div class="why-box">
+        <strong>Pra que serve:</strong> guarda os vídeos das histórias e entrega rápido em qualquer celular do mundo. É como YouTube, mas pago — sem anúncios, sem algoritmo, e a gente tem controle total. <strong>$5/mês fixo</strong>, paga em dólar com cartão internacional.
+      </div>
+
+      <p style="margin-bottom: 18px;">
+        <a href="https://dash.bunny.net/register" target="_blank" rel="noopener" class="btn btn-primary">
+          Abrir Bunny.net →
+        </a>
+      </p>
+
+      <h4 style="font-family: Georgia, serif; color: var(--gold-bright); margin: 24px 0 12px; font-size: 1.1rem;">Opção A — fazer eu mesma</h4>
+
+      <ol class="steps">
+        <li>Cria conta em <strong>bunny.net</strong> com e-mail. Adiciona um cartão (eles cobram $5/mês depois do primeiro vídeo).</li>
+        <li>No menu superior clica em <strong>"Stream"</strong> → <strong>"Add Library"</strong>.</li>
+        <li>Nome: <code>alluretv</code>. Região principal: <strong>New York</strong>. Save.</li>
+        <li>Clica na biblioteca recém-criada pra abrir.</li>
+        <li>Lá em cima vai ter o <strong>Library ID</strong> (um número grande tipo <code>123456</code>) — anota.</li>
+        <li>Clica em <strong>"API"</strong> (menu da biblioteca). Copia a <strong>Library API Key</strong> (texto longo).</li>
+        <li>Volta pra biblioteca. No menu lateral clica em <strong>"Pull Zone"</strong>. Anota o <strong>hostname</strong> que aparece (algo como <code>alluretv.b-cdn.net</code>).</li>
+        <li>Ainda no Pull Zone, clica em <strong>"Token Authentication"</strong> → ativa a opção <strong>"Require token authentication"</strong>. Copia o <strong>Authentication Key</strong> (texto longo).</li>
+        <li>Me manda esses 4 valores: Library ID, API Key, hostname, Authentication Key.</li>
+      </ol>
+
+      <h4 style="font-family: Georgia, serif; color: var(--gold-bright); margin: 24px 0 12px; font-size: 1.1rem;">Opção B — me adicionar como cocriador</h4>
+
+      <ol class="steps">
+        <li>Faz tudo até o passo 4 acima (criar biblioteca).</li>
+        <li>No menu superior, clica no seu avatar → <strong>"Account Settings"</strong> → <strong>"Team"</strong>.</li>
+        <li>Adiciona <code>lucasburque93@gmail.com</code> como membro com permissão de <strong>"Stream"</strong>.</li>
+        <li>Pronto.</li>
+      </ol>
+    </div>
+  </details>
+
+  <!-- ═══════════════════════ DAQUI PRA BAIXO É OPCIONAL ═══════════════════════ -->
+  <h2 class="section-title">Os <em>3 opcionais</em> — pode pular pra criar depois</h2>
+
+  <div class="note" style="margin-bottom: 24px;">
+    <strong>Sem pressa:</strong> esses 3 a gente só liga no fim, perto do lançamento. Se quiser fazer agora pra adiantar, ótimo. Se não, pula direto pra <a href="#enviar" style="color:var(--green); font-weight:700;">"O que enviar"</a>.
+  </div>
+
+  <!-- ═══════════════════════ POSTHOG ═══════════════════════ -->
+  <details class="service" id="posthog">
+    <summary>
+      <div class="service-icon icon-posthog">P</div>
+      <div class="service-meta">
+        <div class="service-name">PostHog — estatísticas das usuárias</div>
+        <div class="service-desc">Quantas pessoas estão usando, de onde, qual história mais assistem</div>
+      </div>
+      <span class="service-tag tag-optional">Opcional</span>
+      <span class="service-arrow">▾</span>
+    </summary>
+
+    <div class="service-content">
+      <div class="why-box">
+        <strong>Pra que serve:</strong> mostra quantas mulheres se cadastraram, qual história mais bombou, em qual idioma, em qual país. Super importante pra a gente saber o que tá funcionando. <strong>Grátis</strong> até 1 milhão de eventos/mês.
+      </div>
+
+      <p style="margin-bottom: 18px;">
+        <a href="https://us.posthog.com/signup" target="_blank" rel="noopener" class="btn btn-primary">
+          Abrir PostHog →
+        </a>
+      </p>
+
+      <h4 style="font-family: Georgia, serif; color: var(--gold-bright); margin: 24px 0 12px; font-size: 1.1rem;">Opção A — fazer eu mesma</h4>
+
+      <ol class="steps">
+        <li>Cria conta grátis em <strong>us.posthog.com</strong>.</li>
+        <li>Cria projeto chamado <code>alluretv</code>.</li>
+        <li>No menu, clica na engrenagem → <strong>"Project Settings"</strong>.</li>
+        <li>Copia o <strong>Project API Key</strong> (começa com <code>phc_...</code>).</li>
+        <li>Me manda essa chave.</li>
+      </ol>
+
+      <h4 style="font-family: Georgia, serif; color: var(--gold-bright); margin: 24px 0 12px; font-size: 1.1rem;">Opção B — me adicionar como cocriador</h4>
+
+      <ol class="steps">
+        <li>Cria a conta e o projeto.</li>
+        <li>Settings → <strong>"Members"</strong> → <strong>"Invite team members"</strong>.</li>
+        <li>Adiciona <code>lucasburque93@gmail.com</code> como Admin.</li>
+      </ol>
+    </div>
+  </details>
+
+  <!-- ═══════════════════════ RESEND ═══════════════════════ -->
+  <details class="service" id="resend">
+    <summary>
+      <div class="service-icon icon-resend">R</div>
+      <div class="service-meta">
+        <div class="service-name">Resend — e-mails do app</div>
+        <div class="service-desc">Boas-vindas, recibo de pagamento, recuperar acesso</div>
+      </div>
+      <span class="service-tag tag-optional">Opcional</span>
+      <span class="service-arrow">▾</span>
+    </summary>
+
+    <div class="service-content">
+      <div class="why-box">
+        <strong>Pra que serve:</strong> mandar os e-mails automáticos do app — quando uma usuária se cadastra, quando paga, quando esquece a senha. <strong>Grátis</strong> até 3 mil e-mails/mês.
+      </div>
+
+      <p style="margin-bottom: 18px;">
+        <a href="https://resend.com/signup" target="_blank" rel="noopener" class="btn btn-primary">
+          Abrir Resend →
+        </a>
+      </p>
+
+      <h4 style="font-family: Georgia, serif; color: var(--gold-bright); margin: 24px 0 12px; font-size: 1.1rem;">Opção A — fazer eu mesma</h4>
+
+      <ol class="steps">
+        <li>Cria conta grátis em <strong>resend.com</strong>.</li>
+        <li>Vai em <strong>"API Keys"</strong> → <strong>"Create API Key"</strong>.</li>
+        <li>Nome: <code>alluretv-prod</code>. Permissão: Full access. Save.</li>
+        <li>Copia a chave (começa com <code>re_...</code>) — só aparece <strong>uma vez</strong>, então copia e cola num bloco de notas.</li>
+        <li>Me manda.</li>
+      </ol>
+
+      <h4 style="font-family: Georgia, serif; color: var(--gold-bright); margin: 24px 0 12px; font-size: 1.1rem;">Opção B — me adicionar como cocriador</h4>
+
+      <ol class="steps">
+        <li>Cria a conta.</li>
+        <li>Settings → <strong>"Team"</strong> → <strong>"Invite member"</strong>.</li>
+        <li>Adiciona <code>lucasburque93@gmail.com</code>.</li>
+      </ol>
+    </div>
+  </details>
+
+  <!-- ═══════════════════════ ONESIGNAL ═══════════════════════ -->
+  <details class="service" id="onesignal">
+    <summary>
+      <div class="service-icon icon-onesignal">O</div>
+      <div class="service-meta">
+        <div class="service-name">OneSignal — notificações push</div>
+        <div class="service-desc">"Episódio novo disponível" pra trazer as usuárias de volta</div>
+      </div>
+      <span class="service-tag tag-optional">Opcional</span>
+      <span class="service-arrow">▾</span>
+    </summary>
+
+    <div class="service-content">
+      <div class="why-box">
+        <strong>Pra que serve:</strong> manda aquele "ding" no celular da usuária quando tem episódio novo, ou pra lembrar de continuar a história. Aumenta MUITO o retorno. <strong>Grátis</strong> até 10 mil inscritas.
+      </div>
+
+      <p style="margin-bottom: 18px;">
+        <a href="https://onesignal.com/signup" target="_blank" rel="noopener" class="btn btn-primary">
+          Abrir OneSignal →
+        </a>
+      </p>
+
+      <h4 style="font-family: Georgia, serif; color: var(--gold-bright); margin: 24px 0 12px; font-size: 1.1rem;">Opção A — fazer eu mesma</h4>
+
+      <ol class="steps">
+        <li>Cria conta grátis em <strong>onesignal.com</strong>.</li>
+        <li>Clica em <strong>"New App/Website"</strong>. Nome: <code>AllureTV</code>. Plataforma: <strong>Web</strong>.</li>
+        <li>Configura como <strong>"Typical Site"</strong> (com seu domínio depois — pode usar <code>localhost:3000</code> por enquanto).</li>
+        <li>Vai em <strong>"Settings" → "Keys & IDs"</strong>. Copia:
+          <ul style="margin-top: 10px; padding-left: 18px; color: var(--text-dim);">
+            <li><strong>OneSignal App ID</strong></li>
+            <li><strong>REST API Key</strong></li>
+          </ul>
+        </li>
+        <li>Me manda.</li>
+      </ol>
+
+      <h4 style="font-family: Georgia, serif; color: var(--gold-bright); margin: 24px 0 12px; font-size: 1.1rem;">Opção B — me adicionar como cocriador</h4>
+
+      <ol class="steps">
+        <li>Cria a conta e o app.</li>
+        <li>No avatar → <strong>"Organization Settings"</strong> → <strong>"Members"</strong>.</li>
+        <li>Adiciona <code>lucasburque93@gmail.com</code> como Admin.</li>
+      </ol>
+    </div>
+  </details>
+
+  <!-- ═══════════════════════ ENVIAR ═══════════════════════ -->
+  <h2 class="section-title" id="enviar">O que <em>enviar pra mim</em> no final</h2>
+
+  <p style="color: var(--text-dim); margin-bottom: 22px;">
+    Se escolheu <strong>Opção A</strong> em alguns serviços, vai precisar me mandar essas chaves. Marca aqui as que você já pegou (a marca não fica salva — é só pra você não esquecer):
+  </p>
+
+  <ul class="keys-list">
+    <li>
+      <input type="checkbox" id="k1">
+      <div class="key-info">
+        <div class="key-name">Supabase: <code>NEXT_PUBLIC_SUPABASE_URL</code></div>
+        <div class="key-where">Project Settings → API → Project URL</div>
+      </div>
+    </li>
+    <li>
+      <input type="checkbox" id="k2">
+      <div class="key-info">
+        <div class="key-name">Supabase: <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code></div>
+        <div class="key-where">Project Settings → API → anon public</div>
+      </div>
+    </li>
+    <li>
+      <input type="checkbox" id="k3">
+      <div class="key-info">
+        <div class="key-name">Supabase: <code>SUPABASE_SERVICE_ROLE_KEY</code> ⚠️</div>
+        <div class="key-where">Project Settings → API → service_role secret</div>
+      </div>
+    </li>
+    <li>
+      <input type="checkbox" id="k4">
+      <div class="key-info">
+        <div class="key-name">Stripe: <code>STRIPE_SECRET_KEY</code></div>
+        <div class="key-where">Developers → API keys → Secret key (sk_test_...)</div>
+      </div>
+    </li>
+    <li>
+      <input type="checkbox" id="k5">
+      <div class="key-info">
+        <div class="key-name">Stripe: <code>NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code></div>
+        <div class="key-where">Developers → API keys → Publishable key (pk_test_...)</div>
+      </div>
+    </li>
+    <li>
+      <input type="checkbox" id="k6">
+      <div class="key-info">
+        <div class="key-name">Stripe: <code>STRIPE_PRICE_ID_MONTHLY</code></div>
+        <div class="key-where">Products → AllureTV Monthly → Price ID (price_...)</div>
+      </div>
+    </li>
+    <li>
+      <input type="checkbox" id="k7">
+      <div class="key-info">
+        <div class="key-name">Bunny: <code>BUNNY_LIBRARY_ID</code></div>
+        <div class="key-where">Stream → Library → número no topo</div>
+      </div>
+    </li>
+    <li>
+      <input type="checkbox" id="k8">
+      <div class="key-info">
+        <div class="key-name">Bunny: <code>BUNNY_API_KEY</code></div>
+        <div class="key-where">Stream → Library → API → Library API Key</div>
+      </div>
+    </li>
+    <li>
+      <input type="checkbox" id="k9">
+      <div class="key-info">
+        <div class="key-name">Bunny: <code>BUNNY_PULL_ZONE</code></div>
+        <div class="key-where">Stream → Library → Pull Zone hostname</div>
+      </div>
+    </li>
+    <li>
+      <input type="checkbox" id="k10">
+      <div class="key-info">
+        <div class="key-name">Bunny: <code>BUNNY_SECURITY_KEY</code></div>
+        <div class="key-where">Stream → Library → Pull Zone → Token Authentication</div>
+      </div>
+    </li>
+    <li>
+      <input type="checkbox" id="k11">
+      <div class="key-info">
+        <div class="key-name" style="color: var(--gold-bright);">PostHog/Resend/OneSignal — opcionais</div>
+        <div class="key-where">Pula se ainda não criou esses 3</div>
+      </div>
+    </li>
+  </ul>
+
+  <div class="send-card" style="margin-top: 30px;">
+    <h3>Como me mandar</h3>
+    <p>Pode ser por <strong>WhatsApp</strong> ou <strong>e-mail</strong>. Cola tudo num bloco de notas separando uma por linha, tipo assim:</p>
+    <pre style="background: var(--bg-deep); padding: 16px; border-radius: 10px; overflow-x: auto; color: var(--gold-bright); font-size: 0.85rem; border: 1px solid var(--border); margin: 14px 0;">SUPABASE_URL=https://xxxxx.supabase.co
+SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE=eyJ...
+STRIPE_SECRET=sk_test_...
+STRIPE_PUBLISHABLE=pk_test_...
+STRIPE_PRICE=price_...
+BUNNY_LIBRARY=123456
+BUNNY_API=xxxx-xxxx
+BUNNY_HOST=alluretv.b-cdn.net
+BUNNY_TOKEN=xxxx-xxxx</pre>
+    <p style="font-size: 0.9rem; color: var(--text-dim);">⚠️ Não posta isso em rede social ou grupo. É tipo senha — manda só pra mim no privado.</p>
+
+    <div class="contact-buttons">
+      <a href="mailto:lucasburque93@gmail.com?subject=AllureTV%20%E2%80%94%20chaves%20das%20contas" class="btn btn-primary">
+        📧 Mandar por e-mail
+      </a>
+      <a href="https://wa.me/" target="_blank" rel="noopener" class="btn btn-ghost">
+        💬 Mandar por WhatsApp
+      </a>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Tudo certo?</strong> Quando eu receber as chaves, ligo elas no app em ~30 minutos e te mando o link pra você ver o AllureTV rodando de verdade. Aí a gente começa a popular as histórias juntos.
+  </div>
+
+  <footer class="footer">
+    <p>AllureTV <span class="heart-pulse">♥</span> feito por você e Lucas.</p>
+    <p style="margin-top: 8px; font-size: 0.82rem;">Dúvidas em qualquer passo? Me manda print. Vamos juntas.</p>
+  </footer>
+
+</div>
+
+</body>
+</html>

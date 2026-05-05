@@ -1,4 +1,4 @@
-// i18n config — supported locales for LOVEFLIX
+// i18n config — supported locales for AllureTV
 import { getRequestConfig } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 

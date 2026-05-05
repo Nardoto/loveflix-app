@@ -1,5 +1,5 @@
 -- ================================================================
--- LOVEFLIX — Initial schema
+-- AllureTV — Initial schema
 -- ================================================================
 -- Run this in Supabase SQL Editor: https://app.supabase.com -> SQL Editor
 

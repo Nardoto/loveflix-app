@@ -1,4 +1,4 @@
-# LOVEFLIX — Production App
+# AllureTV — Production App
 
 Romance audiobook visual platform. **"Audiobook visual, not video streaming."**
 
@@ -38,7 +38,7 @@ The home page shows green/amber dots indicating which services are configured.
 
 #### Supabase
 1. Create account at https://app.supabase.com
-2. Create new project named `loveflix-prod` (region close to US users — `us-east-1` recommended)
+2. Create new project named `alluretv-prod` (region close to US users — `us-east-1` recommended)
 3. Wait ~2 min for provisioning
 4. Open **SQL Editor** → New query → paste contents of `supabase/migrations/0001_init.sql` → Run
 5. **Project Settings → API** → copy:
@@ -54,7 +54,7 @@ The home page shows green/amber dots indicating which services are configured.
 #### Stripe (Brazil)
 1. Create account at https://dashboard.stripe.com (Brazil, with CNPJ)
 2. **Products** → Add product:
-   - Name: `LOVEFLIX Monthly`
+   - Name: `AllureTV Monthly`
    - Pricing: `$14.99 USD / month` recurring
    - Save and copy the `Price ID` (starts with `price_`) → `STRIPE_PRICE_ID_MONTHLY`
 3. **Developers → API keys** → copy:
@@ -68,11 +68,11 @@ The home page shows green/amber dots indicating which services are configured.
 
 #### Bunny Stream
 1. Create account at https://bunny.net
-2. **Stream** → Add Library → Name: `loveflix` → Region: closest to majority of users
+2. **Stream** → Add Library → Name: `alluretv` → Region: closest to majority of users
 3. Open the library:
    - **API → Library API Key** → `BUNNY_API_KEY`
    - **Library ID** (number at the top) → `BUNNY_LIBRARY_ID`
-   - **Pull Zone hostname** (e.g. `loveflix.b-cdn.net`) → `BUNNY_PULL_ZONE`
+   - **Pull Zone hostname** (e.g. `alluretv.b-cdn.net`) → `BUNNY_PULL_ZONE`
 4. **Pull Zone → Token Authentication** → enable → copy `Authentication Key` → `BUNNY_SECURITY_KEY`
 
 #### PostHog
@@ -87,7 +87,7 @@ The home page shows green/amber dots indicating which services are configured.
 
 #### OneSignal (push)
 1. Create account at https://onesignal.com
-2. New App → Web → name: `LOVEFLIX`
+2. New App → Web → name: `AllureTV`
 3. **Settings → Keys & IDs**:
    - `OneSignal App ID` → `NEXT_PUBLIC_ONESIGNAL_APP_ID`
    - `REST API Key` → `ONESIGNAL_REST_API_KEY`
@@ -158,4 +158,4 @@ supabase/
 
 ## Reference
 
-The visual prototype validated the design and lives at https://github.com/Nardoto/LOVEFLIX (museum). This repo is the production rebuild.
+This repo is the production rebuild of an earlier visual prototype that validated the design and palette.

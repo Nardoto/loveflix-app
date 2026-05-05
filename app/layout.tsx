@@ -3,7 +3,7 @@ import './globals.css';
 import type { ReactNode } from 'react';
 
 export const metadata = {
-  title: 'LOVEFLIX',
+  title: 'AllureTV',
   description: 'Romance stories you can listen, watch and read.',
 };
 
