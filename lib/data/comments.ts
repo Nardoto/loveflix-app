@@ -18,7 +18,7 @@ export type StoryComment = {
   id: string;
   user: string;
   avatar: string;
-  stars: number;
+  stars?: number; // optional — coming-soon comments have no rating yet
   date: string;
   body: string;
   likes: number;
@@ -309,13 +309,73 @@ const TEMPLATES: Template[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// DATE LABELS
+// EXPECTATION TEMPLATES — used ONLY for coming-soon stories.
+// People who haven't watched yet, talking about the cover, the title, or the
+// synopsis. NEVER about specific scenes, characters, or the narrator — those
+// would be tells that the story hasn't actually been published yet.
+// ---------------------------------------------------------------------------
+const EXPECTATION_TEMPLATES: { body: string; genres?: Story['genre'][] }[] = [
+  // Generic anticipation
+  { body: "Saw the cover and immediately added it to my list. When does this one drop?" },
+  { body: "Okay this synopsis has me HOOKED. Tell me there's already a release date." },
+  { body: "I have been refreshing this page every couple of days. Just take my subscription already." },
+  { body: "The title alone got me. I don't even need the trailer." },
+  { body: "Is there a release date yet? My book club is asking." },
+  { body: "Cover art looks gorgeous. Whoever's doing the covers for this app — keep going." },
+  { body: "If this delivers half of what the synopsis promises I'm going to be a wreck." },
+  { body: "Saving this one for the first cold weekend. Already know it's going to be that kind of story." },
+  { body: "Can someone tell me when this actually launches? The 'coming soon' is killing me." },
+  { body: "Read the synopsis twice. The second time was just to enjoy it." },
+  { body: "I haven't even pressed play and I'm already invested. That's a good sign." },
+  { body: "Telling my sister to download the app NOW so we can listen to this one together when it's out." },
+  { body: "Coming soon? I'll wait. I'm a patient woman. (I'm not.)" },
+  { body: "The premise is so my thing it's almost suspicious. Did you write it for me specifically?" },
+  { body: "I have a long flight next month. Please let this one be ready by then." },
+  { body: "Don't make us wait too long, please. The cover keeps showing up in my dreams." },
+  { body: "This is going to be the one. I can feel it." },
+  { body: "Already cleared my Saturday. Bath, candle, this audiobook the moment it's available." },
+  { body: "Pre-saving this. I do that with albums. Now I do it with audiobooks too apparently." },
+  { body: "If the chemistry is half of what the cover suggests, I'm going to need a fan." },
+  { body: "Please tell me the audio version is coming and not just the e-book. I do my listening at night." },
+  { body: "Fingers crossed they record this in German too. I always prefer the original-feel narration." },
+  { body: "I will be there the minute this drops. Setting a calendar reminder." },
+  { body: "Why does every 'coming soon' have to look this good? I have things to do, you know." },
+  { body: "Reading the synopsis like it's the first chapter. Already decided I love them." },
+
+  // Genre-tinted anticipation (still vague — no plot details)
+  { body: "Mafia romance with that cover? Yes. Yes thank you. Hurry.", genres: ['mafia'] },
+  { body: "Need this dangerous-man story like I need my evening tea.", genres: ['mafia'] },
+  { body: "Dark, slow, and dangerous from the looks of it. Can't wait.", genres: ['mafia', 'forbidden'] },
+  { body: "Billionaire who doesn't smile in the cover photo. I'm already in.", genres: ['billionaire'] },
+  { body: "If this is another well-written CEO romance I'm going to lose my mind in the best way.", genres: ['billionaire'] },
+  { body: "The forbidden ones are always my favorite. Already cleared the schedule.", genres: ['forbidden'] },
+  { body: "A secret-baby story done right is a rare thing. Hopes are HIGH.", genres: ['secret_baby'] },
+  { body: "Second chance romance and I haven't even pressed play. I'm already emotional.", genres: ['second_chance'] },
+  { body: "Arranged-marriage trope on the app? Sign me up before it drops.", genres: ['arranged'] },
+  { body: "Royal romance with this aesthetic. I'm going to need the day off.", genres: ['royal'] },
+  { body: "Looks like one of those short mood pieces I save for Sunday mornings. Excited.", genres: ['mood'] },
+
+  // Tagging the friends
+  { body: "Sent the cover to my book group with no caption. Got three replies in five minutes." },
+  { body: "Tagged my best friend in the description. She replied in all caps. Same energy here." },
+  { body: "Already told four women about this one and it isn't even out. That has to count for something." },
+];
+
+// ---------------------------------------------------------------------------
+// DATE LABELS — full pool (live stories) + recent-only subset (coming-soon)
 // ---------------------------------------------------------------------------
 const DATES = [
   '2 hours ago', '5 hours ago', '8 hours ago', 'yesterday', '2 days ago',
   '3 days ago', '4 days ago', '5 days ago', '6 days ago', '1 week ago',
   '2 weeks ago', '2 weeks ago', '3 weeks ago', '3 weeks ago', '1 month ago',
   '1 month ago', '5 weeks ago', '6 weeks ago', '2 months ago', '3 months ago',
+];
+
+const RECENT_DATES = [
+  'just now', '20 minutes ago', '1 hour ago', '2 hours ago', '4 hours ago',
+  '6 hours ago', '8 hours ago', 'yesterday', 'yesterday', '2 days ago',
+  '2 days ago', '3 days ago', '4 days ago', '5 days ago', '6 days ago',
+  '1 week ago', '1 week ago', '2 weeks ago',
 ];
 
 // ---------------------------------------------------------------------------
@@ -354,6 +414,24 @@ const HAS_COMMENTS_THRESHOLD = 0.3; // 30% of stories show no comments → 70% d
 export function generateCommentsForStory(story: Story): CommentMeta {
   const seed = hashSeed(story.id + '|' + story.slug);
   const rand = mulberry32(seed);
+
+  // ============================================================
+  // Coming-soon stories: anticipation comments only, no rating.
+  // Nobody has watched yet — so no stars, no "the kitchen scene"
+  // talk. Just curiosity, hype, and "when does this drop".
+  // ============================================================
+  if (story.isComingSoon) {
+    const count = 4 + Math.floor(rand() * 10); // 4 to 13 comments
+    return {
+      ratingAvg: 0,
+      ratingCount: 0,
+      comments: pickExpectationComments(story, rand, count),
+    };
+  }
+
+  // ============================================================
+  // Live stories: full reviews (existing behavior).
+  // ============================================================
 
   // Aggregate rating (mirrors the old formula but with seeded jitter)
   const ratingAvg = +(4.1 + rand() * 0.9).toFixed(1); // 4.1 - 5.0
@@ -447,4 +525,74 @@ export function generateCommentsForStory(story: Story): CommentMeta {
   comments.sort((a, b) => DATES.indexOf(a.date) - DATES.indexOf(b.date));
 
   return { comments, ratingAvg, ratingCount };
+}
+
+// ---------------------------------------------------------------------------
+// Coming-soon picker — uses the EXPECTATION pool, no stars, recent dates only.
+// ---------------------------------------------------------------------------
+function pickExpectationComments(
+  story: Story,
+  rand: () => number,
+  count: number,
+): StoryComment[] {
+  const scored = EXPECTATION_TEMPLATES.map((tpl, idx) => {
+    let weight = 1;
+    if (tpl.genres?.includes(story.genre)) weight += 4;
+    return { idx, weight };
+  });
+
+  const picked: number[] = [];
+  const pool = [...scored];
+  for (let i = 0; i < count && pool.length > 0; i++) {
+    const total = pool.reduce((s, x) => s + x.weight, 0);
+    let r = rand() * total;
+    let chosenIdx = 0;
+    for (let j = 0; j < pool.length; j++) {
+      r -= pool[j].weight;
+      if (r <= 0) {
+        chosenIdx = j;
+        break;
+      }
+    }
+    picked.push(pool[chosenIdx].idx);
+    pool.splice(chosenIdx, 1);
+  }
+
+  const usedAvatars = new Set<number>();
+  const usedNames = new Set<number>();
+
+  const comments: StoryComment[] = picked.map((tplIdx, i) => {
+    let avatarIdx = Math.floor(rand() * AVATAR_INDEXES.length);
+    let guard = 0;
+    while (usedAvatars.has(avatarIdx) && guard++ < 50) {
+      avatarIdx = (avatarIdx + 1) % AVATAR_INDEXES.length;
+    }
+    usedAvatars.add(avatarIdx);
+
+    let nameIdx = Math.floor(rand() * NAMES.length);
+    guard = 0;
+    while (usedNames.has(nameIdx) && guard++ < 50) {
+      nameIdx = (nameIdx + 1) % NAMES.length;
+    }
+    usedNames.add(nameIdx);
+
+    const dateIdx = Math.floor(rand() * RECENT_DATES.length);
+    // Likes are tiny on coming-soon — these are pre-launch hype, not reviews.
+    const likes = Math.max(0, Math.floor(rand() * 14));
+
+    return {
+      id: `${story.id}-c${i}`,
+      user: NAMES[nameIdx],
+      avatar: avatarUrl(avatarIdx),
+      // stars intentionally omitted — no one has rated something they haven't seen
+      date: RECENT_DATES[dateIdx],
+      body: EXPECTATION_TEMPLATES[tplIdx].body,
+      likes,
+    };
+  });
+
+  comments.sort(
+    (a, b) => RECENT_DATES.indexOf(a.date) - RECENT_DATES.indexOf(b.date),
+  );
+  return comments;
 }

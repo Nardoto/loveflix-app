@@ -225,6 +225,7 @@ export default async function StoryDetailPage({
         comments={storyComments}
         initialAverage={ratingAvg}
         initialCount={ratingCount}
+        isComingSoon={!!story.isComingSoon}
       />
 
       {related.length > 0 && (
