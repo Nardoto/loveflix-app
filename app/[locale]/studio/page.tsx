@@ -1,6 +1,6 @@
 import { setRequestLocale } from 'next-intl/server';
 import { redirect } from 'next/navigation';
-import { Film, Image as ImageIcon, BookOpen, Languages } from 'lucide-react';
+import { Film, Image as ImageIcon, BookOpen, Languages, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { allStories } from '@/lib/data/stories';
@@ -15,15 +15,31 @@ export default async function StudioPage({
   const { locale } = await params;
   setRequestLocale(locale);
 
-  // Studio is admin-only. Block both anonymous and non-admin users.
-  // Auth UI lives at /account; supabase login flow is configured there.
+  // Studio is admin-only IF Supabase is configured.
+  // When Supabase env vars are missing, requireAdmin() returns `setup: 'open'`
+  // so the page still renders — with a banner asking to wire up auth.
   const auth = await requireAdmin();
   if (!auth.ok) {
     redirect(`/${locale}`);
   }
+  const isOpenMode = auth.setup === 'open';
 
   return (
     <div className="pt-24 md:pt-28 px-5 md:px-10 lg:px-14 max-w-6xl mx-auto pb-20">
+      {isOpenMode && (
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-400/40 bg-amber-500/10 text-amber-200 px-4 py-3">
+          <AlertTriangle className="size-5 shrink-0 mt-0.5" />
+          <p className="text-sm leading-relaxed">
+            <strong className="font-bold">Auth not configured.</strong> Studio is
+            temporarily open to anyone with the URL. Set up Supabase
+            (<code className="font-mono text-xs">NEXT_PUBLIC_SUPABASE_URL</code> +{' '}
+            <code className="font-mono text-xs">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> +{' '}
+            <code className="font-mono text-xs">SUPABASE_SERVICE_ROLE_KEY</code>) and add
+            your email to <code className="font-mono text-xs">ADMIN_EMAILS</code> to
+            lock it down.
+          </p>
+        </div>
+      )}
       <header className="flex items-end justify-between gap-4 mb-10">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-gold-bright mb-2">

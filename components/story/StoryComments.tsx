@@ -1,58 +1,24 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
+import Image from 'next/image';
 import { Star, Heart, MessageCircle, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-
-type MockComment = {
-  id: string;
-  user: string;
-  initial: string;
-  color: string;
-  stars: number;
-  date: string;
-  body: string;
-  likes: number;
-};
-
-const COMMENT_POOL: MockComment[] = [
-  { id: 'c1', user: 'Margaret R.', initial: 'M', color: 'from-rose to-rose-deep', stars: 5, date: '2 days ago', body: "Listened the whole thing in one drive from Tampa to Miami. The narrator's voice is like honey. Couldn't stop.", likes: 47 },
-  { id: 'c2', user: 'Sandra K.', initial: 'S', color: 'from-purple-500 to-purple-700', stars: 5, date: '5 days ago', body: 'I needed something for the long winter nights and this hit every spot. The build-up… I was holding my breath.', likes: 32 },
-  { id: 'c3', user: 'Linda P.', initial: 'L', color: 'from-amber-500 to-amber-700', stars: 4, date: '1 week ago', body: 'Beautifully written. The chemistry felt real. My only wish is that it was longer — I want a sequel!', likes: 28 },
-  { id: 'c4', user: 'Carolyn T.', initial: 'C', color: 'from-rose-deep to-burgundy', stars: 5, date: '1 week ago', body: 'I cried at the kitchen scene. Twice. Beautiful work — the kind of story that reminds you why we read romance.', likes: 41 },
-  { id: 'c5', user: 'Diane M.', initial: 'D', color: 'from-teal-500 to-teal-700', stars: 5, date: '2 weeks ago', body: 'Finally an audiobook for grown women. No silly tropes, just slow-burn done right. Sleep timer is heaven.', likes: 19 },
-  { id: 'c6', user: 'Patricia W.', initial: 'P', color: 'from-pink-500 to-pink-700', stars: 4, date: '2 weeks ago', body: 'Loved the German narration too — switched between EN and DE just to compare. Both versions are equally moving.', likes: 22 },
-  { id: 'c7', user: 'Jennifer A.', initial: 'J', color: 'from-indigo-500 to-indigo-700', stars: 5, date: '3 weeks ago', body: 'My husband caught me listening with headphones and a glass of wine. He asked what was making me smile. I lied. ❤', likes: 67 },
-  { id: 'c8', user: 'Susan B.', initial: 'S', color: 'from-emerald-500 to-emerald-700', stars: 5, date: '3 weeks ago', body: 'Used the e-book version on the plane. The chapter art and the prose together are stunning. Worth every penny.', likes: 15 },
-  { id: 'c9', user: 'Helen O.', initial: 'H', color: 'from-rose-bright to-rose', stars: 4, date: '1 month ago', body: "Wish there were more stories like this. Strong female lead, slow tension, and zero cringe. More please.", likes: 38 },
-  { id: 'c10', user: 'Rosa V.', initial: 'R', color: 'from-orange-500 to-red-600', stars: 5, date: '1 month ago', body: 'Como mexicana, escuché la versión en español y me hizo recordar las novelas que mi madre escuchaba en la radio. Pero más íntimo. Gracias.', likes: 53 },
-];
-
-// Pseudo-random pick — deterministic per story so refresh keeps the same comments
-const pickComments = (storyId: string, count: number): MockComment[] => {
-  const seed = storyId.split('').reduce((s, c) => s + c.charCodeAt(0), 0);
-  const start = seed % COMMENT_POOL.length;
-  const out: MockComment[] = [];
-  for (let i = 0; i < count; i++) {
-    out.push(COMMENT_POOL[(start + i) % COMMENT_POOL.length]);
-  }
-  return out;
-};
+import type { StoryComment } from '@/lib/data/comments';
 
 export function StoryComments({
-  storyId,
   storyTitle,
+  comments,
   initialAverage,
   initialCount,
 }: {
   storyId: string;
   storyTitle: string;
+  comments: StoryComment[];
   initialAverage: number;
   initialCount: number;
 }) {
-  const comments = useMemo(() => pickComments(storyId, 4), [storyId]);
-
   const [userRating, setUserRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [draft, setDraft] = useState('');
@@ -61,8 +27,10 @@ export function StoryComments({
   const submit = () => {
     if (!draft.trim() || userRating === 0) return;
     setSubmitted(true);
-    // Real Sprint 1+ wires this to Supabase + posthog.capture('rating_submitted')
+    // Sprint 1+ wires this to Supabase + posthog.capture('rating_submitted')
   };
+
+  const hasComments = comments.length > 0;
 
   return (
     <section className="px-5 md:px-10 lg:px-14 mt-12 md:mt-16 max-w-5xl pb-20">
@@ -170,52 +138,62 @@ export function StoryComments({
       </div>
 
       {/* Comment list */}
-      <div className="space-y-4">
-        {comments.map((c) => (
-          <article
-            key={c.id}
-            className="bg-bg-elevated rounded-2xl p-5 md:p-6 shadow-md shadow-black/20"
-          >
-            <header className="flex items-start gap-3 mb-3">
-              <div
-                className={cn(
-                  'grid place-items-center size-10 rounded-full text-white font-bold bg-gradient-to-br shrink-0',
-                  c.color,
-                )}
-              >
-                {c.initial}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-white">{c.user}</span>
-                  <span className="text-xs text-text-mute">· {c.date}</span>
+      {hasComments ? (
+        <div className="space-y-4">
+          {comments.map((c) => (
+            <article
+              key={c.id}
+              className="bg-bg-elevated rounded-2xl p-5 md:p-6 shadow-md shadow-black/20"
+            >
+              <header className="flex items-start gap-3 mb-3">
+                <span className="relative size-10 rounded-full overflow-hidden bg-bg-deep shrink-0 ring-1 ring-white/10">
+                  <Image
+                    src={c.avatar}
+                    alt={c.user}
+                    fill
+                    sizes="40px"
+                    className="object-cover"
+                    unoptimized
+                  />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-white">{c.user}</span>
+                    <span className="text-xs text-text-mute">· {c.date}</span>
+                  </div>
+                  <div className="flex items-center gap-0.5 mt-0.5">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star
+                        key={n}
+                        className={cn(
+                          'size-3.5',
+                          n <= c.stars ? 'fill-gold text-gold' : 'text-white/15',
+                        )}
+                      />
+                    ))}
+                  </div>
                 </div>
-                <div className="flex items-center gap-0.5 mt-0.5">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <Star
-                      key={n}
-                      className={cn(
-                        'size-3.5',
-                        n <= c.stars ? 'fill-gold text-gold' : 'text-white/15',
-                      )}
-                    />
-                  ))}
-                </div>
-              </div>
-            </header>
-            <p className="text-text-soft leading-relaxed mb-3">{c.body}</p>
-            <footer className="flex items-center gap-4 text-text-dim text-sm">
-              <button className="inline-flex items-center gap-1.5 hover:text-rose-bright transition-colors">
-                <Heart className="size-4" />
-                <span>{c.likes}</span>
-              </button>
-              <button className="hover:text-rose-bright transition-colors">
-                Reply
-              </button>
-            </footer>
-          </article>
-        ))}
-      </div>
+              </header>
+              <p className="text-text-soft leading-relaxed mb-3">{c.body}</p>
+              <footer className="flex items-center gap-4 text-text-dim text-sm">
+                <button className="inline-flex items-center gap-1.5 hover:text-rose-bright transition-colors">
+                  <Heart className="size-4" />
+                  <span>{c.likes}</span>
+                </button>
+                <button className="hover:text-rose-bright transition-colors">
+                  Reply
+                </button>
+              </footer>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-bg-elevated rounded-2xl p-8 text-center shadow-md shadow-black/20">
+          <p className="text-text-dim italic">
+            Be the first to leave a review for this story.
+          </p>
+        </div>
+      )}
     </section>
   );
 }

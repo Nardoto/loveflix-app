@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Row } from '@/components/catalog/Row';
 import { findStory, allStories } from '@/lib/data/stories';
 import { getAuthorFor } from '@/lib/data/authors';
+import { generateCommentsForStory } from '@/lib/data/comments';
 import { StoryComments } from '@/components/story/StoryComments';
 import { isStoryHot } from '@/lib/data/hot';
 import { FlameIcon } from '@/components/icons/FlameIcon';
@@ -40,10 +41,10 @@ export default async function StoryDetailPage({
   const hasEbook = !!story.hasEbook;
   const hasAnyMedia = hasVideo || hasAudio || hasEbook;
 
-  // Deterministic mock rating per story (Sprint 1 swaps for Supabase aggregate)
-  const seed = story.id.split('').reduce((s, c) => s + c.charCodeAt(0), 0);
-  const ratingAvg = 4.2 + (seed % 9) / 10; // 4.2 - 5.0
-  const ratingCount = 80 + (seed * 17) % 940; // 80 - 1019
+  // Deterministic mock rating + comments per story (Sprint 1 swaps for Supabase aggregate).
+  // Generator lives in lib/data/comments.ts — picks 0-9 unique comments per story
+  // from a tagged template pool, varied avatars/names, ~70% of stories show comments.
+  const { comments: storyComments, ratingAvg, ratingCount } = generateCommentsForStory(story);
 
   const author = getAuthorFor(story);
 
@@ -221,6 +222,7 @@ export default async function StoryDetailPage({
       <StoryComments
         storyId={story.id}
         storyTitle={story.title}
+        comments={storyComments}
         initialAverage={ratingAvg}
         initialCount={ratingCount}
       />
