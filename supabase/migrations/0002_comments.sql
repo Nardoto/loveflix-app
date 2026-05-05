@@ -1,11 +1,13 @@
 -- ================================================================
 -- AllureTV — Story comments, likes and replies
 -- ================================================================
--- Run AFTER 0001_init.sql, in Supabase SQL Editor.
+-- STANDALONE migration. Does NOT depend on 0001_init.sql.
+-- Safe to run on a fresh Supabase project (only auth.users is required,
+-- which Supabase provisions automatically).
 --
 -- Why a new "story_comments" table separate from "ratings"?
--- - ratings (in 0001_init) is keyed by (user_id, story_id) — one per user per
---   story. That's the right shape for a star rating ("the average is 4.8").
+-- - ratings (in 0001_init, optional) is keyed by (user_id, story_id) — one per
+--   user per story. That's the right shape for a star rating.
 -- - story_comments is for free-form comments which can exist with or without a
 --   rating, can repeat, can be replied to and liked.
 --
@@ -16,12 +18,30 @@
 
 
 -- ================================================================
--- Extend profiles with display_name + avatar (used by the comment list).
--- The comment renderer falls back to a stable hash-based mock name+avatar
--- when these are null, so adding them is non-breaking.
+-- COMMENT USER META — display_name + avatar_url for the comment renderer.
+-- Kept as its own table (instead of altering public.profiles) so this
+-- migration is standalone and works even when 0001_init.sql isn't run yet.
+-- When profiles is later available, copy these values over.
 -- ================================================================
-alter table public.profiles add column if not exists display_name text;
-alter table public.profiles add column if not exists avatar_url text;
+create table if not exists public.comment_user_meta (
+  user_id uuid primary key references auth.users on delete cascade,
+  display_name text,
+  avatar_url text,
+  updated_at timestamptz default now()
+);
+
+alter table public.comment_user_meta enable row level security;
+
+create policy "comment_user_meta_select_all"
+  on public.comment_user_meta for select using (true);
+
+create policy "comment_user_meta_upsert_own"
+  on public.comment_user_meta for insert
+  with check (auth.uid() is not null and auth.uid() = user_id);
+
+create policy "comment_user_meta_update_own"
+  on public.comment_user_meta for update
+  using (auth.uid() = user_id);
 
 
 -- ================================================================
@@ -140,12 +160,12 @@ select
   c.body,
   c.stars,
   c.created_at,
-  p.display_name,
-  p.avatar_url,
+  m.display_name,
+  m.avatar_url,
   coalesce(l.likes_count, 0)     as likes_count,
   coalesce(r.replies_count, 0)   as replies_count
 from public.story_comments c
-left join public.profiles p on p.id = c.user_id
+left join public.comment_user_meta m on m.user_id = c.user_id
 left join (
   select comment_id, count(*)::int as likes_count
   from public.story_comment_likes
