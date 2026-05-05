@@ -3,7 +3,6 @@ import { getTranslations } from 'next-intl/server';
 import { HeroFeatured } from '@/components/catalog/HeroFeatured';
 import { Row } from '@/components/catalog/Row';
 import { AuthorPills } from '@/components/catalog/AuthorPills';
-import { GenreChips } from '@/components/catalog/GenreChips';
 import { HotShowcase } from '@/components/catalog/HotShowcase';
 import { allStories, fazendeiro, stories } from '@/lib/data/stories';
 import { hotStories } from '@/lib/data/hot';
@@ -31,10 +30,10 @@ export default async function HomePage({
           clear that motion-without-consent hurts comprehension for 55+). */}
       <HeroFeatured story={fazendeiro} />
 
-      {/* Genre quick filter — sits right under the hero so a returning
-          reader can jump to her favorite genre in one tap. */}
-      <GenreChips />
-
+      {/* Genre filtering already happens (a) per-row below and (b) via the
+          /genres page in the main nav, so we don't double up with chips here.
+          The author pills come right after the hero — channel-following is
+          the primary discovery path on AllureTV. */}
       <AuthorPills />
 
       <HotShowcase stories={hotStories} />

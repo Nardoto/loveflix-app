@@ -13,10 +13,6 @@ import { SparkleIcon } from '@/components/icons/SparkleIcon';
 
 export function StoryCard({ story }: { story: Story }) {
   const author = getAuthorFor(story);
-  // Languages with playable audio for this story (badge in the corner of the cover).
-  const audioLocales = Object.keys(
-    story.audioKeyByLocale ?? story.audioByLocale ?? {},
-  );
 
   return (
     <Link
@@ -45,15 +41,6 @@ export function StoryCard({ story }: { story: Story }) {
         {story.isComingSoon && (
           <span className="absolute top-2 left-2 inline-flex items-center px-2 py-0.5 rounded-full bg-bg-deep/85 backdrop-blur text-[10px] font-bold uppercase tracking-widest text-text-dim shadow shadow-black/40">
             Soon
-          </span>
-        )}
-
-        {audioLocales.length > 0 && (
-          <span className="absolute bottom-2 right-2 inline-flex items-center gap-0.5 px-1.5 py-1 rounded-full bg-bg-deep/85 backdrop-blur text-xs leading-none shadow shadow-black/40">
-            {audioLocales.includes('en') && <span title="English">🇺🇸</span>}
-            {audioLocales.includes('de') && <span title="Deutsch">🇩🇪</span>}
-            {audioLocales.includes('fr') && <span title="Français">🇫🇷</span>}
-            {audioLocales.includes('es') && <span title="Español">🇪🇸</span>}
           </span>
         )}
       </div>
