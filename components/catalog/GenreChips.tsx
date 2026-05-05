@@ -5,20 +5,20 @@ import { Link } from '@/lib/navigation';
 // for instead of having to scroll past everything. Each chip is 44px
 // tall (Material guideline + 55+ accessibility research minimum).
 //
-// Styled as pills with subtle border so they read as taps even when a
-// theme accent isn't applied. Active state would come from URL match —
-// for now they always navigate to the genre page.
+// Text-only by design. Disney+, Netflix, Apple TV+ all skip emoji on
+// genre filters — emoji glyphs read as childish/stock and clash with the
+// editorial AllureTV palette.
 
-type Chip = { href: string; label: string; emoji?: string };
+type Chip = { href: string; label: string };
 
 const CHIPS: Chip[] = [
-  { href: '/genres/billionaire', label: 'Billionaire', emoji: '💼' },
-  { href: '/genres/mafia', label: 'Mafia', emoji: '🌹' },
-  { href: '/genres/forbidden', label: 'Forbidden', emoji: '🔒' },
-  { href: '/genres/secret_baby', label: 'Secret Baby', emoji: '👶' },
-  { href: '/genres/second_chance', label: 'Second Chance', emoji: '💞' },
-  { href: '/genres/arranged', label: 'Arranged', emoji: '💍' },
-  { href: '/genres/royal', label: 'Royal', emoji: '👑' },
+  { href: '/genres/billionaire', label: 'Billionaire' },
+  { href: '/genres/mafia', label: 'Mafia' },
+  { href: '/genres/forbidden', label: 'Forbidden' },
+  { href: '/genres/secret_baby', label: 'Secret Baby' },
+  { href: '/genres/second_chance', label: 'Second Chance' },
+  { href: '/genres/arranged', label: 'Arranged' },
+  { href: '/genres/royal', label: 'Royal' },
 ];
 
 export function GenreChips() {
@@ -32,14 +32,9 @@ export function GenreChips() {
           <Link
             key={chip.href}
             href={chip.href as never}
-            className="snap-start shrink-0 inline-flex items-center gap-2 h-11 px-4 rounded-full bg-bg-card border border-border text-[15px] font-medium text-text-soft hover:text-white hover:border-rose-bright/40 hover:bg-bg-elevated active:bg-bg-elevated transition-colors"
+            className="snap-start shrink-0 inline-flex items-center h-11 px-5 rounded-full bg-bg-card border border-border text-[15px] font-medium tracking-wide text-text-soft hover:text-white hover:border-rose-bright/40 hover:bg-bg-elevated active:bg-bg-elevated transition-colors"
           >
-            {chip.emoji && (
-              <span className="text-base leading-none" aria-hidden>
-                {chip.emoji}
-              </span>
-            )}
-            <span>{chip.label}</span>
+            {chip.label}
           </Link>
         ))}
       </div>
