@@ -76,7 +76,10 @@ export function Row({ title, highlight, stories }: RowProps) {
       <div className="relative">
         <div
           ref={trackRef}
-          className="row-track flex gap-3 md:gap-4 overflow-x-auto -mx-4 md:-mx-10 px-4 md:px-10 snap-x snap-mandatory scroll-smooth pb-2"
+          /* scroll-pl matches px-4/md:px-10 so when the user lands on a
+             card via swipe-snap, the snapped card aligns to the gutter
+             instead of slamming into the viewport edge mid-cropped. */
+          className="row-track flex gap-3 md:gap-4 overflow-x-auto -mx-4 md:-mx-10 px-4 md:px-10 scroll-pl-4 md:scroll-pl-10 snap-x snap-mandatory scroll-smooth pb-2"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           {stories.map((story) => (
