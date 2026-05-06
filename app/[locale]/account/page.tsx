@@ -1,11 +1,12 @@
 import { setRequestLocale } from 'next-intl/server';
 import { redirect } from 'next/navigation';
 import Image from 'next/image';
-import { Heart, CreditCard, Mail, Globe, BellRing, LogOut } from 'lucide-react';
+import { Heart, Globe, BellRing, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { getUser } from '@/lib/auth-helpers';
 import { signOut } from '@/app/actions/auth';
+import { createClient } from '@/lib/supabase/server';
+import { AccountSubscription } from '@/components/account/AccountSubscription';
 
 // Supabase Google OAuth populates user.user_metadata with these fields:
 //   - full_name | name
@@ -50,10 +51,27 @@ export default async function AccountPage({
   const avatarUrl = pickAvatar(user);
   const email = user.email ?? '';
 
-  // TODO Sprint 3: query subscriptions table for real Stripe subscription state
-  // when Stripe is wired up. For now we display a placeholder card so the layout
-  // doesn't look empty — clearly marked as coming soon.
-  const hasSubscription = false;
+  // Pull live subscription state from Supabase (RLS limits to own row).
+  // If the table doesn't exist yet (migration 0004 not run), or there's no
+  // row for this user, we render the "Free" state.
+  let subscription: {
+    status: string;
+    current_period_end: string | null;
+    cancel_at_period_end: boolean;
+  } | null = null;
+  try {
+    const sb = await createClient();
+    const { data } = await sb
+      .from('subscriptions')
+      .select('status, current_period_end, cancel_at_period_end')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    subscription = data ?? null;
+  } catch {
+    subscription = null;
+  }
+
+  const hasStripe = !!process.env.STRIPE_SECRET_KEY;
 
   return (
     <div className="pt-24 md:pt-28 px-5 md:px-10 lg:px-14 max-w-4xl mx-auto pb-20">
@@ -86,52 +104,7 @@ export default async function AccountPage({
         </div>
       </header>
 
-      <div className="grid md:grid-cols-2 gap-4 mb-10">
-        <div className="bg-bg-elevated rounded-2xl p-6 relative overflow-hidden shadow-xl shadow-rose/15">
-          <Badge variant={hasSubscription ? 'hot' : 'genre'} className="mb-3">
-            {hasSubscription ? 'Active' : 'Free'}
-          </Badge>
-          <h3 className="font-serif italic text-2xl font-bold text-white mb-1">
-            {hasSubscription ? 'Monthly Plan' : 'Free account'}
-          </h3>
-          <p className="text-text-dim text-sm mb-4">
-            {hasSubscription ? (
-              <>Renews on <span className="text-text-soft">soon</span></>
-            ) : (
-              <>Upgrade for full access to premium stories</>
-            )}
-          </p>
-          {hasSubscription ? (
-            <p className="text-3xl font-bold text-rose-bright">
-              $14.99
-              <span className="text-sm text-text-dim font-normal ml-1">/month</span>
-            </p>
-          ) : (
-            <Button variant="rose" disabled>
-              Upgrade — coming soon
-            </Button>
-          )}
-          <div className="absolute -right-4 -bottom-4 text-rose/10 text-9xl pointer-events-none select-none">♥</div>
-        </div>
-
-        <div className="bg-bg-elevated rounded-2xl p-6 space-y-3 shadow-lg shadow-black/30">
-          <h3 className="font-serif italic text-xl font-bold text-white">
-            Manage subscription
-          </h3>
-          <Button variant="glass" className="w-full justify-start" disabled>
-            <CreditCard /> Update payment method
-          </Button>
-          <Button variant="glass" className="w-full justify-start" disabled>
-            <Mail /> Billing history
-          </Button>
-          <Button variant="ghost" className="w-full justify-start text-text-dim" disabled>
-            Cancel subscription
-          </Button>
-          <p className="text-[11px] text-text-mute mt-3">
-            Stripe Customer Portal coming soon.
-          </p>
-        </div>
-      </div>
+      <AccountSubscription subscription={subscription} hasStripe={hasStripe} />
 
       <section className="mb-10">
         <h2 className="font-serif italic text-2xl font-bold text-white mb-4">

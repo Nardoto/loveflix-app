@@ -1,0 +1,130 @@
+'use server';
+
+// Stripe Server Actions:
+//   - createCheckoutSession() → starts a hosted Stripe Checkout for the
+//     monthly plan, returns a URL the client redirects to.
+//   - createPortalSession() → opens the Stripe Customer Portal so the user
+//     can update their card, cancel, or download invoices.
+//
+// Both require the user to be signed in (RLS reads happen against their
+// own subscriptions row).
+
+import { headers } from 'next/headers';
+import { stripe, PRICE_ID_MONTHLY } from '@/lib/stripe';
+import { getUser } from '@/lib/auth-helpers';
+import { createServiceClient } from '@/lib/supabase/server';
+
+type Result<T = void> =
+  | { ok: true; data: T }
+  | { ok: false; error: string; requiresLogin?: boolean };
+
+const SUPABASE_CONFIGURED = !!(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+const STRIPE_CONFIGURED = !!process.env.STRIPE_SECRET_KEY && !!PRICE_ID_MONTHLY;
+
+async function appOrigin(): Promise<string> {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  const h = await headers();
+  const host = h.get('host');
+  const proto = h.get('x-forwarded-proto') ?? 'https';
+  return host ? `${proto}://${host}` : 'https://alluretv.net';
+}
+
+/** Start a Stripe Checkout session for the monthly plan. */
+export async function createCheckoutSession(): Promise<Result<{ url: string }>> {
+  if (!STRIPE_CONFIGURED) {
+    return { ok: false, error: 'Stripe is not configured yet.' };
+  }
+  if (!SUPABASE_CONFIGURED) {
+    return { ok: false, error: 'Supabase is not configured yet.' };
+  }
+
+  const user = await getUser();
+  if (!user) {
+    return { ok: false, error: 'Sign in to subscribe', requiresLogin: true };
+  }
+
+  const origin = await appOrigin();
+
+  // Reuse an existing Stripe customer if we already have one for this user.
+  let customerId: string | undefined;
+  try {
+    const sb = createServiceClient();
+    const { data } = await sb
+      .from('subscriptions')
+      .select('stripe_customer_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    customerId = data?.stripe_customer_id ?? undefined;
+  } catch {
+    customerId = undefined;
+  }
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [{ price: PRICE_ID_MONTHLY, quantity: 1 }],
+      // Important: this lets the webhook attach the subscription to the
+      // correct Supabase user.
+      client_reference_id: user.id,
+      customer: customerId,
+      customer_email: customerId ? undefined : user.email ?? undefined,
+      // Stamp metadata on the subscription so customer.subscription.* events
+      // can resolve user_id without a DB lookup.
+      subscription_data: {
+        metadata: { user_id: user.id },
+      },
+      allow_promotion_codes: true,
+      success_url: `${origin}/account?upgrade=success`,
+      cancel_url: `${origin}/account?upgrade=canceled`,
+    });
+
+    if (!session.url) {
+      return { ok: false, error: 'Stripe did not return a checkout URL' };
+    }
+    return { ok: true, data: { url: session.url } };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown error';
+    console.error('[stripe] checkout session failed:', msg);
+    return { ok: false, error: msg };
+  }
+}
+
+/** Open the Stripe Customer Portal for the signed-in user. */
+export async function createPortalSession(): Promise<Result<{ url: string }>> {
+  if (!STRIPE_CONFIGURED) {
+    return { ok: false, error: 'Stripe is not configured yet.' };
+  }
+
+  const user = await getUser();
+  if (!user) {
+    return { ok: false, error: 'Sign in to manage your subscription', requiresLogin: true };
+  }
+
+  const sb = createServiceClient();
+  const { data } = await sb
+    .from('subscriptions')
+    .select('stripe_customer_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (!data?.stripe_customer_id) {
+    return { ok: false, error: 'No active subscription found' };
+  }
+
+  const origin = await appOrigin();
+
+  try {
+    const session = await stripe.billingPortal.sessions.create({
+      customer: data.stripe_customer_id,
+      return_url: `${origin}/account`,
+    });
+    return { ok: true, data: { url: session.url } };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown error';
+    console.error('[stripe] portal session failed:', msg);
+    return { ok: false, error: msg };
+  }
+}
