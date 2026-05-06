@@ -5,11 +5,19 @@
 // the open state lifted up there since the trigger lives in TopBar.
 
 import { useEffect } from 'react';
-import { X, Home, Heart, Diamond, User, Sparkles } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { X, Home, Heart, Diamond, User, Download } from 'lucide-react';
+import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/lib/navigation';
 import { FlameIcon } from '@/components/icons/FlameIcon';
 import { cn } from '@/lib/utils';
+import { useInstall } from './InstallProvider';
+
+const INSTALL_LABELS: Record<string, string> = {
+  en: 'Install app',
+  de: 'App installieren',
+  fr: 'Installer l’app',
+  es: 'Instalar app',
+};
 
 type NavItem = {
   href: string;
@@ -26,6 +34,8 @@ export function MobileNav({
   onClose: () => void;
 }) {
   const t = useTranslations('nav');
+  const locale = useLocale();
+  const { canInstall, triggerInstall } = useInstall();
 
   // Lock body scroll while the drawer is open + close on Escape.
   useEffect(() => {
@@ -126,6 +136,28 @@ export function MobileNav({
               {item.label}
             </Link>
           ))}
+
+          {/* Install app — vanishes once running standalone (canInstall reads
+              `display-mode: standalone` from the InstallProvider). On Android
+              fires the native prompt; on iOS opens the 3-step sheet. */}
+          {canInstall && (
+            <>
+              <div className="my-2 border-t border-white/5" />
+              <button
+                type="button"
+                onClick={() => {
+                  void triggerInstall();
+                  onClose();
+                }}
+                className="flex items-center gap-4 px-3 h-12 rounded-xl text-base font-bold text-rose-bright bg-rose/5 hover:bg-rose/10 active:bg-rose/15 transition-colors text-left"
+              >
+                <span className="shrink-0 text-rose-bright">
+                  <Download className="size-5" />
+                </span>
+                {INSTALL_LABELS[locale] ?? INSTALL_LABELS.en}
+              </button>
+            </>
+          )}
         </nav>
 
         <div className="border-t border-border p-4 text-center text-[10px] uppercase tracking-[0.3em] text-text-mute shrink-0">
