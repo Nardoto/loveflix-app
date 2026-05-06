@@ -117,6 +117,28 @@ export default async function LocaleLayout({
                 <p className="mt-2 text-gold-deep tracking-widest uppercase text-[10px] font-bold">
                   alluretv.net
                 </p>
+                <nav className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-text-dim">
+                  <a
+                    href={`/${locale}/privacy`}
+                    className="hover:text-rose-bright transition-colors"
+                  >
+                    Privacy
+                  </a>
+                  <span className="text-text-mute/40">·</span>
+                  <a
+                    href={`/${locale}/terms`}
+                    className="hover:text-rose-bright transition-colors"
+                  >
+                    Terms
+                  </a>
+                  <span className="text-text-mute/40">·</span>
+                  <a
+                    href="mailto:rededecanaisanonimo@gmail.com"
+                    className="hover:text-rose-bright transition-colors"
+                  >
+                    Contact
+                  </a>
+                </nav>
                 <p className="mt-4 opacity-60">
                   © 2026 AllureTV — All rights reserved.
                 </p>
