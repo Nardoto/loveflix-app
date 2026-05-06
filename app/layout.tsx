@@ -1,6 +1,54 @@
-// Minimal root layout — i18n locale layout lives at /app/[locale]/layout.tsx
+// Single root layout for the whole app — owns <html>/<body> + global fonts.
+// Both /[locale]/* (public site) and /admin/* (operator UI) nest into this
+// layout. The locale layout adds NextIntl + TopBar/footer; the admin layout
+// adds the sidebar gate. Neither renders its own <html>/<body>.
 import './globals.css';
 import type { ReactNode } from 'react';
+import {
+  Geist,
+  Geist_Mono,
+  Sacramento,
+  Great_Vibes,
+  Yellowtail,
+  Pinyon_Script,
+  Lora,
+} from 'next/font/google';
+
+const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
+const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
+
+// Channel signature scripts (one per creator).
+const fontEmilly = Sacramento({
+  variable: '--font-emilly',
+  weight: '400',
+  subsets: ['latin'],
+  display: 'swap',
+});
+const fontDavid = Great_Vibes({
+  variable: '--font-david',
+  weight: '400',
+  subsets: ['latin'],
+  display: 'swap',
+});
+const fontAdam = Yellowtail({
+  variable: '--font-adam',
+  weight: '400',
+  subsets: ['latin'],
+  display: 'swap',
+});
+const fontMarcus = Pinyon_Script({
+  variable: '--font-marcus',
+  weight: '400',
+  subsets: ['latin'],
+  display: 'swap',
+});
+
+// Reader body for long-form ebook reading.
+const fontReader = Lora({
+  variable: '--font-reader',
+  subsets: ['latin'],
+  display: 'swap',
+});
 
 export const metadata = {
   title: 'AllureTV',
@@ -30,5 +78,12 @@ export const viewport = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  return children;
+  return (
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} ${fontEmilly.variable} ${fontDavid.variable} ${fontAdam.variable} ${fontMarcus.variable} ${fontReader.variable} h-full antialiased`}
+    >
+      <body className="min-h-full bg-bg-deep text-text-soft">{children}</body>
+    </html>
+  );
 }

@@ -32,13 +32,15 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Run on all paths EXCEPT next internals, static files, `/api/*`, and `/auth/*`.
-    // next-intl must NOT rewrite the upload route handlers (POST /api/upload/* would
-    // become /en/api/upload/* and 404), nor the OAuth/magic-link callback at
-    // /auth/callback (Supabase needs the exact path it was given), nor the
-    // PWA contracts at the root (manifest.webmanifest, sw.js, robots.txt,
+    // Run on all paths EXCEPT next internals, static files, `/api/*`, `/auth/*`,
+    // and `/admin/*`. next-intl must NOT rewrite the upload route handlers
+    // (POST /api/upload/* would become /en/api/upload/* and 404), nor the
+    // OAuth/magic-link callback at /auth/callback (Supabase needs the exact
+    // path it was given), nor the admin area which lives outside the locale
+    // tree (admin is English-only and branded separately), nor the PWA
+    // contracts at the root (manifest.webmanifest, sw.js, robots.txt,
     // sitemap.xml) — those MUST live at exact root paths or browsers won't
     // accept the install prompt.
-    '/((?!api/|auth/|_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|robots.txt|sitemap.xml|covers/|media/|ebook/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp3|mp4|m4a|wav|ogg|m3u8|ts|vtt|srt)$).*)',
+    '/((?!api/|auth/|admin(?:/|$)|_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|robots.txt|sitemap.xml|covers/|media/|ebook/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp3|mp4|m4a|wav|ogg|m3u8|ts|vtt|srt)$).*)',
   ],
 };

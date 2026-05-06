@@ -111,12 +111,6 @@ export function TopBar({ user }: { user?: TopBarUser } = {}) {
             >
               {t('genres')}
             </Link>
-            <Link
-              href="/studio"
-              className="hover:text-rose-bright transition-colors font-medium text-gold"
-            >
-              {t('studio')}
-            </Link>
           </nav>
 
           <div className="ml-auto flex items-center gap-0.5 sm:gap-1">
@@ -199,9 +193,6 @@ export function TopBar({ user }: { user?: TopBarUser } = {}) {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link href="/account">{t('account')}</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/studio">{t('studio')}</Link>
                     </DropdownMenuItem>
                     <InstallAppMenuItem />
                     <DropdownMenuSeparator />

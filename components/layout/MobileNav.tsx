@@ -57,12 +57,6 @@ export function MobileNav({
     },
     { href: '/account', icon: <Heart className="size-5" />, label: t('myList') },
     {
-      href: '/studio',
-      icon: <Sparkles className="size-5" />,
-      label: t('studio'),
-      accent: 'gold',
-    },
-    {
       href: '/account',
       icon: <User className="size-5" />,
       label: t('account'),
