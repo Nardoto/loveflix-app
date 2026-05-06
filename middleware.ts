@@ -8,6 +8,10 @@ const intlMiddleware = createMiddleware({
   locales,
   defaultLocale,
   localePrefix: 'as-needed', // /en is implicit; /de explicit
+  // Read Accept-Language on first visit and route to the closest configured
+  // locale — pt-BR / pt → fall back to defaultLocale (en); de-AT → /de, etc.
+  // The choice is then persisted in the NEXT_LOCALE cookie for return visits.
+  localeDetection: true,
 });
 
 export async function middleware(request: NextRequest) {

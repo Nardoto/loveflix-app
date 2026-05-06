@@ -18,15 +18,15 @@ export type Author = {
 
 export const authors: Author[] = [
   {
-    id: 'lena',
-    initial: 'L',
+    id: 'emilly',
+    initial: 'E',
     name: 'Liebesgeschichten',
-    tagline: 'by Lena',
+    tagline: 'by Emilly',
     bio: 'German-language romance — second chance, royal, mood pieces.',
     color: 'from-rose to-rose-deep',
-    avatar: '/channels/lena.jpg',
+    avatar: '/channels/emilly.jpg',
     youtube: 'https://www.youtube.com/@liebesgeschichten1',
-    font: 'var(--font-lena)', // Sacramento — gentle, romantic
+    font: 'var(--font-emilly)', // Sacramento — gentle, romantic
   },
   {
     id: 'david',
@@ -73,13 +73,13 @@ export const creatorName = (author: Author): string =>
 // Derive author from story genre — keeps stories.ts clean and lets us
 // re-balance distribution without editing the catalog.
 export const getAuthorFor = (story: Story): Author => {
-  // The flagship "He Had Never Touched Me" is co-published by Lena.
+  // The flagship "He Had Never Touched Me" is co-published by Emilly.
   if (story.id === 'fazendeiro') return authors[0];
   switch (story.genre) {
     case 'second_chance':
     case 'royal':
     case 'mood':
-      return authors[0]; // Lena
+      return authors[0]; // Emilly
     case 'billionaire':
     case 'arranged':
       return authors[1]; // David

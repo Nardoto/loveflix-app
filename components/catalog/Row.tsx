@@ -65,21 +65,17 @@ export function Row({ title, highlight, stories }: RowProps) {
   };
 
   return (
-    <section className="group relative px-4 md:px-10 mt-8 md:mt-12">
-      <div className="mb-3 md:mb-4">
-        <h2 className="font-serif text-[22px] md:text-2xl lg:text-3xl font-extrabold text-white tracking-tight leading-tight">
+    <section className="group relative px-4 md:px-10 mt-5 md:mt-7">
+      <div className="mb-1.5 md:mb-2">
+        <h2 className="font-serif text-[20px] md:text-[22px] lg:text-2xl font-extrabold text-white tracking-tight leading-tight">
           {renderTitle()}
         </h2>
-        <span className="gold-flourish" aria-hidden="true" />
       </div>
 
       <div className="relative">
         <div
           ref={trackRef}
-          /* scroll-pl matches px-4/md:px-10 so when the user lands on a
-             card via swipe-snap, the snapped card aligns to the gutter
-             instead of slamming into the viewport edge mid-cropped. */
-          className="row-track flex gap-3 md:gap-4 overflow-x-auto -mx-4 md:-mx-10 px-4 md:px-10 scroll-pl-4 md:scroll-pl-10 snap-x snap-mandatory scroll-smooth pb-2"
+          className="row-track flex gap-2.5 md:gap-3 overflow-x-auto -mx-4 md:-mx-10 px-4 md:px-10 scroll-pl-4 md:scroll-pl-10 snap-x snap-mandatory scroll-smooth"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           {stories.map((story) => (

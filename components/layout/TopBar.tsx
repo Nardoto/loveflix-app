@@ -1,6 +1,7 @@
 'use client';
 
-import { Search, User, Menu } from 'lucide-react';
+import { Search, User, Menu, LogIn, LogOut } from 'lucide-react';
+import Image from 'next/image';
 import { useTranslations, useLocale } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { Link, usePathname, useRouter } from '@/lib/navigation';
@@ -16,6 +17,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MobileNav } from './MobileNav';
 import { useSearch } from './SearchProvider';
+import { signOut } from '@/app/actions/auth';
+
+export type TopBarUser = {
+  email: string | null;
+  displayName: string;
+  avatarUrl: string | null;
+} | null;
 
 const LANG_FLAGS: Record<string, { flag: string; name: string }> = {
   en: { flag: '🇺🇸', name: 'English' },
@@ -24,7 +32,7 @@ const LANG_FLAGS: Record<string, { flag: string; name: string }> = {
   es: { flag: '🇪🇸', name: 'Español' },
 };
 
-export function TopBar() {
+export function TopBar({ user }: { user?: TopBarUser } = {}) {
   const t = useTranslations('nav');
   const locale = useLocale();
   const router = useRouter();
@@ -153,24 +161,67 @@ export function TopBar() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  aria-label="Profile"
-                  className="size-9 sm:size-10 rounded-full bg-gradient-to-br from-rose to-rose-deep flex items-center justify-center text-white shadow-lg shadow-rose/30 hover:scale-105 transition-transform"
+                  aria-label={user ? `Account — ${user.displayName}` : 'Sign in'}
+                  className="size-9 sm:size-10 rounded-full bg-gradient-to-br from-rose to-rose-deep flex items-center justify-center text-white shadow-lg shadow-rose/30 hover:scale-105 transition-transform overflow-hidden ring-2 ring-rose-bright/20"
                 >
-                  <User className="size-5" />
+                  {user?.avatarUrl ? (
+                    <Image
+                      src={user.avatarUrl}
+                      alt={user.displayName}
+                      width={40}
+                      height={40}
+                      className="size-full object-cover"
+                      unoptimized
+                    />
+                  ) : user ? (
+                    <span className="text-sm font-bold">
+                      {user.displayName.charAt(0).toUpperCase()}
+                    </span>
+                  ) : (
+                    <User className="size-5" />
+                  )}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Welcome</DropdownMenuLabel>
-                <DropdownMenuItem asChild>
-                  <Link href="/account">{t('account')}</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/studio">{t('studio')}</Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/account">{t('signIn')}</Link>
-                </DropdownMenuItem>
+              <DropdownMenuContent align="end" className="min-w-[220px]">
+                {user ? (
+                  <>
+                    <DropdownMenuLabel>
+                      <p className="font-bold text-white truncate">
+                        {user.displayName}
+                      </p>
+                      {user.email && (
+                        <p className="text-xs text-text-dim font-normal truncate mt-0.5">
+                          {user.email}
+                        </p>
+                      )}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/account">{t('account')}</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/studio">{t('studio')}</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <form action={signOut}>
+                      <button
+                        type="submit"
+                        className="w-full text-left px-2 py-1.5 text-sm rounded-sm hover:bg-white/5 inline-flex items-center gap-2 text-rose hover:text-rose-bright transition-colors"
+                      >
+                        <LogOut className="size-4" /> Sign out
+                      </button>
+                    </form>
+                  </>
+                ) : (
+                  <>
+                    <DropdownMenuLabel>Welcome</DropdownMenuLabel>
+                    <DropdownMenuItem asChild>
+                      <Link href="/login" className="inline-flex items-center gap-2">
+                        <LogIn className="size-4" /> {t('signIn')}
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
 

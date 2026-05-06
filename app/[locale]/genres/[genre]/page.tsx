@@ -5,6 +5,7 @@ import { Clock, Headphones } from 'lucide-react';
 import { Row } from '@/components/catalog/Row';
 import { allStories, type Story } from '@/lib/data/stories';
 import { authors, getAuthorFor, filterByAuthor } from '@/lib/data/authors';
+import { filterByLocale } from '@/lib/data/locale-filter';
 
 const GENRE_META: Record<Story['genre'], { label: string; tagline: string; description: string }> = {
   mafia: {
@@ -67,7 +68,10 @@ export default async function GenreDetailPage({
   if (!isGenre(genre)) notFound();
 
   const meta = GENRE_META[genre];
-  const list = allStories.filter((s) => s.genre === genre);
+  const list = filterByLocale(
+    allStories.filter((s) => s.genre === genre),
+    locale,
+  );
   const featured = list.find((s) => s.isHot) ?? list[0];
 
   if (!featured) notFound();

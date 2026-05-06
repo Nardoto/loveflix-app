@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { setRequestLocale } from 'next-intl/server';
 import { Link } from '@/lib/navigation';
 import { allStories, type Story } from '@/lib/data/stories';
+import { filterByLocale } from '@/lib/data/locale-filter';
 
 const GENRES: { id: Story['genre']; label: string; tagline: string }[] = [
   { id: 'mafia', label: 'Mafia & Dark', tagline: 'Forced unions and possessive grooms' },
@@ -22,6 +23,8 @@ export default async function GenresIndex({
   const { locale } = await params;
   setRequestLocale(locale);
 
+  const localeAll = filterByLocale(allStories, locale);
+
   return (
     <div className="pt-24 md:pt-28 px-5 md:px-10 lg:px-14 max-w-7xl mx-auto pb-20">
       <header className="mb-10 md:mb-12 text-center md:text-left">
@@ -38,7 +41,7 @@ export default async function GenresIndex({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
         {GENRES.map((g) => {
-          const list = allStories.filter((s) => s.genre === g.id);
+          const list = localeAll.filter((s) => s.genre === g.id);
           const covers = list.slice(0, 4).map((s) => s.cover);
           return (
             <Link

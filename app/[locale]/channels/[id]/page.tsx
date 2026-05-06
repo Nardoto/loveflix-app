@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Row } from '@/components/catalog/Row';
 import { allStories, type Story } from '@/lib/data/stories';
 import { findAuthor, filterByAuthor, getAuthorFor, authors } from '@/lib/data/authors';
+import { filterByLocale } from '@/lib/data/locale-filter';
 
 const GENRE_LABELS: Record<Story['genre'], string> = {
   mafia: 'Mafia & Dark',
@@ -43,7 +44,7 @@ export default async function ChannelPage({
   const author = findAuthor(id);
   if (!author) notFound();
 
-  const channelStories = filterByAuthor(allStories, id);
+  const channelStories = filterByLocale(filterByAuthor(allStories, id), locale);
 
   // Deterministic mock numbers seeded from author id
   const seed = id.split('').reduce((s, c) => s + c.charCodeAt(0), 0);
@@ -59,7 +60,7 @@ export default async function ChannelPage({
   const otherChannels = authors.filter((a) => a.id !== id);
   const crossPromo: { story: Story; from: typeof author }[] = [];
   for (const a of otherChannels) {
-    const pick = filterByAuthor(allStories, a.id)[0];
+    const pick = filterByLocale(filterByAuthor(allStories, a.id), locale)[0];
     if (pick) crossPromo.push({ story: pick, from: a });
     if (crossPromo.length === 4) break;
   }

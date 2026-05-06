@@ -3,6 +3,8 @@ import { setRequestLocale } from 'next-intl/server';
 import { Row } from '@/components/catalog/Row';
 import { FlameIcon } from '@/components/icons/FlameIcon';
 import { hotStories, hotByGenre } from '@/lib/data/hot';
+import { filterByLocale } from '@/lib/data/locale-filter';
+import type { Story } from '@/lib/data/stories';
 
 export default async function HotPage({
   params,
@@ -12,7 +14,10 @@ export default async function HotPage({
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const featured = hotStories[0];
+  const localeHot = filterByLocale(hotStories, locale);
+  const featured = localeHot[0];
+  const hotByGenreInLocale = (g: Story['genre']) =>
+    filterByLocale(hotByGenre(g), locale);
 
   return (
     <>
@@ -56,19 +61,18 @@ export default async function HotPage({
           </p>
 
           <div className="flex flex-wrap items-center gap-3">
-            <Stat value={`${hotStories.length} stories`} />
+            <Stat value={`${localeHot.length} stories`} />
             <Stat value="18+ only" />
-            <Stat value="4 languages" />
           </div>
         </div>
       </section>
 
-      <SubRow title="Hot Mafia" highlight="Mafia" stories={hotByGenre('mafia')} />
-      <SubRow title="Hot Forbidden" highlight="Forbidden" stories={hotByGenre('forbidden')} />
-      <SubRow title="Hot Secret Baby" highlight="Secret" stories={hotByGenre('secret_baby')} />
-      <SubRow title="Hot Billionaire" highlight="Billionaire" stories={hotByGenre('billionaire')} />
-      <SubRow title="Hot Arranged" highlight="Arranged" stories={hotByGenre('arranged')} />
-      <SubRow title="Hot Second Chance" highlight="Second" stories={hotByGenre('second_chance')} />
+      <SubRow title="Hot Mafia" highlight="Mafia" stories={hotByGenreInLocale('mafia')} />
+      <SubRow title="Hot Forbidden" highlight="Forbidden" stories={hotByGenreInLocale('forbidden')} />
+      <SubRow title="Hot Secret Baby" highlight="Secret" stories={hotByGenreInLocale('secret_baby')} />
+      <SubRow title="Hot Billionaire" highlight="Billionaire" stories={hotByGenreInLocale('billionaire')} />
+      <SubRow title="Hot Arranged" highlight="Arranged" stories={hotByGenreInLocale('arranged')} />
+      <SubRow title="Hot Second Chance" highlight="Second" stories={hotByGenreInLocale('second_chance')} />
     </>
   );
 }

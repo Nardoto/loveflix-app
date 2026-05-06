@@ -4,6 +4,7 @@ import { ChevronRight, Headphones } from 'lucide-react';
 import { Link } from '@/lib/navigation';
 import { authors, filterByAuthor } from '@/lib/data/authors';
 import { allStories } from '@/lib/data/stories';
+import { filterByLocale } from '@/lib/data/locale-filter';
 
 export default async function ChannelsIndex({
   params,
@@ -12,6 +13,8 @@ export default async function ChannelsIndex({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+
+  const localeAll = filterByLocale(allStories, locale);
 
   return (
     <div className="pt-24 md:pt-28 px-5 md:px-10 lg:px-14 max-w-6xl mx-auto pb-20">
@@ -29,7 +32,7 @@ export default async function ChannelsIndex({
 
       <div className="grid sm:grid-cols-2 gap-4 md:gap-6">
         {authors.map((a) => {
-          const count = filterByAuthor(allStories, a.id).length;
+          const count = filterByAuthor(localeAll, a.id).length;
           return (
             <Link
               key={a.id}

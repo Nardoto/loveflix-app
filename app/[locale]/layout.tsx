@@ -17,13 +17,14 @@ import { TopBar } from '@/components/layout/TopBar';
 import { BottomTabBar } from '@/components/layout/BottomTabBar';
 import { SearchProvider } from '@/components/layout/SearchProvider';
 import { PWASupport } from '@/components/layout/PWASupport';
+import { getUser } from '@/lib/auth-helpers';
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
 
 // One distinct script font per creator — gives each channel its own signature.
-const fontLena = Sacramento({
-  variable: '--font-lena',
+const fontEmilly = Sacramento({
+  variable: '--font-emilly',
   weight: '400',
   subsets: ['latin'],
   display: 'swap',
@@ -72,17 +73,33 @@ export default async function LocaleLayout({
 
   setRequestLocale(locale);
   const messages = await getMessages();
+  // Resolve current user once per request and pass down — avoids hitting
+  // Supabase from inside the client TopBar component.
+  const user = await getUser();
+  const userMeta = user
+    ? {
+        email: user.email ?? null,
+        displayName:
+          (user.user_metadata?.full_name as string | undefined) ||
+          (user.user_metadata?.name as string | undefined) ||
+          (user.email ? user.email.split('@')[0] : 'You'),
+        avatarUrl:
+          (user.user_metadata?.avatar_url as string | undefined) ||
+          (user.user_metadata?.picture as string | undefined) ||
+          null,
+      }
+    : null;
 
   return (
     <html
       lang={locale}
-      className={`${geistSans.variable} ${geistMono.variable} ${fontLena.variable} ${fontDavid.variable} ${fontAdam.variable} ${fontMarcus.variable} ${fontReader.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${fontEmilly.variable} ${fontDavid.variable} ${fontAdam.variable} ${fontMarcus.variable} ${fontReader.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-bg-deep text-text-soft">
         <NextIntlClientProvider messages={messages}>
           <PostHogProvider>
             <SearchProvider>
-              <TopBar />
+              <TopBar user={userMeta} />
               {/* pb-20 reserves room for the bottom tab bar on mobile so
                   the last row isn't hidden behind it. */}
               <main className="min-h-screen pb-20 lg:pb-0">{children}</main>

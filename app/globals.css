@@ -168,11 +168,11 @@ button, [role="button"], a {
   }
 }
 
-/* Add vertical padding inside the scroll track so hover lift has room
-   without overflowing into the next row's title. */
+/* Tight vertical padding on the scroll track — Disney+/Netflix density.
+   Just enough room for the hover lift without bleeding into the next row. */
 .row-track {
-  padding-block: 14px;
-  padding-inline-start: 1px; /* avoid clipping the focus ring of the first card */
+  padding-block: 6px;
+  padding-inline-start: 1px;
 }
 
 /* Hero radial accent */
