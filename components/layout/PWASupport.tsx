@@ -1,12 +1,12 @@
 'use client';
 
-// One-line client component that registers the service worker on mount and
-// renders the install banner. Mounted once at the locale layout level.
+// Registers the service worker on mount and renders the install banner.
+// The InstallProvider higher up in the tree owns the actual install
+// state; this component is just the side-effect host.
 //
-// The service worker is what makes Chrome surface "Install app" instead of
-// "Add to home screen" (the latter is just a Chrome bookmark with the URL
-// bar still showing). The banner gates on visit count + delay so it never
-// pops on the first visit.
+// The service worker is what makes Chrome surface "Install app" instead
+// of "Add to home screen" (the latter is just a Chrome bookmark with
+// the URL bar still showing).
 
 import { useEffect } from 'react';
 import { InstallBanner } from './InstallBanner';
@@ -14,12 +14,9 @@ import { InstallBanner } from './InstallBanner';
 export function PWASupport() {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
-    // Register passively — failure is non-fatal (user can still browse).
-    navigator.serviceWorker
-      .register('/sw.js', { scope: '/' })
-      .catch(() => {
-        /* swallow — most likely an expired secure context (HTTP) */
-      });
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {
+      /* non-fatal: usually an expired secure context (HTTP) */
+    });
   }, []);
 
   return <InstallBanner />;

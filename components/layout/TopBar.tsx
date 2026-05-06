@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MobileNav } from './MobileNav';
 import { useSearch } from './SearchProvider';
+import { InstallAppMenuItem } from './InstallAppMenuItem';
 import { signOut } from '@/app/actions/auth';
 
 export type TopBarUser = {
@@ -202,6 +203,7 @@ export function TopBar({ user }: { user?: TopBarUser } = {}) {
                     <DropdownMenuItem asChild>
                       <Link href="/studio">{t('studio')}</Link>
                     </DropdownMenuItem>
+                    <InstallAppMenuItem />
                     <DropdownMenuSeparator />
                     <form action={signOut}>
                       <button
@@ -220,6 +222,7 @@ export function TopBar({ user }: { user?: TopBarUser } = {}) {
                         <LogIn className="size-4" /> {t('signIn')}
                       </Link>
                     </DropdownMenuItem>
+                    <InstallAppMenuItem />
                   </>
                 )}
               </DropdownMenuContent>

@@ -17,6 +17,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { BottomTabBar } from '@/components/layout/BottomTabBar';
 import { SearchProvider } from '@/components/layout/SearchProvider';
 import { PWASupport } from '@/components/layout/PWASupport';
+import { InstallProvider } from '@/components/layout/InstallProvider';
 import { getUser } from '@/lib/auth-helpers';
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
@@ -99,6 +100,7 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
           <PostHogProvider>
             <SearchProvider>
+              <InstallProvider>
               <TopBar user={userMeta} />
               {/* pb-20 reserves room for the bottom tab bar on mobile so
                   the last row isn't hidden behind it. */}
@@ -145,6 +147,7 @@ export default async function LocaleLayout({
               </footer>
               <BottomTabBar />
               <PWASupport />
+              </InstallProvider>
             </SearchProvider>
           </PostHogProvider>
         </NextIntlClientProvider>
