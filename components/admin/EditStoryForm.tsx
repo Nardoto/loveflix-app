@@ -120,9 +120,11 @@ export function EditStoryForm({
         hasEbook: meta.hasEbook,
         coverKey: coverKey ?? undefined,
         videoKey: videoKey ?? undefined,
+        // Strip undefined antes de enviar — partialRecord aceita keys
+        // omitidas mas não keys com undefined.
         audioKeyByLocale: Object.fromEntries(
           Object.entries(audioKeys).filter(([, v]) => !!v),
-        ) as Record<'en' | 'de' | 'fr' | 'es', string>,
+        ),
       });
       if (res.ok) {
         setSavedAt(Date.now());
@@ -352,10 +354,17 @@ function AssetSlot({
   locale?: 'en' | 'de' | 'fr' | 'es';
 }) {
   const upload = useMultipartUpload();
-  const [showInput, setShowInput] = useState(!currentKey);
+  // pickingNew força o picker mesmo quando ainda existe um asset salvo.
+  // Sem isso, clicar Substituir não fazia nada visualmente — o card
+  // verde voltava porque `currentKey` continuava preenchido.
+  const [pickingNew, setPickingNew] = useState(false);
+  const isUploading = ['requesting', 'uploading', 'completing'].includes(upload.status);
+  const showSuccess = !!currentKey && !pickingNew && !isUploading;
+  const showPicker = !showSuccess && !isUploading;
 
   const handleFile = (file: File | undefined) => {
     if (!file) return;
+    setPickingNew(false);
     upload.start({
       storySlug: slug,
       bookNumber: 1,
@@ -364,14 +373,9 @@ function AssetSlot({
       file,
       filename: file.name,
     }).then((key) => {
-      if (key) {
-        onUploaded(key);
-        setShowInput(false);
-      }
+      if (key) onUploaded(key);
     });
   };
-
-  const isUploading = ['requesting', 'uploading', 'completing'].includes(upload.status);
 
   return (
     <div className="rounded-xl bg-bg-elevated border border-white/[0.06] p-4">
@@ -419,7 +423,7 @@ function AssetSlot({
             />
           </div>
         </div>
-      ) : showInput || !currentKey ? (
+      ) : showPicker ? (
         <label className="block cursor-pointer text-center py-3 px-3 rounded-lg border border-dashed border-white/[0.10] hover:border-rose-bright/50 hover:bg-rose/[0.03] transition-colors">
           <input
             type="file"
@@ -428,13 +432,13 @@ function AssetSlot({
             onChange={(e) => handleFile(e.target.files?.[0])}
           />
           <span className="text-[12px] text-rose-bright font-semibold">
-            Escolher arquivo
+            {pickingNew ? 'Escolher novo arquivo' : 'Escolher arquivo'}
           </span>
         </label>
       ) : (
         <button
           type="button"
-          onClick={() => setShowInput(true)}
+          onClick={() => setPickingNew(true)}
           className="text-[12px] text-rose-bright hover:text-rose font-semibold inline-flex items-center gap-1.5"
         >
           <RefreshCw className="size-3.5" /> Substituir

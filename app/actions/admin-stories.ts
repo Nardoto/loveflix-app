@@ -21,6 +21,37 @@ type Result<T = void> =
 
 const SLUG_RE = /^[a-z0-9-]+$/;
 
+/** Translate a Zod validation error into something an operator can act on. */
+function humanZod(err: z.ZodError): string {
+  const FIELD_LABEL: Record<string, string> = {
+    title: 'Título',
+    slug: 'URL (slug)',
+    synopsis: 'Sinopse',
+    genre: 'Gênero',
+    authorId: 'Canal/Autor',
+    totalMinutes: 'Duração',
+    coverKey: 'Capa',
+    videoKey: 'Vídeo',
+    audioKeyByLocale: 'Áudio',
+  };
+  const lines = err.issues.map((i) => {
+    const top = i.path[0]?.toString() ?? '';
+    const label = FIELD_LABEL[top] ?? top;
+    if (top === 'audioKeyByLocale') {
+      const locale = i.path[1]?.toString().toUpperCase() ?? '';
+      return `Áudio ${locale}: arquivo inválido (re-suba ou remova)`;
+    }
+    if (i.code === 'too_small') return `${label}: muito curto`;
+    if (i.code === 'too_big') return `${label}: muito longo`;
+    if (i.code === 'invalid_format') return `${label}: formato inválido`;
+    if (i.code === 'invalid_type') return `${label}: campo obrigatório`;
+    if (i.code === 'invalid_value') return `${label}: valor não permitido`;
+    return `${label}: ${i.message}`;
+  });
+  // Dedup
+  return Array.from(new Set(lines)).join(' · ');
+}
+
 const CreateInput = z.object({
   // The form generates the slug client-side from the title; we still
   // validate it here.
@@ -52,8 +83,11 @@ const CreateInput = z.object({
   coverKey: z.string().min(1),
   videoKey: z.string().optional(),
   // Locale → R2 key. Empty when the title is text-only / coming-soon.
+  // Zod v4: z.record(enum, value) is EXHAUSTIVE — exige todas as chaves
+  // do enum. Pra aceitar parcial (só EN, ou só DE, etc.) precisa de
+  // partialRecord.
   audioKeyByLocale: z
-    .record(z.enum(['en', 'de', 'fr', 'es']), z.string().min(1))
+    .partialRecord(z.enum(['en', 'de', 'fr', 'es']), z.string().min(1))
     .optional(),
 });
 
@@ -67,12 +101,7 @@ export async function createStory(
 
   const parsed = CreateInput.safeParse(raw);
   if (!parsed.success) {
-    return {
-      ok: false,
-      error: parsed.error.issues
-        .map((i) => `${i.path.join('.')}: ${i.message}`)
-        .join('; '),
-    };
+    return { ok: false, error: humanZod(parsed.error) };
   }
   const v = parsed.data;
 
@@ -148,10 +177,7 @@ export async function updateStory(
 
   const parsed = UpdateInput.safeParse(raw);
   if (!parsed.success) {
-    return {
-      ok: false,
-      error: parsed.error.issues.map((i) => i.message).join('; '),
-    };
+    return { ok: false, error: humanZod(parsed.error) };
   }
   const v = parsed.data;
 

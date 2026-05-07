@@ -1,16 +1,21 @@
 'use client';
 
-// Multistep upload form for /admin/stories/new. Each step has its own
-// validation; the operator can't advance with missing fields.
+// YouTube Studio-style upload form. Two-column layout: form fields on
+// the left, sticky preview panel on the right that shows what the user
+// is uploading + the final StoryCard preview as it'll appear on the
+// home. 3 steps:
 //
-//   1. Metadata        — title, slug, synopsis, genre, author, flags
-//   2. Cover           — single 16:9 image (multipart still works for >5MB)
-//   3. Video           — MP4, multipart with progress + cancelable
-//   4. Audio (4 langs) — EN/DE/FR/ES, all optional but at least one if not
-//                        coming-soon
-//   5. Review          — recap + Publish button → calls createStory()
+//   1. Detalhes — title, slug, synopsis, genre, author, duration, flags
+//   2. Mídia    — cover + video + 4 audio dropzones
+//   3. Revisão  — full preview + Publish button
+//
+// All upload steps share the same UploadSlot which fixes the Substituir
+// bug from v1: clicking Replace now sets a local `pickingNew` flag so
+// the file picker shows even when the parent's `existing` key is still
+// set from the previous upload.
 
 import { useMemo, useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -24,6 +29,9 @@ import {
   Upload,
   Video,
   X,
+  Heart,
+  Sparkle,
+  Flame,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useMultipartUpload, type UploadKind } from '@/lib/upload/useMultipartUpload';
@@ -50,11 +58,11 @@ const GENRES: Array<{ id: Genre; label: string }> = [
   { id: 'mood', label: 'Short Mood' },
 ];
 
-const LOCALES: Array<{ id: 'en' | 'de' | 'fr' | 'es'; label: string }> = [
-  { id: 'en', label: 'English' },
-  { id: 'de', label: 'Deutsch' },
-  { id: 'fr', label: 'Français' },
-  { id: 'es', label: 'Español' },
+const LOCALES = [
+  { id: 'en' as const, label: 'English', flag: '🇺🇸' },
+  { id: 'de' as const, label: 'Deutsch', flag: '🇩🇪' },
+  { id: 'fr' as const, label: 'Français', flag: '🇫🇷' },
+  { id: 'es' as const, label: 'Español', flag: '🇪🇸' },
 ];
 
 type Author = { id: string; name: string; tagline: string };
@@ -84,12 +92,10 @@ type Meta = {
   hasEbook: boolean;
 };
 
-type StepId = 'meta' | 'cover' | 'video' | 'audio' | 'review';
+type StepId = 'meta' | 'media' | 'review';
 const STEPS: Array<{ id: StepId; label: string }> = [
-  { id: 'meta', label: 'Metadata' },
-  { id: 'cover', label: 'Capa' },
-  { id: 'video', label: 'Vídeo' },
-  { id: 'audio', label: 'Áudios' },
+  { id: 'meta', label: 'Detalhes' },
+  { id: 'media', label: 'Mídia' },
   { id: 'review', label: 'Revisão' },
 ];
 
@@ -110,12 +116,15 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
     hasEbook: false,
   });
   const [coverKey, setCoverKey] = useState<string | null>(null);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
   const [videoKey, setVideoKey] = useState<string | null>(null);
+  const [videoFilename, setVideoFilename] = useState<string | null>(null);
   const [audioKeys, setAudioKeys] = useState<Partial<Record<'en' | 'de' | 'fr' | 'es', string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const stepIndex = STEPS.findIndex((s) => s.id === step);
+
   const canAdvance = useMemo(() => {
     switch (step) {
       case 'meta':
@@ -124,14 +133,10 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
           meta.slug.length >= 3 &&
           meta.synopsis.length >= 10
         );
-      case 'cover':
-        return coverKey !== null;
-      case 'video':
-        // Video is optional for coming-soon stories.
-        return meta.isComingSoon || videoKey !== null;
-      case 'audio':
-        // At least one audio for non-coming-soon.
-        return meta.isComingSoon || Object.keys(audioKeys).length > 0;
+      case 'media':
+        if (!coverKey) return false;
+        if (meta.isComingSoon) return true;
+        return videoKey !== null && Object.keys(audioKeys).length > 0;
       case 'review':
         return true;
     }
@@ -167,11 +172,9 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
       hasEbook: meta.hasEbook,
       coverKey,
       videoKey: videoKey ?? undefined,
-      // Strip undefined entries before passing — Zod's record schema is
-      // typed as Record<...>, not Partial<Record<...>>.
       audioKeyByLocale: Object.fromEntries(
         Object.entries(audioKeys).filter(([, v]) => !!v),
-      ) as Record<'en' | 'de' | 'fr' | 'es', string>,
+      ),
     });
     setSubmitting(false);
     if (res.ok) {
@@ -182,18 +185,21 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
     }
   };
 
+  const author = authors.find((a) => a.id === meta.authorId);
+  const audioCount = Object.keys(audioKeys).length;
+
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-[1280px]">
       {/* Step indicator */}
-      <ol className="flex items-center gap-2 mb-8">
+      <ol className="flex items-center gap-3 mb-8">
         {STEPS.map((s, i) => {
           const done = i < stepIndex;
           const active = i === stepIndex;
           return (
-            <li key={s.id} className="flex items-center gap-2 flex-1">
+            <li key={s.id} className="flex items-center gap-3 flex-1">
               <span
                 className={[
-                  'grid place-items-center size-7 rounded-full text-[11px] font-bold shrink-0',
+                  'grid place-items-center size-8 rounded-full text-[12px] font-bold shrink-0 transition-colors',
                   done
                     ? 'bg-rose text-white'
                     : active
@@ -205,12 +211,8 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
               </span>
               <span
                 className={[
-                  'text-[12px] font-bold uppercase tracking-wider hidden sm:inline',
-                  active
-                    ? 'text-white'
-                    : done
-                      ? 'text-rose-bright'
-                      : 'text-text-mute',
+                  'text-[13px] font-bold uppercase tracking-wider',
+                  active ? 'text-white' : done ? 'text-rose-bright' : 'text-text-mute',
                 ].join(' ')}
               >
                 {s.label}
@@ -223,58 +225,62 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
         })}
       </ol>
 
-      {/* Step bodies */}
-      {step === 'meta' && (
-        <MetaStep meta={meta} setMeta={setMeta} authors={authors} slugify={slugify} />
-      )}
-      {step === 'cover' && (
-        <UploadStep
-          slug={meta.slug}
-          kind="cover"
-          accept="image/*"
-          icon={<ImageIcon className="size-7" />}
-          label="Capa 16:9"
-          hint="JPEG ou PNG. Recomendado 1920×1080."
-          existing={coverKey}
-          onUploaded={setCoverKey}
-        />
-      )}
-      {step === 'video' && (
-        <UploadStep
-          slug={meta.slug}
-          kind="video"
-          accept="video/mp4,video/*"
-          icon={<Video className="size-7" />}
-          label="Vídeo principal"
-          hint="MP4, qualquer tamanho. Upload em chunks de 50MB."
-          existing={videoKey}
-          onUploaded={setVideoKey}
-          optional={meta.isComingSoon}
-        />
-      )}
-      {step === 'audio' && (
-        <AudioStep
-          slug={meta.slug}
-          audioKeys={audioKeys}
-          setAudioKeys={setAudioKeys}
-          required={!meta.isComingSoon}
-        />
-      )}
-      {step === 'review' && (
-        <ReviewStep
-          meta={meta}
-          coverKey={coverKey}
-          videoKey={videoKey}
-          audioKeys={audioKeys}
-          authors={authors}
-          submitting={submitting}
-          error={submitError}
-          onSubmit={handleSubmit}
-        />
-      )}
+      {/* Two-column body — left form, right preview panel */}
+      <div className="grid lg:grid-cols-[1fr_360px] gap-8">
+        {/* LEFT — form */}
+        <div className="min-w-0">
+          {step === 'meta' && (
+            <MetaStep meta={meta} setMeta={setMeta} authors={authors} />
+          )}
+          {step === 'media' && (
+            <MediaStep
+              slug={meta.slug}
+              isComingSoon={meta.isComingSoon}
+              coverKey={coverKey}
+              videoKey={videoKey}
+              audioKeys={audioKeys}
+              onCoverUploaded={(key, file) => {
+                setCoverKey(key);
+                if (file) setCoverPreviewUrl(URL.createObjectURL(file));
+              }}
+              onVideoUploaded={(key, file) => {
+                setVideoKey(key);
+                if (file) setVideoFilename(file.name);
+              }}
+              onAudioUploaded={(locale, key) =>
+                setAudioKeys((prev) => ({ ...prev, [locale]: key }))
+              }
+            />
+          )}
+          {step === 'review' && (
+            <ReviewStep
+              meta={meta}
+              author={author}
+              coverPreviewUrl={coverPreviewUrl}
+              hasVideo={!!videoKey}
+              audioLocales={Object.keys(audioKeys) as Array<'en' | 'de' | 'fr' | 'es'>}
+              error={submitError}
+            />
+          )}
+        </div>
+
+        {/* RIGHT — sticky preview panel (hidden on small screens) */}
+        <aside className="hidden lg:block">
+          <div className="sticky top-8 space-y-4">
+            <PreviewPanel
+              meta={meta}
+              author={author}
+              coverPreviewUrl={coverPreviewUrl}
+              videoFilename={videoFilename}
+              audioCount={audioCount}
+              hasVideo={!!videoKey}
+            />
+          </div>
+        </aside>
+      </div>
 
       {/* Nav */}
-      <div className="flex items-center justify-between mt-8 pt-6 border-t border-white/[0.06]">
+      <div className="flex items-center justify-between mt-10 pt-6 border-t border-white/[0.06]">
         <Button
           variant="glass"
           onClick={prev}
@@ -304,20 +310,18 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
   );
 }
 
-// ---------------------------------------------------------------------
-// Step components
-// ---------------------------------------------------------------------
+// =====================================================================
+// STEP 1 — Detalhes
+// =====================================================================
 
 function MetaStep({
   meta,
   setMeta,
   authors,
-  slugify,
 }: {
   meta: Meta;
   setMeta: React.Dispatch<React.SetStateAction<Meta>>;
   authors: Author[];
-  slugify: (s: string) => string;
 }) {
   return (
     <div className="space-y-5">
@@ -327,15 +331,12 @@ function MetaStep({
           value={meta.title}
           onChange={(e) => {
             const title = e.target.value;
-            // Auto-derive slug while it stays empty or matches the
-            // previous auto-derivation. Once the operator edits the slug
-            // manually, leave it alone.
             const auto = slugify(meta.title);
             const slugUntouched = meta.slug === '' || meta.slug === auto;
             setMeta({ ...meta, title, slug: slugUntouched ? slugify(title) : meta.slug });
           }}
           maxLength={280}
-          placeholder="The Mafia's Bride"
+          placeholder="Como aparece pra usuária na home"
           className="input"
         />
       </Field>
@@ -356,7 +357,7 @@ function MetaStep({
           onChange={(e) => setMeta({ ...meta, synopsis: e.target.value })}
           maxLength={4000}
           rows={5}
-          placeholder="Quando ela cruzou o salão de baile..."
+          placeholder="O que vai aparecer no hero e na página da story."
           className="input resize-y min-h-[120px]"
         />
       </Field>
@@ -404,148 +405,473 @@ function MetaStep({
         </Field>
       </div>
 
-      <fieldset className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        <legend className="block text-[11px] font-bold uppercase tracking-[0.18em] text-text-mute mb-2">
+      <fieldset>
+        <legend className="block text-[11px] font-bold uppercase tracking-[0.18em] text-text-mute mb-2.5">
           Flags
         </legend>
-        <Toggle
-          label="Free"
-          checked={meta.isFree}
-          onChange={(v) => setMeta({ ...meta, isFree: v })}
-        />
-        <Toggle
-          label="Premium"
-          checked={meta.isPremium}
-          onChange={(v) => setMeta({ ...meta, isPremium: v })}
-        />
-        <Toggle
-          label="Hot"
-          checked={meta.isHot}
-          onChange={(v) => setMeta({ ...meta, isHot: v })}
-        />
-        <Toggle
-          label="Coming Soon"
-          checked={meta.isComingSoon}
-          onChange={(v) => setMeta({ ...meta, isComingSoon: v })}
-        />
-        <Toggle
-          label="Tem ebook"
-          checked={meta.hasEbook}
-          onChange={(v) => setMeta({ ...meta, hasEbook: v })}
-        />
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <Toggle label="Free" checked={meta.isFree} onChange={(v) => setMeta({ ...meta, isFree: v })} />
+          <Toggle label="Premium" checked={meta.isPremium} onChange={(v) => setMeta({ ...meta, isPremium: v })} />
+          <Toggle label="Hot" checked={meta.isHot} onChange={(v) => setMeta({ ...meta, isHot: v })} />
+          <Toggle label="Coming Soon" checked={meta.isComingSoon} onChange={(v) => setMeta({ ...meta, isComingSoon: v })} />
+          <Toggle label="Tem ebook" checked={meta.hasEbook} onChange={(v) => setMeta({ ...meta, hasEbook: v })} />
+        </div>
       </fieldset>
-
-      <style jsx>{`
-        .input {
-          width: 100%;
-          padding: 10px 12px;
-          background: var(--bg-card, #110a14);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 10px;
-          color: white;
-          font-size: 14px;
-          outline: none;
-          transition: border-color 0.15s;
-        }
-        .input:focus {
-          border-color: var(--rose, #e85d8a);
-        }
-      `}</style>
     </div>
   );
 }
 
-function UploadStep({
+// =====================================================================
+// STEP 2 — Mídia (cover + video + 4 áudios todos juntos)
+// =====================================================================
+
+function MediaStep({
+  slug,
+  isComingSoon,
+  coverKey,
+  videoKey,
+  audioKeys,
+  onCoverUploaded,
+  onVideoUploaded,
+  onAudioUploaded,
+}: {
+  slug: string;
+  isComingSoon: boolean;
+  coverKey: string | null;
+  videoKey: string | null;
+  audioKeys: Partial<Record<'en' | 'de' | 'fr' | 'es', string>>;
+  onCoverUploaded: (key: string, file?: File) => void;
+  onVideoUploaded: (key: string, file?: File) => void;
+  onAudioUploaded: (locale: 'en' | 'de' | 'fr' | 'es', key: string) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <Section title="Capa" hint="Aparece no carrossel da home e na página da story (16:9 recomendado).">
+        <UploadSlot
+          slug={slug}
+          kind="cover"
+          accept="image/*"
+          existing={coverKey}
+          onUploaded={onCoverUploaded}
+          label="Escolher imagem"
+        />
+      </Section>
+
+      <Section
+        title="Vídeo principal"
+        hint={isComingSoon
+          ? 'Opcional — story marcada como Coming Soon.'
+          : 'MP4 — pode ser pesado, sobe em chunks de 50MB.'}
+      >
+        <UploadSlot
+          slug={slug}
+          kind="video"
+          accept="video/mp4,video/*"
+          existing={videoKey}
+          onUploaded={onVideoUploaded}
+          label="Escolher vídeo"
+        />
+      </Section>
+
+      <Section
+        title="Áudios por idioma"
+        hint="Sobe MP3 pra cada idioma que essa story vai estar disponível. Se um idioma não tiver áudio, a story simplesmente não aparece pra usuárias daquela locale."
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {LOCALES.map((l) => (
+            <UploadSlot
+              key={l.id}
+              slug={slug}
+              kind="audio"
+              locale={l.id}
+              accept="audio/mpeg,audio/mp3,audio/*"
+              existing={audioKeys[l.id] ?? null}
+              onUploaded={(key) => onAudioUploaded(l.id, key)}
+              label={`${l.flag} ${l.label}`}
+              compact
+            />
+          ))}
+        </div>
+      </Section>
+    </div>
+  );
+}
+
+// =====================================================================
+// STEP 3 — Revisão (preview real do StoryCard)
+// =====================================================================
+
+function ReviewStep({
+  meta,
+  author,
+  coverPreviewUrl,
+  hasVideo,
+  audioLocales,
+  error,
+}: {
+  meta: Meta;
+  author: Author | undefined;
+  coverPreviewUrl: string | null;
+  hasVideo: boolean;
+  audioLocales: Array<'en' | 'de' | 'fr' | 'es'>;
+  error: string | null;
+}) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-[13px] font-bold uppercase tracking-wider text-text-mute mb-3">
+          Como vai aparecer pra usuária
+        </h3>
+        <StoryCardPreview
+          title={meta.title}
+          coverUrl={coverPreviewUrl}
+          author={author}
+          isFree={meta.isFree}
+          isHot={meta.isHot}
+          isComingSoon={meta.isComingSoon}
+          locales={audioLocales}
+        />
+      </div>
+
+      <div className="rounded-2xl bg-bg-card border border-white/[0.06] p-5">
+        <h3 className="text-[13px] font-bold uppercase tracking-wider text-text-mute mb-3">
+          Checklist
+        </h3>
+        <ul className="space-y-2 text-[13px]">
+          <ChecklistItem ok label="Título" value={meta.title} />
+          <ChecklistItem ok label="Sinopse" value={`${meta.synopsis.length} caracteres`} />
+          <ChecklistItem ok label="Gênero" value={GENRES.find((g) => g.id === meta.genre)?.label ?? meta.genre} />
+          <ChecklistItem ok label="Autor" value={author?.name ?? '—'} />
+          <ChecklistItem ok label="Capa" value="enviada" />
+          <ChecklistItem
+            ok={meta.isComingSoon || hasVideo}
+            label="Vídeo"
+            value={hasVideo ? 'enviado' : meta.isComingSoon ? 'opcional (Coming Soon)' : 'faltando'}
+          />
+          <ChecklistItem
+            ok={meta.isComingSoon || audioLocales.length > 0}
+            label="Áudios"
+            value={
+              audioLocales.length > 0
+                ? `${audioLocales.length}/4 idiomas (${audioLocales.map((l) => l.toUpperCase()).join(' · ')})`
+                : meta.isComingSoon
+                  ? 'opcional (Coming Soon)'
+                  : 'faltando'
+            }
+          />
+        </ul>
+      </div>
+
+      {error && (
+        <div className="rounded-xl bg-red-500/10 border border-red-500/30 p-4">
+          <p className="text-[12px] font-bold uppercase tracking-wider text-red-300 mb-1">
+            Não consegui publicar
+          </p>
+          <p className="text-sm text-red-200 leading-relaxed">{error}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ChecklistItem({
+  ok,
+  label,
+  value,
+}: {
+  ok: boolean;
+  label: string;
+  value: string;
+}) {
+  return (
+    <li className="flex items-baseline gap-2.5">
+      <span
+        className={[
+          'shrink-0 size-4 rounded-full grid place-items-center text-[10px] mt-0.5',
+          ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300',
+        ].join(' ')}
+      >
+        {ok ? <Check className="size-2.5" /> : '!'}
+      </span>
+      <span className="text-text-dim w-24 shrink-0">{label}</span>
+      <span className="text-text-soft flex-1 truncate">{value}</span>
+    </li>
+  );
+}
+
+// =====================================================================
+// Right column — sticky preview panel
+// =====================================================================
+
+function PreviewPanel({
+  meta,
+  author,
+  coverPreviewUrl,
+  videoFilename,
+  audioCount,
+  hasVideo,
+}: {
+  meta: Meta;
+  author: Author | undefined;
+  coverPreviewUrl: string | null;
+  videoFilename: string | null;
+  audioCount: number;
+  hasVideo: boolean;
+}) {
+  return (
+    <div className="rounded-2xl bg-bg-card border border-white/[0.06] overflow-hidden">
+      {/* Cover preview area (16:9) */}
+      <div className="relative aspect-video bg-bg-deep">
+        {coverPreviewUrl ? (
+          <Image
+            src={coverPreviewUrl}
+            alt=""
+            fill
+            sizes="360px"
+            className="object-cover"
+            unoptimized
+          />
+        ) : (
+          <div className="absolute inset-0 grid place-items-center text-text-mute">
+            <div className="text-center">
+              <ImageIcon className="size-8 mx-auto mb-2 opacity-50" />
+              <p className="text-[11px] uppercase tracking-wider">Sem capa</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Body */}
+      <div className="p-4 space-y-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-mute mb-1">
+            Pré-visualização
+          </p>
+          <h4 className="font-serif italic font-bold text-white text-[15px] leading-snug line-clamp-2 min-h-[2.4em]">
+            {meta.title || 'Sem título'}
+          </h4>
+          {author && (
+            <p className="text-[11px] text-text-dim mt-1">por {author.name}</p>
+          )}
+        </div>
+
+        <div className="space-y-1.5 pt-3 border-t border-white/[0.05]">
+          <PreviewRow
+            label="Capa"
+            value={coverPreviewUrl ? 'Enviada' : 'Faltando'}
+            ok={!!coverPreviewUrl}
+          />
+          <PreviewRow
+            label="Vídeo"
+            value={
+              hasVideo
+                ? videoFilename ?? 'Enviado'
+                : meta.isComingSoon
+                  ? '—'
+                  : 'Faltando'
+            }
+            ok={hasVideo || meta.isComingSoon}
+          />
+          <PreviewRow
+            label="Áudios"
+            value={`${audioCount}/4 idiomas`}
+            ok={audioCount > 0 || meta.isComingSoon}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PreviewRow({
+  label,
+  value,
+  ok,
+}: {
+  label: string;
+  value: string;
+  ok: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-[11px] uppercase tracking-wider text-text-mute">
+        {label}
+      </span>
+      <span
+        className={[
+          'text-[12px] font-semibold truncate',
+          ok ? 'text-emerald-300' : 'text-amber-300',
+        ].join(' ')}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+// =====================================================================
+// Story card — actually rendered as it'll appear on the home
+// =====================================================================
+
+function StoryCardPreview({
+  title,
+  coverUrl,
+  author,
+  isFree,
+  isHot,
+  isComingSoon,
+  locales,
+}: {
+  title: string;
+  coverUrl: string | null;
+  author: Author | undefined;
+  isFree: boolean;
+  isHot: boolean;
+  isComingSoon: boolean;
+  locales: string[];
+}) {
+  return (
+    <div className="max-w-[340px]">
+      <div className="relative aspect-video rounded-xl overflow-hidden bg-bg-card shadow-lg shadow-black/50 ring-1 ring-white/10">
+        {coverUrl ? (
+          <Image
+            src={coverUrl}
+            alt=""
+            fill
+            sizes="340px"
+            className="object-cover object-[center_28%]"
+            unoptimized
+          />
+        ) : (
+          <div className="absolute inset-0 grid place-items-center text-text-mute bg-bg-deep">
+            <ImageIcon className="size-8 opacity-50" />
+          </div>
+        )}
+        {/* badges */}
+        <div className="absolute top-2 left-2 flex flex-col gap-1">
+          {isComingSoon && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gold-bright text-bg-deep text-[10px] font-bold">
+              SOON
+            </span>
+          )}
+          {!isComingSoon && isFree && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-amber-400 text-bg-deep text-[10px] font-bold">
+              <Sparkle className="size-3" /> FREE
+            </span>
+          )}
+          {!isComingSoon && isHot && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-red-500 text-white text-[10px] font-bold">
+              <Flame className="size-3" /> HOT
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="mt-2.5 px-0.5">
+        <h3 className="font-serif italic text-[14px] md:text-[15px] font-semibold text-white leading-snug line-clamp-2 min-h-[2.4em]">
+          {title || 'Sem título'}
+        </h3>
+        <div className="mt-1 flex items-baseline justify-between gap-2">
+          <p className="text-[11px] text-text-dim leading-none flex items-baseline gap-1 truncate min-w-0">
+            <span className="opacity-70">by</span>
+            <span className="text-gold-bright text-[14px] truncate">
+              {author?.name ?? '—'}
+            </span>
+          </p>
+          {locales.length > 0 && (
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-text-mute shrink-0">
+              {locales.map((l) => l.toUpperCase()).join(' · ')}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// Reusable upload slot — fixes the Substituir bug from v1
+// =====================================================================
+
+function UploadSlot({
   slug,
   kind,
+  locale,
   accept,
-  icon,
-  label,
-  hint,
   existing,
   onUploaded,
-  locale,
-  optional = false,
+  label,
+  compact = false,
 }: {
   slug: string;
   kind: UploadKind;
-  accept: string;
-  icon: React.ReactNode;
-  label: string;
-  hint: string;
-  existing: string | null;
-  onUploaded: (key: string) => void;
   locale?: 'en' | 'de' | 'fr' | 'es';
-  optional?: boolean;
+  accept: string;
+  existing: string | null;
+  onUploaded: (key: string, file?: File) => void;
+  label: string;
+  compact?: boolean;
 }) {
   const upload = useMultipartUpload();
+  // Local "show file picker" flag — gets set to true when user clicks
+  // Substituir, so the picker re-shows even though `existing` (parent
+  // state) is still set. Cleared when the new upload completes.
+  const [pickingNew, setPickingNew] = useState(false);
+
+  const isUploading =
+    upload.status === 'requesting' ||
+    upload.status === 'uploading' ||
+    upload.status === 'completing';
+  const showSuccess = !!existing && !pickingNew && !isUploading;
+  const showPicker = !showSuccess && !isUploading;
 
   const handleFile = (file: File | undefined) => {
     if (!file) return;
-    upload.start({
-      storySlug: slug,
-      bookNumber: 1,
-      kind,
-      locale,
-      file,
-      filename: file.name,
-    }).then((key) => {
-      if (key) onUploaded(key);
-    });
+    setPickingNew(false);
+    upload
+      .start({
+        storySlug: slug,
+        bookNumber: 1,
+        kind,
+        locale,
+        file,
+        filename: file.name,
+      })
+      .then((key) => {
+        if (key) onUploaded(key, file);
+      });
   };
 
-  if (existing && upload.status !== 'uploading' && upload.status !== 'completing') {
-    return (
-      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.05] p-5">
-        <div className="flex items-center gap-3 mb-3">
-          <span className="size-10 rounded-xl bg-emerald-500/20 grid place-items-center text-emerald-300">
-            <Check className="size-5" />
-          </span>
-          <div>
-            <p className="font-bold text-white text-sm">Upload concluído</p>
-            <p className="text-[11px] text-text-mute font-mono break-all">{existing}</p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => upload.reset()}
-          className="text-[12px] text-rose-bright hover:text-rose font-semibold inline-flex items-center gap-1.5"
-        >
-          <RefreshCw className="size-3.5" /> Substituir
-        </button>
-      </div>
-    );
-  }
+  // ---- States ------------------------------------------------------
 
-  if (upload.status === 'uploading' || upload.status === 'completing' || upload.status === 'requesting') {
+  if (isUploading) {
     const pct = Math.round(upload.progress * 100);
     return (
-      <div className="rounded-2xl border border-rose-bright/30 bg-rose/[0.05] p-5">
-        <div className="flex items-center gap-3 mb-4">
-          <span className="size-10 rounded-xl bg-rose-bright/20 grid place-items-center text-rose-bright">
-            <Loader2 className="size-5 animate-spin" />
+      <div className={`rounded-xl border border-rose-bright/30 bg-rose/[0.05] p-4 ${compact ? '' : 'p-5'}`}>
+        <div className="flex items-center gap-3 mb-3">
+          <span className="size-9 rounded-lg bg-rose-bright/20 grid place-items-center text-rose-bright shrink-0">
+            <Loader2 className="size-4 animate-spin" />
           </span>
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-white text-sm">
-              {upload.status === 'requesting' && 'Preparando...'}
+            <p className="text-[13px] font-bold text-white">
+              {upload.status === 'requesting' && 'Preparando…'}
               {upload.status === 'uploading' && `Enviando ${pct}%`}
-              {upload.status === 'completing' && 'Finalizando...'}
+              {upload.status === 'completing' && 'Finalizando…'}
             </p>
             <p className="text-[11px] text-text-mute">
-              {(upload.uploadedBytes / 1024 / 1024).toFixed(1)} MB de{' '}
+              {(upload.uploadedBytes / 1024 / 1024).toFixed(1)} de{' '}
               {(upload.totalBytes / 1024 / 1024).toFixed(1)} MB
             </p>
           </div>
           <button
             type="button"
             onClick={upload.abort}
-            aria-label="Cancelar upload"
-            className="size-9 grid place-items-center rounded-full bg-white/[0.05] hover:bg-white/[0.1] text-text-dim"
+            aria-label="Cancelar"
+            className="size-8 grid place-items-center rounded-full hover:bg-white/[0.05] text-text-dim shrink-0"
           >
             <X className="size-4" />
           </button>
         </div>
-        <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
+        <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-rose to-rose-bright transition-all"
             style={{ width: `${pct}%` }}
@@ -555,164 +881,113 @@ function UploadStep({
     );
   }
 
+  if (showSuccess) {
+    return (
+      <div className={`rounded-xl border border-emerald-500/30 bg-emerald-500/[0.05] p-4 ${compact ? '' : 'p-5'}`}>
+        <div className="flex items-center gap-3">
+          <span className="size-9 rounded-lg bg-emerald-500/20 grid place-items-center text-emerald-300 shrink-0">
+            <Check className="size-4" />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-bold text-white">{label}</p>
+            <p className="text-[10px] font-mono text-text-mute mt-0.5 line-clamp-1">
+              {existing}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setPickingNew(true)}
+            className="text-[11px] font-bold uppercase tracking-wider text-rose-bright hover:text-rose inline-flex items-center gap-1"
+          >
+            <RefreshCw className="size-3.5" /> Substituir
+          </button>
+        </div>
+        {upload.status === 'error' && upload.error && (
+          <p className="text-[11px] text-red-300 mt-2">{upload.error}</p>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <label className="block cursor-pointer rounded-2xl border-2 border-dashed border-white/[0.10] hover:border-rose-bright/50 hover:bg-rose/[0.03] transition-colors p-8 text-center">
+    <label
+      className={[
+        'block cursor-pointer rounded-xl border-2 border-dashed border-white/[0.10] hover:border-rose-bright/50 hover:bg-rose/[0.03] transition-colors',
+        compact ? 'p-4' : 'p-6 text-center',
+      ].join(' ')}
+    >
       <input
         type="file"
         className="hidden"
         accept={accept}
         onChange={(e) => handleFile(e.target.files?.[0])}
       />
-      <div className="size-14 mx-auto mb-3 rounded-2xl bg-rose-bright/10 grid place-items-center text-rose-bright">
-        {icon}
+      <div className={compact ? 'flex items-center gap-3' : ''}>
+        {!compact && (
+          <span className="size-12 mx-auto mb-3 rounded-xl bg-rose-bright/10 grid place-items-center text-rose-bright">
+            {kind === 'cover' ? (
+              <ImageIcon className="size-5" />
+            ) : kind === 'video' ? (
+              <Video className="size-5" />
+            ) : (
+              <Music className="size-5" />
+            )}
+          </span>
+        )}
+        {compact && (
+          <span className="size-8 rounded-lg bg-rose-bright/10 grid place-items-center text-rose-bright shrink-0">
+            <Music className="size-4" />
+          </span>
+        )}
+        <div className={compact ? 'flex-1 min-w-0' : ''}>
+          <p className={`font-bold text-white ${compact ? 'text-[13px]' : ''}`}>
+            {label}
+          </p>
+          {!compact && (
+            <p className="text-xs text-text-dim mt-1 inline-flex items-center gap-1.5">
+              <Upload className="size-3.5" /> Clique pra escolher arquivo
+            </p>
+          )}
+          {compact && (
+            <p className="text-[11px] text-text-dim mt-0.5">
+              Clique pra subir MP3
+            </p>
+          )}
+        </div>
       </div>
-      <p className="font-bold text-white">{label}</p>
-      <p className="text-xs text-text-dim mt-1">{hint}</p>
-      {optional && (
-        <p className="text-[10px] text-text-mute uppercase tracking-wider mt-3">
-          Opcional (story marcada como Coming Soon)
+      {pickingNew && (
+        <p className="text-[10px] text-text-mute mt-2 text-center">
+          Substituindo o arquivo anterior…
         </p>
       )}
-      <p className="text-[11px] text-rose-bright mt-4 inline-flex items-center gap-1.5">
-        <Upload className="size-3.5" /> Clique pra escolher arquivo
-      </p>
       {upload.status === 'error' && upload.error && (
-        <p className="text-xs text-red-400 mt-3">{upload.error}</p>
+        <p className="text-[11px] text-red-300 mt-2">{upload.error}</p>
       )}
     </label>
   );
 }
 
-function AudioStep({
-  slug,
-  audioKeys,
-  setAudioKeys,
-  required,
+// =====================================================================
+// Atoms
+// =====================================================================
+
+function Section({
+  title,
+  hint,
+  children,
 }: {
-  slug: string;
-  audioKeys: Partial<Record<'en' | 'de' | 'fr' | 'es', string>>;
-  setAudioKeys: React.Dispatch<
-    React.SetStateAction<Partial<Record<'en' | 'de' | 'fr' | 'es', string>>>
-  >;
-  required: boolean;
+  title: string;
+  hint?: string;
+  children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-4">
-      <p className="text-[13px] text-text-dim">
-        Sobe um áudio MP3 por idioma. Idiomas sem áudio simplesmente não
-        aparecem pros usuários daquela locale.{' '}
-        {required && (
-          <span className="text-amber-300">
-            (Pelo menos um é obrigatório porque a story não está marcada como Coming Soon.)
-          </span>
-        )}
-      </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {LOCALES.map((l) => (
-          <UploadStep
-            key={l.id}
-            slug={slug}
-            kind="audio"
-            locale={l.id}
-            accept="audio/mpeg,audio/mp3,audio/*"
-            icon={<Music className="size-5" />}
-            label={l.label}
-            hint="MP3"
-            existing={audioKeys[l.id] ?? null}
-            onUploaded={(key) => setAudioKeys((prev) => ({ ...prev, [l.id]: key }))}
-            optional
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ReviewStep({
-  meta,
-  coverKey,
-  videoKey,
-  audioKeys,
-  authors,
-  submitting,
-  error,
-  onSubmit,
-}: {
-  meta: Meta;
-  coverKey: string | null;
-  videoKey: string | null;
-  audioKeys: Partial<Record<string, string>>;
-  authors: Author[];
-  submitting: boolean;
-  error: string | null;
-  onSubmit: () => void;
-}) {
-  const author = authors.find((a) => a.id === meta.authorId);
-  const flags = [
-    meta.isFree && 'Free',
-    meta.isPremium && 'Premium',
-    meta.isHot && 'Hot',
-    meta.isComingSoon && 'Coming Soon',
-    meta.hasEbook && 'Ebook',
-  ].filter(Boolean);
-
-  return (
-    <div className="space-y-5">
-      <div className="rounded-2xl bg-bg-card border border-white/[0.06] p-5">
-        <h3 className="font-serif italic font-bold text-xl text-white mb-1">
-          {meta.title}
-        </h3>
-        <p className="text-[12px] text-text-mute font-mono mb-3">/s/{meta.slug}</p>
-        <p className="text-sm text-text-soft mb-4 line-clamp-3">{meta.synopsis}</p>
-        <dl className="grid grid-cols-2 sm:grid-cols-3 gap-y-2 text-[12px]">
-          <ReviewKv k="Gênero" v={meta.genre} />
-          <ReviewKv k="Autor" v={author?.name ?? meta.authorId} />
-          <ReviewKv k="Duração" v={`${meta.totalMinutes} min`} />
-          <ReviewKv k="Capa" v={coverKey ? '✓' : '—'} />
-          <ReviewKv k="Vídeo" v={videoKey ? '✓' : '—'} />
-          <ReviewKv
-            k="Áudios"
-            v={
-              Object.keys(audioKeys).length
-                ? Object.keys(audioKeys).join(' · ').toUpperCase()
-                : '—'
-            }
-          />
-          {flags.length > 0 && (
-            <ReviewKv k="Flags" v={flags.join(' · ')} className="col-span-full" />
-          )}
-        </dl>
-      </div>
-      {error && (
-        <div className="rounded-xl bg-red-500/10 border border-red-500/30 p-4 text-sm text-red-300">
-          {error}
-        </div>
-      )}
-      {submitting && (
-        <div className="text-sm text-text-dim flex items-center gap-2">
-          <Loader2 className="size-4 animate-spin" /> Salvando no Supabase + invalidando cache...
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ReviewKv({
-  k,
-  v,
-  className,
-}: {
-  k: string;
-  v: string;
-  className?: string;
-}) {
-  return (
-    <div className={className}>
-      <dt className="text-text-mute uppercase tracking-wider text-[10px] font-bold">
-        {k}
-      </dt>
-      <dd className="text-text-soft mt-0.5 capitalize">{v}</dd>
-    </div>
+    <section>
+      <h3 className="text-[13px] font-bold uppercase tracking-wider text-white mb-1">
+        {title}
+      </h3>
+      {hint && <p className="text-[12px] text-text-dim mb-3">{hint}</p>}
+      {children}
+    </section>
   );
 }
 
