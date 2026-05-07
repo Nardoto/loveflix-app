@@ -44,15 +44,24 @@ const sb = createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: false } })
 // --- Read the catalog by piping it through tsx -----------------------
 // We dump a JSON snapshot via a tiny inline TS program so this seeder
 // stays language-agnostic about the catalog format.
+//
+// IMPORTANT: real stories AND placeholders both use ids '001'..'NNN' in
+// the source modules — they collide. We import them SEPARATELY and
+// prefix the placeholder ids with 'ph_' on the way out, so the DB rows
+// are unique. The publicly-visible slug stays untouched.
 function dumpCatalog() {
   const r = spawnSync(
     'npx',
     ['--yes', 'tsx', '-e', `
-      import { allStories } from '${resolve(root, 'lib/data/stories.ts').replace(/\\\\/g, '/')}';
+      import { fazendeiro, magnata, stories } from '${resolve(root, 'lib/data/stories.ts').replace(/\\\\/g, '/')}';
+      import { placeholders } from '${resolve(root, 'lib/data/placeholders.ts').replace(/\\\\/g, '/')}';
       import { authors, getAuthorFor } from '${resolve(root, 'lib/data/authors.ts').replace(/\\\\/g, '/')}';
+      const real = [fazendeiro, magnata, ...stories];
+      const phs = placeholders.map((p) => ({ ...p, id: 'ph_' + p.id }));
+      const all = [...real, ...phs];
       const out = {
         authors: authors.map((a, i) => ({ ...a, display_order: i })),
-        stories: allStories.map((s) => ({
+        stories: all.map((s) => ({
           ...s,
           author_id: getAuthorFor(s).id,
         })),
