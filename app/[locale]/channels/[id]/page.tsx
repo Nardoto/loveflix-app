@@ -22,6 +22,8 @@ import { allStories, type Story } from '@/lib/data/stories';
 import { findAuthor, filterByAuthor, getAuthorFor, authors } from '@/lib/data/authors';
 import { filterByLocale } from '@/lib/data/locale-filter';
 
+export const dynamic = 'force-dynamic';
+
 const GENRE_LABELS: Record<Story['genre'], string> = {
   mafia: 'Mafia & Dark',
   billionaire: 'Billionaire',

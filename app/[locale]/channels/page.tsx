@@ -6,6 +6,8 @@ import { authors, filterByAuthor } from '@/lib/data/authors';
 import { allStories } from '@/lib/data/stories';
 import { filterByLocale } from '@/lib/data/locale-filter';
 
+export const dynamic = 'force-dynamic';
+
 export default async function ChannelsIndex({
   params,
 }: {

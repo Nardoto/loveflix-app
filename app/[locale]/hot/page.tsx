@@ -6,6 +6,8 @@ import { hotStories, hotByGenre } from '@/lib/data/hot';
 import { filterByLocale } from '@/lib/data/locale-filter';
 import type { Story } from '@/lib/data/stories';
 
+export const dynamic = 'force-dynamic';
+
 export default async function HotPage({
   params,
 }: {

@@ -8,6 +8,14 @@ import { getAllStories } from '@/lib/data/stories-server';
 import { isStoryHot } from '@/lib/data/hot';
 import { filterByLocale, isAvailableInLocale } from '@/lib/data/locale-filter';
 
+// Renderiza a home a cada request (sem cache de CDN nem de browser).
+// O catálogo em si continua cacheado em unstable_cache(stories, 60s)
+// dentro de stories-server.ts — então é rápido — mas o HTML é fresco.
+// Esse é o padrão YouTube/Netflix: HTML dinâmico, dados cacheados em
+// memória do servidor. Sem isso, novos uploads do admin demorariam até
+// 5 min pra aparecer na home (cache de edge da Vercel).
+export const dynamic = 'force-dynamic';
+
 export default async function HomePage({
   params,
 }: {

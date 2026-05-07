@@ -4,6 +4,8 @@ import { Link } from '@/lib/navigation';
 import { allStories, type Story } from '@/lib/data/stories';
 import { filterByLocale } from '@/lib/data/locale-filter';
 
+export const dynamic = 'force-dynamic';
+
 const GENRES: { id: Story['genre']; label: string; tagline: string }[] = [
   { id: 'mafia', label: 'Mafia & Dark', tagline: 'Forced unions and possessive grooms' },
   { id: 'billionaire', label: 'Billionaire', tagline: 'Power suits and late-night offices' },
