@@ -84,6 +84,7 @@ export function InstallBanner() {
   const {
     canPromptNative,
     canShowIOSGuide,
+    needsSafariSwitch,
     isIOS,
     dismissed,
     iosSheetOpen,
@@ -93,8 +94,13 @@ export function InstallBanner() {
   } = useInstall();
 
   const t = COPY[locale] ?? COPY.en;
-  // Show as soon as we know how to install — first visit, no delay.
-  const showBanner = !dismissed && (canPromptNative || canShowIOSGuide);
+  // Show banner em 3 cenários:
+  //   • Android com beforeinstallprompt
+  //   • iOS Safari (mostra guia)
+  //   • iOS em outro browser (Chrome/Firefox/Edge) — explica que precisa
+  //     trocar pro Safari, sem botão "instalar" (não tem como).
+  const showBanner =
+    !dismissed && (canPromptNative || canShowIOSGuide || needsSafariSwitch);
 
   return (
     <>
@@ -118,19 +124,25 @@ export function InstallBanner() {
             />
             <div className="flex-1 min-w-0">
               <p className="font-bold text-[15px] text-white leading-tight">
-                {t.title}
+                {needsSafariSwitch ? 'Abre no Safari pra instalar' : t.title}
               </p>
               <p className="text-xs text-text-dim mt-1 leading-snug line-clamp-2">
-                {isIOS ? t.iosCta : t.desc}
+                {needsSafariSwitch
+                  ? 'Apple só permite instalar PWA pelo Safari (não Chrome/Firefox no iPhone).'
+                  : isIOS
+                    ? t.iosCta
+                    : t.desc}
               </p>
             </div>
 
-            <button
-              onClick={triggerInstall}
-              className="shrink-0 px-4 h-10 rounded-full bg-gradient-to-r from-rose to-rose-deep text-white font-bold text-sm shadow shadow-rose/30 active:scale-95 transition-transform"
-            >
-              {t.install}
-            </button>
+            {!needsSafariSwitch && (
+              <button
+                onClick={triggerInstall}
+                className="shrink-0 px-4 h-10 rounded-full bg-gradient-to-r from-rose to-rose-deep text-white font-bold text-sm shadow shadow-rose/30 active:scale-95 transition-transform"
+              >
+                {t.install}
+              </button>
+            )}
 
             <button
               onClick={dismiss}
