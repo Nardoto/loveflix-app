@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
-import { Play, Headphones, BookOpen, Plus, Star, Clock, Languages } from 'lucide-react';
+import { Play, Headphones, BookOpen, Plus, Star, Clock, Clock3, Languages } from 'lucide-react';
 import { Link } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -71,8 +71,19 @@ export default async function StoryDetailPage({
         <div className="absolute inset-0 hero-overlay" />
 
         <div className="relative h-full flex flex-col justify-end pb-16 md:pb-24 px-5 md:px-10 lg:px-14 max-w-3xl">
+          {/* Coming-soon tarja — shown above the title so 55+ visitors see
+              it before tapping anywhere. Mirrors the row-card treatment. */}
+          {story.isComingSoon && (
+            <div className="inline-flex self-start items-center gap-2 mb-3 md:mb-4 px-3.5 py-1.5 rounded-md bg-black/65 border border-white/25 backdrop-blur-sm">
+              <Clock3 className="size-4 text-amber-300" />
+              <span className="text-[11px] md:text-xs font-extrabold uppercase tracking-[0.32em] text-white">
+                Coming Soon · Em breve
+              </span>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 mb-3 md:mb-4 flex-wrap">
-            {isStoryHot(story) && (
+            {!story.isComingSoon && isStoryHot(story) && (
               <Badge variant="hot">
                 <FlameIcon className="size-3" />
                 Hot
@@ -89,7 +100,14 @@ export default async function StoryDetailPage({
             </span>
           </div>
 
-          <h1 className="font-serif italic font-black text-3xl sm:text-5xl md:text-6xl text-white leading-[1.05] tracking-tight mb-4 drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)]">
+          {/* Title — capped at text-5xl and 3 lines so super-long titles
+              (e.g. "Chosen by Spain's Most Feared Tycoon for Revenge — But
+              He Craved Her Every Night") don't overflow the hero and bleed
+              behind the top bar. text-balance distributes the wrap evenly. */}
+          <h1
+            className="font-serif italic font-black text-2xl sm:text-4xl md:text-5xl text-white leading-[1.1] tracking-tight mb-4 drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)] line-clamp-3 text-balance"
+            title={story.title}
+          >
             {story.title}
           </h1>
 

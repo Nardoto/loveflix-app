@@ -5,6 +5,11 @@ import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? '')
+  .split(',')
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
+
 export async function GET() {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
@@ -24,6 +29,15 @@ export async function GET() {
     }
   } catch {
     // Table may not exist yet — leave tier = 'free'.
+  }
+
+  // Admin override — operators in ADMIN_EMAILS always get full playback so
+  // they can QA premium content without seeding a fake subscription row.
+  // The Worker doesn't care WHY tier is "active"; the JWT signature is what
+  // it verifies, and only this endpoint can mint one.
+  const email = user.email?.toLowerCase();
+  if (tier === 'free' && email && ADMIN_EMAILS.includes(email)) {
+    tier = 'active';
   }
 
   const expirySeconds = 7200;

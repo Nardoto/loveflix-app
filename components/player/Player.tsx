@@ -64,7 +64,7 @@ export function Player({
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const { token } = useMediaToken();
+  const { token, tier, loading: tokenLoading, error: tokenError } = useMediaToken();
 
   const hasVideo = !!(story.videoSrc || story.videoKey);
   const hasAudio = !!(story.audioByLocale || story.audioKeyByLocale);
@@ -92,6 +92,10 @@ export function Player({
   // instant start we also show it for at least 600ms after mount even when the
   // network is fast.
   const [loading, setLoading] = useState(true);
+  // Surfaced when the <video>/<audio> element fires `error` — typically a
+  // 401/402 from the Worker (token missing or tier=free for premium content).
+  // Without this the spinner stays forever and the user has no idea why.
+  const [mediaError, setMediaError] = useState<string | null>(null);
 
   const activeMedia = mode === 'video' ? videoRef.current : audioRef.current;
 
@@ -105,32 +109,8 @@ export function Player({
     };
   }, []);
 
-  // Autoplay on mount + every time the active media element changes (i.e. when
-  // switching modes or audio language). The Watch button is the user gesture
-  // that authorizes autoplay with sound — browsers honor it. If autoplay does
-  // get blocked (very old Safari, etc.), the loading overlay turns into a Tap
-  // to play prompt because `setIsPlaying(false)` after the failed promise.
-  useEffect(() => {
-    const m = activeMedia;
-    if (!m) return;
-    const minLoadingTimer = setTimeout(() => {
-      // Even on instant-cached media, hold the loading state for 600ms so the
-      // user sees a smooth "preparing" beat before the cover snaps to playback.
-      if (m.readyState >= 3) setLoading(false);
-    }, 600);
-    const onCanPlay = () => {
-      setLoading(false);
-      m.play()
-        .then(() => setIsPlaying(true))
-        .catch(() => setIsPlaying(false));
-    };
-    if (m.readyState >= 3) onCanPlay();
-    else m.addEventListener('canplay', onCanPlay);
-    return () => {
-      clearTimeout(minLoadingTimer);
-      m.removeEventListener('canplay', onCanPlay);
-    };
-  }, [activeMedia]);
+  // (Autoplay + error effects moved below URL resolution so they can depend
+  //  on the resolved src strings — see end of this hook block.)
 
   // Hide controls on inactivity
   useEffect(() => {
@@ -268,17 +248,70 @@ export function Player({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [togglePlay, duration]);
 
-  // Resolve playback URLs. R2 keys go through the Worker (with token); otherwise fall back to mock URLs.
-  // We memoize on token+story so React doesn't tear the <video src> mid-playback when other state changes.
+  // Resolve playback URLs. R2 keys go through the Worker (with token); local
+  // mock URLs (videoSrc/audioByLocale) bypass the gate entirely.
+  //
+  // CRITICAL: when the asset is on R2 we MUST wait for the token before setting
+  // src. Setting src=<url-without-token> fires a 401 immediately, the element
+  // enters error state, and `canplay` never fires — the spinner gets stuck
+  // forever. Returning undefined keeps the <video src> attribute absent until
+  // we have a token to attach.
   const videoSrcResolved = useMemo(() => {
-    if (story.videoKey) return mediaUrl(story.videoKey, token);
+    if (story.videoKey) return token ? mediaUrl(story.videoKey, token) : undefined;
     return story.videoSrc;
   }, [story.videoKey, story.videoSrc, token]);
   const audioSrc = useMemo(() => {
     const key = story.audioKeyByLocale?.[audioLocale];
-    if (key) return mediaUrl(key, token);
+    if (key) return token ? mediaUrl(key, token) : undefined;
     return story.audioByLocale?.[audioLocale];
   }, [story.audioKeyByLocale, story.audioByLocale, audioLocale, token]);
+
+  // Autoplay every time the active media src changes (mode swap, locale swap,
+  // OR token arriving and adding ?token= to the URL for the first time). The
+  // Watch button is the user gesture that authorizes autoplay with sound, so
+  // browsers honor it. If autoplay does get blocked (old Safari), the loading
+  // overlay turns into a Tap-to-play prompt because we setIsPlaying(false)
+  // after the failed promise.
+  //
+  // We depend on the resolved src strings (not the ref) so the effect re-runs
+  // when token finally arrives and rewrites the URL. Otherwise canplay would
+  // be listened for once, miss the new src's load cycle, and we'd be stuck.
+  const activeSrc = mode === 'video' ? videoSrcResolved : audioSrc;
+  useEffect(() => {
+    const m = activeMedia;
+    if (!m || !activeSrc) return;
+    setMediaError(null);
+    setLoading(true);
+    const minLoadingTimer = setTimeout(() => {
+      if (m.readyState >= 3) setLoading(false);
+    }, 600);
+    const onCanPlay = () => {
+      setLoading(false);
+      m.play()
+        .then(() => setIsPlaying(true))
+        .catch(() => setIsPlaying(false));
+    };
+    if (m.readyState >= 3) onCanPlay();
+    else m.addEventListener('canplay', onCanPlay);
+    return () => {
+      clearTimeout(minLoadingTimer);
+      m.removeEventListener('canplay', onCanPlay);
+    };
+  }, [activeMedia, activeSrc]);
+
+  // Translate the media element's `error` event into a human message. Without
+  // this the spinner stays up forever when the Worker rejects the request
+  // (missing token, expired token, free tier hitting a paid asset).
+  const onMediaError = useCallback(() => {
+    setLoading(false);
+    if (tier === 'free' && (story.videoKey || story.audioKeyByLocale)) {
+      setMediaError('Esse título é exclusivo pra assinantes. Faça upgrade pra assistir.');
+    } else if (tokenError) {
+      setMediaError('Não consegui autorizar a reprodução. Tente recarregar a página.');
+    } else {
+      setMediaError('Não foi possível carregar a mídia. Verifique sua conexão e tente de novo.');
+    }
+  }, [tier, tokenError, story.videoKey, story.audioKeyByLocale]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col">
@@ -291,7 +324,10 @@ export function Player({
         className="absolute inset-x-0 top-20 bottom-48 z-0 cursor-pointer"
       />
 
-      {/* Hidden media elements — we keep both and toggle visibility/active */}
+      {/* Hidden media elements — we keep both and toggle visibility/active.
+          Note: we leave src absent (not empty string) until token arrives, to
+          avoid a guaranteed 401 on the first paint that puts the element in
+          a permanent error state. */}
       {hasVideo && (
         <video
           ref={videoRef}
@@ -305,6 +341,7 @@ export function Player({
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
           onEnded={() => setIsPlaying(false)}
+          onError={onMediaError}
           playsInline
         />
       )}
@@ -317,14 +354,52 @@ export function Player({
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
           onEnded={() => setIsPlaying(false)}
+          onError={onMediaError}
           preload="auto"
         />
       )}
 
-      {/* Loading veil — mounts on top of cover/video while we wait for canplay. */}
-      {loading && (
+      {/* Loading veil — only while we're actually waiting (token still
+          fetching OR media still buffering AND no error yet). */}
+      {(loading || tokenLoading) && !mediaError && (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm pointer-events-none">
           <div className="size-14 rounded-full border-4 border-white/15 border-t-rose animate-spin" />
+        </div>
+      )}
+
+      {/* Error overlay — replaces the spinner when the media element fails to
+          load. Gives the user a way out instead of a forever-spinner. */}
+      {mediaError && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/85 backdrop-blur-sm p-6">
+          <div className="max-w-md text-center">
+            <div className="text-2xl font-serif italic font-bold text-white mb-3">
+              Tudo pronto, menos o playback
+            </div>
+            <p className="text-text-soft mb-5">{mediaError}</p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {tier === 'free' && (
+                <Button asChild variant="rose">
+                  <Link href="/account">Ver planos</Link>
+                </Button>
+              )}
+              <Button
+                variant="glass"
+                onClick={() => {
+                  setMediaError(null);
+                  setLoading(true);
+                  activeMedia?.load();
+                }}
+              >
+                Tentar de novo
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => router.back()}
+              >
+                Voltar
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 

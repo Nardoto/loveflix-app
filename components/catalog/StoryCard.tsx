@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import { Clock3 } from 'lucide-react';
 import { Link } from '@/lib/navigation';
 import { Badge } from '@/components/ui/badge';
 import type { Story } from '@/lib/data/stories';
@@ -35,34 +36,54 @@ export function StoryCard({ story }: { story: Story }) {
           alt={story.title}
           fill
           sizes="(max-width: 640px) 360px, (max-width: 1024px) 420px, 420px"
-          className="object-cover object-[center_28%] transition-transform duration-500 group-hover:scale-[1.04]"
+          className={`object-cover object-[center_28%] transition-transform duration-500 group-hover:scale-[1.04] ${
+            story.isComingSoon ? 'grayscale-[0.55] brightness-[0.55]' : ''
+          }`}
         />
 
         {/* Subtle bottom dim — keeps badges legible on bright covers
             without painting over the artwork. */}
         <div className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-black/45 to-transparent pointer-events-none" />
 
-        {/* Top-left badge stack — FREE / HOT / Soon. */}
-        <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
-          {story.isComingSoon ? (
-            <Badge variant="comingSoon">Soon</Badge>
-          ) : (
-            <>
-              {story.isFree && (
-                <Badge variant="free">
-                  <SparkleIcon className="size-3" />
-                  Free
-                </Badge>
-              )}
-              {hot && (
-                <Badge variant="hot">
-                  <FlameIcon className="size-3" />
-                  Hot
-                </Badge>
-              )}
-            </>
-          )}
-        </div>
+        {/* TARJA — full-width strip across the top. Reads at-a-glance:
+            HOT (red/orange) or COMING SOON (dark muted). Mutually exclusive
+            with each other; FREE stays as a small corner pill below. */}
+        {story.isComingSoon ? (
+          <>
+            <div className="absolute inset-x-0 top-0 bg-gradient-to-b from-black/85 to-black/55 backdrop-blur-[2px] border-b border-white/15 px-3 py-1.5 flex items-center justify-center gap-2">
+              <Clock3 className="size-3.5 text-amber-300" />
+              <span className="text-[11px] font-extrabold uppercase tracking-[0.28em] text-white">
+                Coming Soon
+              </span>
+            </div>
+            {/* Center stamp — extra signal that the artwork is a preview,
+                so 55+ users don't tap expecting playback. */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <span className="px-4 py-1.5 rounded-md bg-black/55 border border-white/20 backdrop-blur-sm text-[12px] md:text-[13px] font-black uppercase tracking-[0.32em] text-white/95 shadow-[0_4px_18px_rgba(0,0,0,0.6)]">
+                Em breve
+              </span>
+            </div>
+          </>
+        ) : hot ? (
+          <div className="absolute inset-x-0 top-0 bg-gradient-to-r from-red-700 via-orange-500 to-red-700 px-3 py-1.5 flex items-center justify-center gap-2 shadow-[0_3px_14px_rgba(220,38,38,0.55)] animate-hot-glow">
+            <FlameIcon flicker className="size-3.5 text-white" />
+            <span className="text-[11px] font-extrabold uppercase tracking-[0.28em] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
+              Hot Now
+            </span>
+          </div>
+        ) : null}
+
+        {/* FREE pill — only shown when not coming-soon (free + soon doesn't
+            make sense — there's nothing to listen to yet). Pulled below the
+            tarja so it doesn't fight for the same space. */}
+        {!story.isComingSoon && story.isFree && (
+          <div className={`absolute left-2 ${hot ? 'top-10' : 'top-2'}`}>
+            <Badge variant="free">
+              <SparkleIcon className="size-3" />
+              Free
+            </Badge>
+          </div>
+        )}
       </div>
 
       {/* Title below the cover — kept small (14-15px) so the artwork
