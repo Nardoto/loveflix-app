@@ -279,10 +279,11 @@ export function StoryComments({
 
   const submit = () => {
     const text = draft.trim();
-    // Coming-soon: no rating required (no one has seen it yet).
-    // Live stories: rating required.
+    // Rating is OPTIONAL on every kind of story — viewers should be able
+    // to drop a comment without committing to stars. If they did pick a
+    // rating, we record it; otherwise we send null and the comment shows
+    // up without the star strip.
     if (!text) return;
-    if (!isComingSoon && userRating === 0) return;
     if (!isSignedIn) {
       setSignInPromptFor('post');
       return;
@@ -292,7 +293,7 @@ export function StoryComments({
     const optimistic: UserComment = {
       id: `you-${posted.length}-${Date.now()}`,
       body: text,
-      stars: isComingSoon ? 0 : userRating,
+      stars: userRating, // 0 means "no rating" — render hides the star strip
     };
 
     // Optimistic insert at top
@@ -306,7 +307,7 @@ export function StoryComments({
       const res = await postComment({
         storySlug,
         body: text,
-        stars: isComingSoon ? null : userRating,
+        stars: userRating > 0 ? userRating : null,
       });
       if (!res.ok) {
         // Rollback
@@ -455,19 +456,19 @@ export function StoryComments({
         />
         <div className="flex items-center justify-between mt-3 gap-3">
           <p className="text-xs text-text-mute">
-            {postError
-              ? <span className="text-rose-bright">{postError}</span>
-              : isComingSoon
-              ? 'Posted as guest'
-              : userRating === 0
-              ? 'Rate the story above before posting.'
-              : 'Posted as guest'}
+            {postError ? (
+              <span className="text-rose-bright">{postError}</span>
+            ) : userRating > 0 ? (
+              `Rating ${userRating}★ · posting as you`
+            ) : isComingSoon ? (
+              'Posting as you'
+            ) : (
+              'Star rating is optional — comment freely.'
+            )}
           </p>
           <Button
             variant="rose"
-            disabled={
-              !draft.trim() || (!isComingSoon && userRating === 0) || isPosting
-            }
+            disabled={!draft.trim() || isPosting}
             onClick={submit}
             size="sm"
           >
