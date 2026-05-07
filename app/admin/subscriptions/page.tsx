@@ -42,10 +42,25 @@ type Sub = {
   user_email?: string | null;
 };
 
-async function loadSubs(): Promise<{ subs: Sub[]; mrrUsd: number; active: number; trialing: number; cancelingAtPeriodEnd: number }> {
-  if (!SUPABASE_CONFIGURED) {
-    return { subs: [], mrrUsd: 0, active: 0, trialing: 0, cancelingAtPeriodEnd: 0 };
-  }
+type MrrByCurrency = { usd: number; brl: number; eur: number };
+
+async function loadSubs(): Promise<{
+  subs: Sub[];
+  mrrUsd: number;
+  mrrByCurrency: MrrByCurrency;
+  active: number;
+  trialing: number;
+  cancelingAtPeriodEnd: number;
+}> {
+  const empty = {
+    subs: [] as Sub[],
+    mrrUsd: 0,
+    mrrByCurrency: { usd: 0, brl: 0, eur: 0 },
+    active: 0,
+    trialing: 0,
+    cancelingAtPeriodEnd: 0,
+  };
+  if (!SUPABASE_CONFIGURED) return empty;
   try {
     const sb = createServiceClient();
     const { data: subs } = await sb
@@ -53,9 +68,7 @@ async function loadSubs(): Promise<{ subs: Sub[]; mrrUsd: number; active: number
       .select('*')
       .order('updated_at', { ascending: false })
       .limit(200);
-    if (!subs) {
-      return { subs: [], mrrUsd: 0, active: 0, trialing: 0, cancelingAtPeriodEnd: 0 };
-    }
+    if (!subs) return empty;
 
     // Resolve emails for the user_ids in one shot. Auth admin API is
     // the simplest path; small-N enough that pagination isn't an issue.
@@ -71,6 +84,7 @@ async function loadSubs(): Promise<{ subs: Sub[]; mrrUsd: number; active: number
     }
 
     let mrrCentsUsd = 0;
+    const mrrCentsBy: MrrByCurrency = { usd: 0, brl: 0, eur: 0 };
     let active = 0;
     let trialing = 0;
     let canceling = 0;
@@ -81,6 +95,7 @@ async function loadSubs(): Promise<{ subs: Sub[]; mrrUsd: number; active: number
         const meta = s.price_id ? PRICE_CENTS[s.price_id] : undefined;
         if (meta) {
           mrrCentsUsd += meta.cents * (TO_USD[meta.currency] ?? 1);
+          mrrCentsBy[meta.currency] += meta.cents;
         }
       } else if (s.status === 'trialing') {
         trialing += 1;
@@ -90,12 +105,17 @@ async function loadSubs(): Promise<{ subs: Sub[]; mrrUsd: number; active: number
     return {
       subs: (subs as Sub[]).map((s) => ({ ...s, user_email: emailById.get(s.user_id) ?? null })),
       mrrUsd: Math.round(mrrCentsUsd) / 100,
+      mrrByCurrency: {
+        usd: mrrCentsBy.usd / 100,
+        brl: mrrCentsBy.brl / 100,
+        eur: mrrCentsBy.eur / 100,
+      },
       active,
       trialing,
       cancelingAtPeriodEnd: canceling,
     };
   } catch {
-    return { subs: [], mrrUsd: 0, active: 0, trialing: 0, cancelingAtPeriodEnd: 0 };
+    return empty;
   }
 }
 
@@ -110,8 +130,12 @@ const STATUS_TONE: Record<string, 'published' | 'draft' | 'coming' | 'flagged' |
   incomplete_expired: 'flagged',
 };
 
+const FMT_USD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
+const FMT_BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 });
+const FMT_EUR = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 });
+
 export default async function AdminSubscriptionsPage() {
-  const { subs, mrrUsd, active, trialing, cancelingAtPeriodEnd } = await loadSubs();
+  const { subs, mrrUsd, mrrByCurrency, active, trialing, cancelingAtPeriodEnd } = await loadSubs();
 
   return (
     <>
@@ -149,12 +173,31 @@ export default async function AdminSubscriptionsPage() {
           deltaTone={cancelingAtPeriodEnd > 0 ? 'down' : 'up'}
         />
         <Stat label="Em trial" value={String(trialing)} delta="período de teste" deltaTone="neutral" />
-        <Stat
-          label="Stripe"
-          value={Object.keys(PRICE_CENTS).length === 3 ? '3/3' : `${Object.keys(PRICE_CENTS).length}/3`}
-          delta="moedas configuradas"
-          deltaTone={Object.keys(PRICE_CENTS).length === 3 ? 'up' : 'neutral'}
-        />
+        <div className="bg-bg-card border border-white/[0.06] rounded-2xl p-5">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-text-mute mb-2.5">
+            MRR por moeda
+          </p>
+          <div className="space-y-1">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-[10.5px] font-extrabold uppercase tracking-[0.18em] text-text-mute">USD</span>
+              <span className="font-serif italic font-black text-[17px] text-white leading-none">
+                {FMT_USD.format(mrrByCurrency.usd)}
+              </span>
+            </div>
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-[10.5px] font-extrabold uppercase tracking-[0.18em] text-text-mute">BRL</span>
+              <span className="font-serif italic font-black text-[17px] text-white leading-none">
+                {FMT_BRL.format(mrrByCurrency.brl)}
+              </span>
+            </div>
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-[10.5px] font-extrabold uppercase tracking-[0.18em] text-text-mute">EUR</span>
+              <span className="font-serif italic font-black text-[17px] text-white leading-none">
+                {FMT_EUR.format(mrrByCurrency.eur)}
+              </span>
+            </div>
+          </div>
+        </div>
       </StatGrid>
 
       {!SUPABASE_CONFIGURED && (
