@@ -1,6 +1,8 @@
 import Image from 'next/image';
 import { createServiceClient } from '@/lib/supabase/server';
+import { getUser } from '@/lib/auth-helpers';
 import { PageHead, Pill, Stat, StatGrid, Table, Th } from '@/components/admin/AdminUI';
+import { UserDeleteButton } from '@/components/admin/UserDeleteButton';
 
 const SUPABASE_CONFIGURED = !!(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -125,7 +127,8 @@ function formatRelative(iso: string | null): string {
 }
 
 export default async function AdminUsersPage() {
-  const { users, totals } = await loadUsers();
+  const [{ users, totals }, me] = await Promise.all([loadUsers(), getUser()]);
+  const myId = me?.id ?? null;
 
   return (
     <>
@@ -175,6 +178,7 @@ export default async function AdminUsersPage() {
               <Th className="hidden lg:table-cell">Provedor</Th>
               <Th className="hidden lg:table-cell">Cadastro</Th>
               <Th>Última atividade</Th>
+              <Th className="text-right">Ações</Th>
             </>
           }
         >
@@ -228,6 +232,20 @@ export default async function AdminUsersPage() {
                 </td>
                 <td className="px-4 py-3.5 text-[12.5px] text-text-dim">
                   {formatRelative(u.lastSignIn)}
+                </td>
+                <td className="px-4 py-3.5 text-right">
+                  <UserDeleteButton
+                    userId={u.id}
+                    userLabel={u.name || u.email}
+                    disabled={isAdmin || u.id === myId}
+                    disabledReason={
+                      u.id === myId
+                        ? 'Não dá pra apagar sua própria conta.'
+                        : isAdmin
+                          ? 'Tira o email do ADMIN_EMAILS pra poder apagar.'
+                          : undefined
+                    }
+                  />
                 </td>
               </tr>
             );
