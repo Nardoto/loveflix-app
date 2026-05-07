@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
-import { Play, Headphones, BookOpen, Plus, Star, Clock, Clock3, Languages } from 'lucide-react';
+import { Play, Headphones, BookOpen, Plus, Star, Clock, Clock3, Languages, ArrowLeft } from 'lucide-react';
 import { Link } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -71,19 +71,29 @@ export default async function StoryDetailPage({
         />
         <div className="absolute inset-0 hero-overlay" />
 
-        <div className="relative h-full flex flex-col justify-end pb-16 md:pb-24 px-5 md:px-10 lg:px-14 max-w-3xl">
-          {/* Coming-soon tarja — shown above the title so 55+ visitors see
-              it before tapping anywhere. Mirrors the row-card treatment. */}
-          {story.isComingSoon && (
-            <div className="inline-flex self-start items-center gap-2 mb-3 md:mb-4 px-3.5 py-1.5 rounded-md bg-black/65 border border-white/25 backdrop-blur-sm">
-              <Clock3 className="size-4 text-amber-300" />
-              <span className="text-[11px] md:text-xs font-extrabold uppercase tracking-[0.32em] text-white">
-                {t('comingSoon')}
-              </span>
-            </div>
-          )}
+        {/* Back button — top-left, above the title, separated from the
+            topbar so 55+ users have a clear "voltar" sem precisar usar
+            o botão do navegador. z-30 fica abaixo do topbar (z-40) mas
+            acima do hero overlay. */}
+        <Link
+          href="/"
+          aria-label="Voltar"
+          className="absolute top-20 md:top-24 left-4 md:left-8 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-sm text-white text-[12px] font-bold transition-colors"
+        >
+          <ArrowLeft className="size-4" />
+          <span className="hidden sm:inline">Voltar</span>
+        </Link>
 
+        {/* pt-28 reserva espaço pro topbar (h-16/18 = 64-72px) +
+            o botão Voltar não esconder o título. */}
+        <div className="relative h-full flex flex-col justify-end pt-28 pb-16 md:pb-24 px-5 md:px-10 lg:px-14 max-w-3xl">
           <div className="flex items-center gap-2 mb-3 md:mb-4 flex-wrap">
+            {story.isComingSoon && (
+              <Badge variant="comingSoon">
+                <Clock3 className="size-3" />
+                {t('comingSoon')}
+              </Badge>
+            )}
             {!story.isComingSoon && isStoryHot(story) && (
               <Badge variant="hot">
                 <FlameIcon className="size-3" />
