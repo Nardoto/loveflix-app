@@ -250,6 +250,21 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
               onAudioUploaded={(locale, key) =>
                 setAudioKeys((prev) => ({ ...prev, [locale]: key }))
               }
+              onCoverClear={() => {
+                setCoverKey(null);
+                setCoverPreviewUrl(null);
+              }}
+              onVideoClear={() => {
+                setVideoKey(null);
+                setVideoFilename(null);
+              }}
+              onAudioClear={(locale) =>
+                setAudioKeys((prev) => {
+                  const next = { ...prev };
+                  delete next[locale];
+                  return next;
+                })
+              }
             />
           )}
           {step === 'review' && (
@@ -434,6 +449,9 @@ function MediaStep({
   onCoverUploaded,
   onVideoUploaded,
   onAudioUploaded,
+  onCoverClear,
+  onVideoClear,
+  onAudioClear,
 }: {
   slug: string;
   isComingSoon: boolean;
@@ -443,6 +461,9 @@ function MediaStep({
   onCoverUploaded: (key: string, file?: File) => void;
   onVideoUploaded: (key: string, file?: File) => void;
   onAudioUploaded: (locale: 'en' | 'de' | 'fr' | 'es', key: string) => void;
+  onCoverClear: () => void;
+  onVideoClear: () => void;
+  onAudioClear: (locale: 'en' | 'de' | 'fr' | 'es') => void;
 }) {
   return (
     <div className="space-y-6">
@@ -453,6 +474,7 @@ function MediaStep({
           accept="image/*"
           existing={coverKey}
           onUploaded={onCoverUploaded}
+          onClear={onCoverClear}
           label="Escolher imagem"
         />
       </Section>
@@ -469,13 +491,14 @@ function MediaStep({
           accept="video/mp4,video/*"
           existing={videoKey}
           onUploaded={onVideoUploaded}
+          onClear={onVideoClear}
           label="Escolher vídeo"
         />
       </Section>
 
       <Section
         title="Áudios por idioma"
-        hint="Sobe MP3 pra cada idioma que essa story vai estar disponível. Se um idioma não tiver áudio, a story simplesmente não aparece pra usuárias daquela locale."
+        hint="Sobe MP3 pra cada idioma que essa story vai estar disponível. Idiomas sem áudio: a story não aparece pros usuários daquela locale (ex: só EN = não aparece na home alemã)."
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {LOCALES.map((l) => (
@@ -487,6 +510,7 @@ function MediaStep({
               accept="audio/mpeg,audio/mp3,audio/*"
               existing={audioKeys[l.id] ?? null}
               onUploaded={(key) => onAudioUploaded(l.id, key)}
+              onClear={() => onAudioClear(l.id)}
               label={`${l.flag} ${l.label}`}
               compact
             />
@@ -799,6 +823,7 @@ function UploadSlot({
   accept,
   existing,
   onUploaded,
+  onClear,
   label,
   compact = false,
 }: {
@@ -808,6 +833,7 @@ function UploadSlot({
   accept: string;
   existing: string | null;
   onUploaded: (key: string, file?: File) => void;
+  onClear?: () => void;
   label: string;
   compact?: boolean;
 }) {
@@ -901,6 +927,21 @@ function UploadSlot({
           >
             <RefreshCw className="size-3.5" /> Substituir
           </button>
+          {onClear && (
+            <button
+              type="button"
+              onClick={() => {
+                onClear();
+                upload.reset();
+                setPickingNew(false);
+              }}
+              aria-label="Remover"
+              title="Remover"
+              className="size-8 grid place-items-center rounded-lg text-text-dim hover:text-red-300 hover:bg-red-500/10 transition-colors shrink-0"
+            >
+              <X className="size-4" />
+            </button>
+          )}
         </div>
         {upload.status === 'error' && upload.error && (
           <p className="text-[11px] text-red-300 mt-2">{upload.error}</p>

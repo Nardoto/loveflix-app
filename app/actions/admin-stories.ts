@@ -155,7 +155,12 @@ export async function createStory(
     }
   }
 
-  revalidateTag('stories', 'max');
+  // expire: 0 = invalida AGORA (não SWR). Operator que acabou de
+  // publicar precisa ver o resultado na próxima navegação, não daqui
+  // a uns segundos. 'max' (stale-while-revalidate) servia o conteúdo
+  // antigo na primeira visita e era o que fazia o usuário pensar que
+  // o upload não tinha funcionado.
+  revalidateTag('stories', { expire: 0 });
   revalidatePath('/');
   revalidatePath('/admin');
   revalidatePath('/admin/stories');
@@ -230,7 +235,12 @@ export async function updateStory(
     }
   }
 
-  revalidateTag('stories', 'max');
+  // expire: 0 = invalida AGORA (não SWR). Operator que acabou de
+  // publicar precisa ver o resultado na próxima navegação, não daqui
+  // a uns segundos. 'max' (stale-while-revalidate) servia o conteúdo
+  // antigo na primeira visita e era o que fazia o usuário pensar que
+  // o upload não tinha funcionado.
+  revalidateTag('stories', { expire: 0 });
   revalidatePath('/');
   revalidatePath(`/s/${v.slug ?? storySlug}`);
   revalidatePath('/admin/stories');
@@ -265,7 +275,12 @@ export async function deleteStory(storySlug: string): Promise<Result> {
     keys.map((k) => deleteObject(k).catch(() => undefined)),
   );
 
-  revalidateTag('stories', 'max');
+  // expire: 0 = invalida AGORA (não SWR). Operator que acabou de
+  // publicar precisa ver o resultado na próxima navegação, não daqui
+  // a uns segundos. 'max' (stale-while-revalidate) servia o conteúdo
+  // antigo na primeira visita e era o que fazia o usuário pensar que
+  // o upload não tinha funcionado.
+  revalidateTag('stories', { expire: 0 });
   revalidatePath('/');
   revalidatePath('/admin/stories');
   return { ok: true };
