@@ -11,9 +11,9 @@ export function UnderConstruction({
   hint?: string;
 }) {
   return (
-    <div className="max-w-2xl rounded-3xl border border-gold/[0.20] bg-gradient-to-br from-gold/[0.05] to-transparent p-10 text-center">
-      <div className="size-14 mx-auto mb-4 rounded-2xl bg-gold/10 grid place-items-center text-gold-bright">
-        <Wrench className="size-6" />
+    <div className="max-w-2xl py-10 text-center">
+      <div className="size-12 mx-auto mb-4 rounded-2xl bg-white/[0.04] grid place-items-center text-text-dim">
+        <Wrench className="size-5" />
       </div>
       <h2 className="font-serif italic font-black text-2xl text-white mb-2">
         {title}
