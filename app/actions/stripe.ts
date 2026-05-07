@@ -24,11 +24,15 @@ const SUPABASE_CONFIGURED = !!(
 const STRIPE_CONFIGURED = !!process.env.STRIPE_SECRET_KEY && !!PRICE_IDS.usd;
 
 async function appOrigin(): Promise<string> {
-  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  // Always prefer the real request host — this is the URL the user actually
+  // landed on. Falling back to NEXT_PUBLIC_APP_URL would send a production
+  // visitor to localhost when the env var is misconfigured.
   const h = await headers();
   const host = h.get('host');
   const proto = h.get('x-forwarded-proto') ?? 'https';
-  return host ? `${proto}://${host}` : 'https://alluretv.net';
+  if (host) return `${proto}://${host}`;
+  // Last-resort fallbacks (build-time, edge cases).
+  return process.env.NEXT_PUBLIC_APP_URL || 'https://alluretv.net';
 }
 
 /** Resolve the customer's country from the request headers (Vercel/CDN geo). */
