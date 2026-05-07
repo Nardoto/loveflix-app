@@ -42,6 +42,39 @@ const NOT_SIGNED_IN: Result<never> = {
   requiresLogin: true,
 };
 
+/** Mirror the user's display_name + avatar from Supabase auth metadata into
+ *  comment_user_meta so the comment list joins to a real name/photo instead
+ *  of falling back to "Reader #xxxx". Idempotent — run on every post. */
+async function syncCommentUserMeta(user: User) {
+  const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const displayName =
+    (meta.full_name as string | undefined) ||
+    (meta.name as string | undefined) ||
+    (user.email ? user.email.split('@')[0] : null);
+  const avatarUrl =
+    (meta.avatar_url as string | undefined) ||
+    (meta.picture as string | undefined) ||
+    null;
+  if (!displayName && !avatarUrl) return;
+
+  try {
+    const supabase = await createClient();
+    await supabase
+      .from('comment_user_meta')
+      .upsert(
+        {
+          user_id: user.id,
+          display_name: displayName,
+          avatar_url: avatarUrl,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' },
+      );
+  } catch {
+    // Non-fatal — comment still saves; meta just falls back to "Reader #xxxx".
+  }
+}
+
 
 // ============================================================
 // POST a top-level comment
@@ -60,6 +93,10 @@ export async function postComment(input: {
 
   const user = await getSignedInUser();
   if (!user) return NOT_SIGNED_IN;
+
+  // Mirror the user's profile into comment_user_meta so the comment list
+  // shows their real name + photo instead of "Reader #xxxx".
+  await syncCommentUserMeta(user);
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -133,6 +170,7 @@ export async function postReply(input: {
 
   const user = await getSignedInUser();
   if (!user) return NOT_SIGNED_IN;
+  await syncCommentUserMeta(user);
 
   const supabase = await createClient();
   const { data, error } = await supabase

@@ -40,6 +40,8 @@ export function StoryComments({
   isComingSoon = false,
   isSignedIn = false,
   currentUserId = null,
+  currentUserName = null,
+  currentUserAvatar = null,
 }: {
   storyId: string;
   storyTitle: string;
@@ -52,6 +54,10 @@ export function StoryComments({
   /** Server-resolved auth uid. Used to show Edit/Delete on the user's own
    *  comments. Null when the viewer isn't signed in. */
   currentUserId?: string | null;
+  /** Display name from Google/Supabase metadata for the optimistic UI. */
+  currentUserName?: string | null;
+  /** Avatar URL from Google for the optimistic UI. */
+  currentUserAvatar?: string | null;
 }) {
   // ── New top-level comment from the viewer ───────────────────────────────
   const [userRating, setUserRating] = useState(0);
@@ -481,39 +487,62 @@ export function StoryComments({
       {/* Comment list */}
       {hasComments ? (
         <div className="space-y-4">
-          {/* Viewer's just-posted comments at the top */}
-          {posted.map((p) => (
-            <article
-              key={p.id}
-              className="bg-bg-elevated rounded-2xl p-5 md:p-6 shadow-md shadow-black/20 ring-1 ring-rose/30"
-            >
-              <header className="flex items-start gap-3 mb-3">
-                <span className="grid place-items-center size-10 rounded-full bg-gradient-to-br from-rose to-rose-deep text-white font-bold shrink-0">
-                  Y
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-white">You</span>
-                    <span className="text-xs text-text-mute">· just now</span>
-                  </div>
-                  {p.stars > 0 && (
-                    <div className="flex items-center gap-0.5 mt-0.5">
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <Star
-                          key={n}
-                          className={cn(
-                            'size-3.5',
-                            n <= p.stars ? 'fill-gold text-gold' : 'text-white/15',
-                          )}
-                        />
-                      ))}
-                    </div>
+          {/* Viewer's just-posted comments at the top — uses the real Google
+              name/avatar from auth so the optimistic card matches what the
+              user expects to see (and what'll come back from the DB on F5). */}
+          {posted.map((p) => {
+            const initial = (currentUserName ?? 'U').charAt(0).toUpperCase();
+            return (
+              <article
+                key={p.id}
+                className="bg-bg-elevated rounded-2xl p-5 md:p-6 shadow-md shadow-black/20 ring-1 ring-rose/30"
+              >
+                <header className="flex items-start gap-3 mb-3">
+                  {currentUserAvatar ? (
+                    <span className="relative size-10 rounded-full overflow-hidden bg-bg-deep shrink-0 ring-1 ring-rose/40">
+                      <Image
+                        src={currentUserAvatar}
+                        alt={currentUserName ?? 'You'}
+                        fill
+                        sizes="40px"
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </span>
+                  ) : (
+                    <span className="grid place-items-center size-10 rounded-full bg-gradient-to-br from-rose to-rose-deep text-white font-bold shrink-0">
+                      {initial}
+                    </span>
                   )}
-                </div>
-              </header>
-              <p className="text-text-soft leading-relaxed">{p.body}</p>
-            </article>
-          ))}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-white">
+                        {currentUserName ?? 'Você'}
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-rose/20 text-rose-bright">
+                        Você
+                      </span>
+                      <span className="text-xs text-text-mute">· agora</span>
+                    </div>
+                    {p.stars > 0 && (
+                      <div className="flex items-center gap-0.5 mt-0.5">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Star
+                            key={n}
+                            className={cn(
+                              'size-3.5',
+                              n <= p.stars ? 'fill-gold text-gold' : 'text-white/15',
+                            )}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </header>
+                <p className="text-text-soft leading-relaxed">{p.body}</p>
+              </article>
+            );
+          })}
 
           {/* Pre-seeded / real comments */}
           {comments.map((c) => {

@@ -250,6 +250,16 @@ export default async function StoryDetailPage({
         isComingSoon={!!story.isComingSoon}
         isSignedIn={!!currentUser}
         currentUserId={currentUser?.id ?? null}
+        currentUserName={
+          (currentUser?.user_metadata?.full_name as string | undefined) ||
+          (currentUser?.user_metadata?.name as string | undefined) ||
+          (currentUser?.email ? currentUser.email.split('@')[0] : null)
+        }
+        currentUserAvatar={
+          (currentUser?.user_metadata?.avatar_url as string | undefined) ||
+          (currentUser?.user_metadata?.picture as string | undefined) ||
+          null
+        }
       />
 
       {related.length > 0 && (
