@@ -1,5 +1,8 @@
+'use client';
+
 import Image from 'next/image';
 import { Clock3 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/lib/navigation';
 import { Badge } from '@/components/ui/badge';
 import type { Story } from '@/lib/data/stories';
@@ -19,6 +22,7 @@ import { FlameIcon } from '@/components/icons/FlameIcon';
 // to ~420px so 3-4 cards stay visible on a 1440px screen.
 
 export function StoryCard({ story }: { story: Story }) {
+  const t = useTranslations('home');
   const author = getAuthorFor(story);
   const hot = isStoryHot(story);
   const audioLocales = Object.keys(
@@ -49,26 +53,17 @@ export function StoryCard({ story }: { story: Story }) {
             HOT (red/orange) or COMING SOON (dark muted). Mutually exclusive
             with each other; FREE stays as a small corner pill below. */}
         {story.isComingSoon ? (
-          <>
-            <div className="absolute inset-x-0 top-0 bg-gradient-to-b from-black/85 to-black/55 backdrop-blur-[2px] border-b border-white/15 px-3 py-1.5 flex items-center justify-center gap-2">
-              <Clock3 className="size-3.5 text-amber-300" />
-              <span className="text-[11px] font-extrabold uppercase tracking-[0.28em] text-white">
-                Coming Soon
-              </span>
-            </div>
-            {/* Center stamp — extra signal that the artwork is a preview,
-                so 55+ users don't tap expecting playback. */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="px-4 py-1.5 rounded-md bg-black/55 border border-white/20 backdrop-blur-sm text-[12px] md:text-[13px] font-black uppercase tracking-[0.32em] text-white/95 shadow-[0_4px_18px_rgba(0,0,0,0.6)]">
-                Em breve
-              </span>
-            </div>
-          </>
+          <div className="absolute inset-x-0 top-0 bg-gradient-to-b from-black/85 to-black/55 backdrop-blur-[2px] border-b border-white/15 px-3 py-1.5 flex items-center justify-center gap-2">
+            <Clock3 className="size-3.5 text-amber-300" />
+            <span className="text-[11px] font-extrabold uppercase tracking-[0.28em] text-white">
+              {t('comingSoon')}
+            </span>
+          </div>
         ) : hot ? (
           <div className="absolute inset-x-0 top-0 bg-gradient-to-r from-red-700 via-orange-500 to-red-700 px-3 py-1.5 flex items-center justify-center gap-2 shadow-[0_3px_14px_rgba(220,38,38,0.55)] animate-hot-glow">
             <FlameIcon flicker className="size-3.5 text-white" />
             <span className="text-[11px] font-extrabold uppercase tracking-[0.28em] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
-              Hot Now
+              HOT
             </span>
           </div>
         ) : null}

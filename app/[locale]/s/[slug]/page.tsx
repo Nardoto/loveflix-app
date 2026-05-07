@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { Play, Headphones, BookOpen, Plus, Star, Clock, Clock3, Languages } from 'lucide-react';
 import { Link } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,7 @@ export default async function StoryDetailPage({
 }) {
   const { locale, slug } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations('home');
 
   const story = findStory(slug);
   if (!story) notFound();
@@ -77,7 +78,7 @@ export default async function StoryDetailPage({
             <div className="inline-flex self-start items-center gap-2 mb-3 md:mb-4 px-3.5 py-1.5 rounded-md bg-black/65 border border-white/25 backdrop-blur-sm">
               <Clock3 className="size-4 text-amber-300" />
               <span className="text-[11px] md:text-xs font-extrabold uppercase tracking-[0.32em] text-white">
-                Coming Soon · Em breve
+                {t('comingSoon')}
               </span>
             </div>
           )}
