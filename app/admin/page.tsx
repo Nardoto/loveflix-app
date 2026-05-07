@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Plus, RefreshCw, Upload, FileText, MessageSquare, CreditCard } from 'lucide-react';
 import { getAllStories } from '@/lib/data/stories-server';
 import { createServiceClient } from '@/lib/supabase/server';
@@ -151,7 +152,16 @@ export default async function AdminDashboardPage() {
               <tr key={s.id} className="cursor-pointer">
                 <td className="px-4 py-3.5">
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="size-11 w-[44px] h-[28px] rounded-md shrink-0 bg-gradient-to-br from-burgundy to-bg-deep" />
+                    <span className="relative w-[64px] h-[36px] rounded-md shrink-0 overflow-hidden bg-bg-deep ring-1 ring-white/10">
+                      <Image
+                        src={s.cover}
+                        alt=""
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </span>
                     <div className="min-w-0">
                       <p className="font-serif italic font-bold text-[13.5px] text-white truncate max-w-[280px]">
                         {s.title}
