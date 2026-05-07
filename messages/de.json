@@ -45,7 +45,14 @@
     },
     "back": "Zurück",
     "sleepTimer": "Sleep-Timer",
-    "speed": "Geschwindigkeit"
+    "speed": "Geschwindigkeit",
+    "share": {
+      "label": "Teilen",
+      "copied": "Link kopiert!",
+      "title": "{title} — AllureTV",
+      "text": "Diese Geschichte begeistert mich auf AllureTV — hören, ansehen und lesen.",
+      "copyManual": "Diesen Link kopieren:"
+    }
   },
   "auth": {
     "signInWithApple": "Mit Apple anmelden",

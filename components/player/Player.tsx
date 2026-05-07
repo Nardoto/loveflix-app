@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { Story } from '@/lib/data/stories';
 import { cn } from '@/lib/utils';
+import { ShareButton } from './ShareButton';
 
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 2];
 const SLEEP_OPTIONS = [
@@ -446,7 +447,7 @@ export function Player({
           <ChevronLeft className="size-5" />
           <span className="text-sm font-semibold">Back</span>
         </Link>
-        <div className="flex flex-col min-w-0">
+        <div className="flex flex-col min-w-0 flex-1">
           <span className="text-[10px] font-bold uppercase tracking-widest text-rose-bright">
             {mode === 'video' ? 'Video' : 'Audiobook'} · {audioLocale.toUpperCase()}
           </span>
@@ -454,6 +455,14 @@ export function Player({
             {story.title}
           </span>
         </div>
+        {/* Share — opens native share sheet on mobile, falls back to
+            clipboard on desktop. Right-aligned so the title stays the
+            visual focus and the back button stays in the same spot. */}
+        <ShareButton
+          storySlug={story.slug}
+          storyTitle={story.title}
+          className="relative"
+        />
       </div>
 
       {/* Controls overlay (bottom — fades on inactivity) */}
