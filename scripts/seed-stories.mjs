@@ -48,10 +48,14 @@ const sb = createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: false } })
 // inline source + Windows path escaping.
 function dumpCatalog() {
   const dumper = resolve(here, 'dump-catalog.ts');
+  // shell: true on Windows concatenates the args with spaces and skips
+  // quoting — paths like "MEU YOUTUBE" with a space then get split. We
+  // call npx via its .cmd shim directly with shell: false so Node spawns
+  // it natively and the args are passed verbatim.
   const r = spawnSync(
-    'npx',
+    process.platform === 'win32' ? 'npx.cmd' : 'npx',
     ['--yes', 'tsx', dumper],
-    { encoding: 'utf8', cwd: root, shell: true },
+    { encoding: 'utf8', cwd: root },
   );
   if (r.status !== 0 || !r.stdout) {
     console.error('✗ tsx dump-catalog.ts failed (exit', r.status, ')');
