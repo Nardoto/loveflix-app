@@ -107,7 +107,7 @@ async function onCheckoutCompleted(session: Stripe.Checkout.Session) {
   // Upsert a placeholder row — full state lands when customer.subscription.*
   // fires right after.
   const sb = createServiceClient();
-  await sb.from('subscriptions').upsert(
+  const { error } = await sb.from('subscriptions').upsert(
     {
       user_id: userId,
       stripe_customer_id: customerId,
@@ -117,6 +117,12 @@ async function onCheckoutCompleted(session: Stripe.Checkout.Session) {
     },
     { onConflict: 'user_id' },
   );
+  if (error) {
+    // Surface in Vercel logs so a missing GRANT or RLS issue stops being
+    // silent — the previous behavior swallowed it and Stripe got a 200.
+    console.error('[stripe webhook] checkout upsert failed:', error);
+    throw new Error(`subscriptions upsert failed: ${error.message}`);
+  }
 }
 
 async function onSubscriptionEvent(sub: Stripe.Subscription) {
@@ -149,7 +155,7 @@ async function onSubscriptionEvent(sub: Stripe.Subscription) {
     : null;
 
   const sb = createServiceClient();
-  await sb.from('subscriptions').upsert(
+  const { error } = await sb.from('subscriptions').upsert(
     {
       user_id: userId,
       stripe_customer_id: customerId,
@@ -164,6 +170,10 @@ async function onSubscriptionEvent(sub: Stripe.Subscription) {
     },
     { onConflict: 'user_id' },
   );
+  if (error) {
+    console.error('[stripe webhook] subscription upsert failed:', error);
+    throw new Error(`subscriptions upsert failed: ${error.message}`);
+  }
 }
 
 async function onInvoiceEvent(invoice: Stripe.Invoice) {
@@ -182,18 +192,26 @@ async function onInvoiceEvent(invoice: Stripe.Invoice) {
   const sb = createServiceClient();
 
   if (invoice.status === 'paid') {
-    await sb
+    const { error } = await sb
       .from('subscriptions')
       .update({ status: 'active', updated_at: new Date().toISOString() })
       .eq('user_id', userId);
+    if (error) {
+      console.error('[stripe webhook] invoice→active update failed:', error);
+      throw new Error(`subscriptions update failed: ${error.message}`);
+    }
   } else if (
     invoice.status === 'open' ||
     invoice.status === 'uncollectible'
   ) {
-    await sb
+    const { error } = await sb
       .from('subscriptions')
       .update({ status: 'past_due', updated_at: new Date().toISOString() })
       .eq('user_id', userId);
+    if (error) {
+      console.error('[stripe webhook] invoice→past_due update failed:', error);
+      throw new Error(`subscriptions update failed: ${error.message}`);
+    }
   }
 }
 
