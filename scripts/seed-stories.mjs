@@ -42,39 +42,31 @@ if (!SUPA_URL || !SUPA_KEY) {
 const sb = createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: false } });
 
 // --- Read the catalog by piping it through tsx -----------------------
-// We dump a JSON snapshot via a tiny inline TS program so this seeder
-// stays language-agnostic about the catalog format.
-//
-// IMPORTANT: real stories AND placeholders both use ids '001'..'NNN' in
-// the source modules — they collide. We import them SEPARATELY and
-// prefix the placeholder ids with 'ph_' on the way out, so the DB rows
-// are unique. The publicly-visible slug stays untouched.
+// scripts/dump-catalog.ts handles the actual TS imports — we just
+// shell out, capture stdout, and parse JSON. Splitting it lets tsx see
+// a real .ts file (proper project resolution) instead of dancing with
+// inline source + Windows path escaping.
 function dumpCatalog() {
+  const dumper = resolve(here, 'dump-catalog.ts');
   const r = spawnSync(
     'npx',
-    ['--yes', 'tsx', '-e', `
-      import { fazendeiro, magnata, stories } from '${resolve(root, 'lib/data/stories.ts').replace(/\\\\/g, '/')}';
-      import { placeholders } from '${resolve(root, 'lib/data/placeholders.ts').replace(/\\\\/g, '/')}';
-      import { authors, getAuthorFor } from '${resolve(root, 'lib/data/authors.ts').replace(/\\\\/g, '/')}';
-      const real = [fazendeiro, magnata, ...stories];
-      const phs = placeholders.map((p) => ({ ...p, id: 'ph_' + p.id }));
-      const all = [...real, ...phs];
-      const out = {
-        authors: authors.map((a, i) => ({ ...a, display_order: i })),
-        stories: all.map((s) => ({
-          ...s,
-          author_id: getAuthorFor(s).id,
-        })),
-      };
-      process.stdout.write(JSON.stringify(out));
-    `],
+    ['--yes', 'tsx', dumper],
     { encoding: 'utf8', cwd: root, shell: true },
   );
-  if (r.status !== 0) {
-    console.error('tsx failed:', r.stderr);
+  if (r.status !== 0 || !r.stdout) {
+    console.error('✗ tsx dump-catalog.ts failed (exit', r.status, ')');
+    if (r.stderr) console.error('  stderr:', r.stderr.slice(0, 1500));
+    if (r.stdout) console.error('  stdout:', r.stdout.slice(0, 800));
     process.exit(r.status ?? 1);
   }
-  return JSON.parse(r.stdout);
+  try {
+    return JSON.parse(r.stdout);
+  } catch (e) {
+    console.error('✗ catalog JSON parse failed:', e instanceof Error ? e.message : e);
+    console.error('  raw stdout (first 800):', r.stdout.slice(0, 800));
+    if (r.stderr) console.error('  stderr (first 800):', r.stderr.slice(0, 800));
+    process.exit(1);
+  }
 }
 
 console.log('• Loading catalog from lib/data/...');
