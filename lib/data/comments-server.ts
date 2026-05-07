@@ -128,17 +128,28 @@ export async function getCommentsForStory(story: Story): Promise<CommentMeta> {
         .maybeSingle(),
     ]);
 
-    if (!commentsRes.error && commentsRes.data) {
+    if (commentsRes.error) {
+      console.error('[comments-server] story_comments_with_counts query failed:', {
+        slug: story.slug,
+        message: commentsRes.error.message,
+        code: commentsRes.error.code,
+        details: commentsRes.error.details,
+      });
+    }
+    if (commentsRes.data) {
       real = commentsRes.data as RealCommentRow[];
+      console.log('[comments-server]', {
+        slug: story.slug,
+        realFound: real.length,
+      });
     }
     if (!aggRes.error && aggRes.data) {
       const row = aggRes.data as { rated_count?: number; avg_rating?: number };
       realRatedCount = row.rated_count ?? 0;
       realAvgRating = Number(row.avg_rating ?? 0);
     }
-  } catch {
-    // If Supabase blows up (schema not run yet, anonymous auth disabled, etc),
-    // silently fall through to the mocks. Better than a 500 on the catalog.
+  } catch (err) {
+    console.error('[comments-server] Supabase exception:', err);
   }
 
   const mock = generateCommentsForStory(story);

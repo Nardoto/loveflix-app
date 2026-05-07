@@ -1,6 +1,14 @@
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
+
+// Defensa contra cache estático: o page já é dinâmico de fato (lê cookies via
+// getUser e consulta Supabase a cada request), mas marcar explicitamente
+// garante que o Vercel/Next nunca sirva uma versão pré-renderizada — o que
+// faria comentários novos sumirem no F5 logo após o post.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { Play, Headphones, BookOpen, Plus, Star, Clock, Clock3, Languages, ArrowLeft } from 'lucide-react';
 import { Link } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';

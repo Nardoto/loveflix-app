@@ -111,10 +111,22 @@ export async function postComment(input: {
     .single();
 
   if (error || !data) {
+    console.error('[postComment] insert failed:', {
+      slug: input.storySlug,
+      userId: user.id,
+      message: error?.message,
+      code: error?.code,
+      details: error?.details,
+      hint: error?.hint,
+    });
     return { ok: false, error: error?.message ?? 'Failed to post comment' };
   }
 
+  console.log('[postComment] inserted', { id: data.id, slug: input.storySlug });
+  // Revalidate em todos os formatos possíveis. O segundo argumento 'page'
+  // garante que o cache da página dinâmica seja invalidado.
   revalidatePath(`/[locale]/s/${input.storySlug}`, 'page');
+  revalidatePath(`/s/${input.storySlug}`);
   return { ok: true, data: { id: data.id } };
 }
 
