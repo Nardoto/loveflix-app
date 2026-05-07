@@ -168,6 +168,24 @@ button, [role="button"], a {
   }
 }
 
+/* Form inputs in admin pages — shared shell for text/select/textarea so
+   the new-story wizard reads as one consistent surface. */
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: white;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.input:focus {
+  border-color: var(--rose);
+}
+.input::placeholder { color: var(--text-mute); }
+
 /* Tight vertical padding on the scroll track — Disney+/Netflix density.
    Just enough room for the hover lift without bleeding into the next row. */
 .row-track {

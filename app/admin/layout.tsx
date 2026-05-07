@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { requireAdmin, getUser } from '@/lib/auth-helpers';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
+import { AdminLockBanner } from '@/components/admin/AdminLockBanner';
 
 // Admin lives outside the locale tree on purpose:
 //   - English-only operator UI (not customer-facing).
@@ -41,6 +42,7 @@ export default async function AdminLayout({
     <div className="flex min-h-screen">
       <AdminSidebar user={userMeta} />
       <main className="flex-1 min-w-0 px-6 md:px-10 py-7 md:py-8 pb-20 max-w-[1280px]">
+        <AdminLockBanner email={userMeta.email} />
         {children}
       </main>
     </div>

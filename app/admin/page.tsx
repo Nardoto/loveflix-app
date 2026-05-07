@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Plus, RefreshCw, Upload, FileText, MessageSquare, CreditCard } from 'lucide-react';
-import { allStories } from '@/lib/data/stories';
+import { getAllStories } from '@/lib/data/stories-server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +19,7 @@ const SUPABASE_CONFIGURED = !!(
 );
 
 async function loadStats() {
+  const allStories = await getAllStories();
   const totalStories = allStories.length;
   const livePublished = allStories.filter(
     (s) => s.videoSrc || s.videoKey,
@@ -52,7 +53,10 @@ async function loadStats() {
 }
 
 async function loadRecentStories(limit = 5) {
-  return allStories.slice(0, limit);
+  const all = await getAllStories();
+  // Newest first — DB query orders ascending by created_at; we reverse so
+  // the latest uploads sit at the top of the dashboard.
+  return [...all].reverse().slice(0, limit);
 }
 
 async function loadCommentsToModerate(limit = 3) {

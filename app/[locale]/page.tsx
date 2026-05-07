@@ -4,8 +4,8 @@ import { HeroCarousel } from '@/components/catalog/HeroCarousel';
 import { Row } from '@/components/catalog/Row';
 import { AuthorPills } from '@/components/catalog/AuthorPills';
 import { HotShowcase } from '@/components/catalog/HotShowcase';
-import { allStories, fazendeiro, magnata, stories } from '@/lib/data/stories';
-import { hotStories } from '@/lib/data/hot';
+import { getAllStories } from '@/lib/data/stories-server';
+import { isStoryHot } from '@/lib/data/hot';
 import { filterByLocale, isAvailableInLocale } from '@/lib/data/locale-filter';
 
 export default async function HomePage({
@@ -18,31 +18,37 @@ export default async function HomePage({
   const t = await getTranslations('home.rows');
   const tHero = await getTranslations('home.hero');
 
-  // Hide stories whose audio isn't available in the current locale (German-
-  // only and French-only uploads disappear from the EN/ES home, etc.).
-  // Coming-soon placeholders stay visible across locales — they have no
-  // audio yet and serve as aspirational catalog filler.
-  const localeStories = filterByLocale(stories, locale);
-  const localeAllStories = filterByLocale(allStories, locale);
-  const localeHotStories = filterByLocale(hotStories, locale);
+  // Read from Supabase (with hardcoded fallback when the table is empty —
+  // a fresh deploy still renders a non-blank home).
+  const all = await getAllStories();
+  // Reproduce the legacy split: `stories` excluded the two flagships +
+  // placeholders. After migration both sets are mixed; we just filter on
+  // the genre rows below — no need to slice anymore.
+  const localeAll = filterByLocale(all, locale);
+  const localeHot = localeAll.filter(isStoryHot);
 
-  const freeRow = localeAllStories.filter((s) => s.isFree);
-  const billionaireRow = localeStories.filter((s) => s.genre === 'billionaire');
-  const mafiaRow = localeStories.filter((s) => s.genre === 'mafia');
-  const forbiddenRow = localeStories.filter((s) => s.genre === 'forbidden');
-  const secretBabyRow = localeStories.filter((s) => s.genre === 'secret_baby');
-  const moodRow = localeStories.filter((s) => s.genre === 'mood');
-  const trendingRow = localeAllStories.slice(0, 12);
+  const freeRow = localeAll.filter((s) => s.isFree);
+  const billionaireRow = localeAll.filter((s) => s.genre === 'billionaire');
+  const mafiaRow = localeAll.filter((s) => s.genre === 'mafia');
+  const forbiddenRow = localeAll.filter((s) => s.genre === 'forbidden');
+  const secretBabyRow = localeAll.filter((s) => s.genre === 'secret_baby');
+  const moodRow = localeAll.filter((s) => s.genre === 'mood');
+  const trendingRow = localeAll.slice(0, 12);
 
-  // Hero carousel — flagship titles + a few of the latest playable releases
-  // available in this locale. Flagships only appear when their audio covers
-  // this locale (fazendeiro and magnata both ship en/de/fr/es, so they're
-  // global in practice). Manual nav only (no auto-rotation) to respect the
-  // 55+ audience guidance.
+  // Hero carousel — flagship titles + the latest playable releases
+  // available in this locale. We pick the flagships explicitly by id then
+  // top up with newer releases that have a real videoKey set. Manual nav
+  // only (no auto-rotation) to respect the 55+ audience guidance.
+  const fazendeiro = all.find((s) => s.id === 'fazendeiro');
+  const magnata = all.find((s) => s.id === 'magnata');
   const heroSlides = [
-    ...(isAvailableInLocale(fazendeiro, locale) ? [fazendeiro] : []),
-    ...(isAvailableInLocale(magnata, locale) ? [magnata] : []),
-    ...localeStories.filter((s) => s.videoKey).slice(0, 4),
+    ...(fazendeiro && isAvailableInLocale(fazendeiro, locale) ? [fazendeiro] : []),
+    ...(magnata && isAvailableInLocale(magnata, locale) ? [magnata] : []),
+    ...localeAll
+      .filter(
+        (s) => s.videoKey && s.id !== 'fazendeiro' && s.id !== 'magnata',
+      )
+      .slice(0, 4),
   ];
 
   return (
@@ -58,7 +64,7 @@ export default async function HomePage({
           the primary discovery path on AllureTV. */}
       <AuthorPills />
 
-      <HotShowcase stories={localeHotStories} />
+      <HotShowcase stories={localeHot} />
 
       <Row title={t('trending')} highlight="Trending" stories={trendingRow} />
       <Row title="Free to Listen" highlight="Free" stories={freeRow} />

@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
-import { allStories } from '@/lib/data/stories';
+import { getAllStories } from '@/lib/data/stories-server';
 import { Button } from '@/components/ui/button';
 import { PageHead, Pill, Table, Th } from '@/components/admin/AdminUI';
 
 export default async function AdminStoriesPage() {
-  const stories = allStories;
+  const stories = await getAllStories();
 
   const live = stories.filter((s) => s.videoSrc || s.videoKey);
   const coming = stories.filter((s) => s.isComingSoon);
@@ -87,9 +87,10 @@ export default async function AdminStoriesPage() {
       </Table>
 
       <p className="text-[11px] text-text-mute mt-4">
-        Catálogo lido de <code className="font-mono">lib/data/stories.ts</code>{' '}
-        + <code className="font-mono">placeholders.ts</code>. Sprint futuro
-        migra pra Supabase.
+        Catálogo carregado do Supabase quando populado, com fallback pra
+        <code className="font-mono">lib/data/stories.ts</code> em deploy
+        fresco. Rode <code className="font-mono">node scripts/seed-stories.mjs</code>{' '}
+        pra migrar o catálogo hardcoded pro banco.
       </p>
     </>
   );
