@@ -1,5 +1,6 @@
 import { setRequestLocale } from 'next-intl/server';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import Image from 'next/image';
 import { Heart, Globe, BellRing, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { getUser } from '@/lib/auth-helpers';
 import { signOut } from '@/app/actions/auth';
 import { createClient } from '@/lib/supabase/server';
 import { AccountSubscription } from '@/components/account/AccountSubscription';
+import { pickCurrency, PRICE_DISPLAY } from '@/lib/stripe';
 
 // Supabase Google OAuth populates user.user_metadata with these fields:
 //   - full_name | name
@@ -73,6 +75,13 @@ export default async function AccountPage({
 
   const hasStripe = !!process.env.STRIPE_SECRET_KEY;
 
+  // Pick the price in the user's currency for the Upgrade button label.
+  const h = await headers();
+  const country =
+    h.get('x-vercel-ip-country') || h.get('cf-ipcountry') || null;
+  const currency = pickCurrency({ country, locale });
+  const priceLabel = PRICE_DISPLAY[currency].label;
+
   return (
     <div className="pt-24 md:pt-28 px-5 md:px-10 lg:px-14 max-w-4xl mx-auto pb-20">
       <header className="flex items-center gap-4 mb-10">
@@ -104,7 +113,13 @@ export default async function AccountPage({
         </div>
       </header>
 
-      <AccountSubscription subscription={subscription} hasStripe={hasStripe} />
+      <AccountSubscription
+        subscription={subscription}
+        hasStripe={hasStripe}
+        priceLabel={priceLabel}
+        currencySymbol={PRICE_DISPLAY[currency].symbol}
+        currencyAmount={PRICE_DISPLAY[currency].amount}
+      />
 
       <section className="mb-10">
         <h2 className="font-serif italic text-2xl font-bold text-white mb-4">

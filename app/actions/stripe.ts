@@ -10,7 +10,7 @@
 // own subscriptions row).
 
 import { headers } from 'next/headers';
-import { stripe, PRICE_ID_MONTHLY } from '@/lib/stripe';
+import { stripe, PRICE_IDS, pickCurrency } from '@/lib/stripe';
 import { getUser } from '@/lib/auth-helpers';
 import { createServiceClient } from '@/lib/supabase/server';
 
@@ -21,7 +21,7 @@ type Result<T = void> =
 const SUPABASE_CONFIGURED = !!(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
 );
-const STRIPE_CONFIGURED = !!process.env.STRIPE_SECRET_KEY && !!PRICE_ID_MONTHLY;
+const STRIPE_CONFIGURED = !!process.env.STRIPE_SECRET_KEY && !!PRICE_IDS.usd;
 
 async function appOrigin(): Promise<string> {
   if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
@@ -31,8 +31,27 @@ async function appOrigin(): Promise<string> {
   return host ? `${proto}://${host}` : 'https://alluretv.net';
 }
 
-/** Start a Stripe Checkout session for the monthly plan. */
-export async function createCheckoutSession(): Promise<Result<{ url: string }>> {
+/** Resolve the customer's country from the request headers (Vercel/CDN geo). */
+async function resolveCountry(): Promise<string | null> {
+  const h = await headers();
+  // Vercel sets x-vercel-ip-country; Cloudflare sets cf-ipcountry; both
+  // are 2-letter ISO codes. Fall back to Accept-Language country segment.
+  const fromVercel = h.get('x-vercel-ip-country');
+  if (fromVercel) return fromVercel;
+  const fromCf = h.get('cf-ipcountry');
+  if (fromCf) return fromCf;
+  // Accept-Language: "pt-BR,en;q=0.9" → BR
+  const al = h.get('accept-language');
+  const m = al?.match(/[a-z]{2,3}-([A-Z]{2})/);
+  return m?.[1] ?? null;
+}
+
+/** Start a Stripe Checkout session for the monthly plan.
+ *  Picks USD/BRL/EUR based on the customer's country (Vercel geo header). */
+export async function createCheckoutSession(opts?: {
+  /** Override currency detection — used when the UI offers a manual chooser. */
+  locale?: string;
+}): Promise<Result<{ url: string }>> {
   if (!STRIPE_CONFIGURED) {
     return { ok: false, error: 'Stripe is not configured yet.' };
   }
@@ -46,6 +65,18 @@ export async function createCheckoutSession(): Promise<Result<{ url: string }>> 
   }
 
   const origin = await appOrigin();
+
+  // Pick price by country (BR → BRL, DE/FR/ES/etc → EUR, default → USD).
+  const country = await resolveCountry();
+  const currency = pickCurrency({ country, locale: opts?.locale ?? null });
+  const priceId = PRICE_IDS[currency];
+
+  if (!priceId) {
+    return {
+      ok: false,
+      error: `Price for ${currency.toUpperCase()} is not configured.`,
+    };
+  }
 
   // Reuse an existing Stripe customer if we already have one for this user.
   let customerId: string | undefined;
@@ -65,7 +96,7 @@ export async function createCheckoutSession(): Promise<Result<{ url: string }>> 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
-      line_items: [{ price: PRICE_ID_MONTHLY, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       // Important: this lets the webhook attach the subscription to the
       // correct Supabase user.
       client_reference_id: user.id,

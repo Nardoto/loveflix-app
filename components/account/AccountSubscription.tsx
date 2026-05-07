@@ -18,9 +18,15 @@ type Subscription = {
 export function AccountSubscription({
   subscription,
   hasStripe,
+  priceLabel = '$14.99/mo',
+  currencySymbol = '$',
+  currencyAmount = '14.99',
 }: {
   subscription: Subscription;
   hasStripe: boolean;
+  priceLabel?: string;
+  currencySymbol?: string;
+  currencyAmount?: string;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -90,7 +96,8 @@ export function AccountSubscription({
         </p>
         {isActive ? (
           <p className="text-3xl font-bold text-rose-bright">
-            $14.99
+            {currencySymbol}
+            {currencyAmount}
             <span className="text-sm text-text-dim font-normal ml-1">
               /month
             </span>
@@ -107,7 +114,7 @@ export function AccountSubscription({
               </>
             ) : (
               <>
-                <Sparkles className="size-4" /> Upgrade — $14.99/mo
+                <Sparkles className="size-4" /> Upgrade — {priceLabel}
               </>
             )}
           </Button>
