@@ -668,15 +668,30 @@ export function Player({
             >
               <SkipForward />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setMuted((m) => !m)}
-              aria-label="Toggle mute"
-              className="ml-1 hidden sm:inline-flex"
-            >
-              {muted || volume === 0 ? <VolumeX /> : <Volume2 />}
-            </Button>
+            <div className="ml-1 hidden sm:flex items-center group/vol">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMuted((m) => !m)}
+                aria-label="Toggle mute"
+              >
+                {muted || volume === 0 ? <VolumeX /> : <Volume2 />}
+              </Button>
+              <div className="w-0 group-hover/vol:w-24 focus-within:w-24 overflow-hidden transition-[width] duration-200 ease-out">
+                <Slider
+                  value={[muted ? 0 : volume]}
+                  max={1}
+                  step={0.01}
+                  aria-label="Volume"
+                  onValueChange={([v]) => {
+                    setVolume(v);
+                    if (v > 0 && muted) setMuted(false);
+                    if (v === 0) setMuted(true);
+                  }}
+                  className="w-20 mx-2"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Secondary row — mode toggle + dropdowns. Single row on desktop
