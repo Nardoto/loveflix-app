@@ -175,3 +175,46 @@ export async function deleteComment(input: {
   revalidatePath(`/[locale]/s/${input.storySlug}`, 'page');
   return { ok: true, data: undefined };
 }
+
+
+// ============================================================
+// EDIT own comment
+// ============================================================
+export async function editComment(input: {
+  commentId: string;
+  storySlug: string;
+  body: string;
+  stars?: number | null;
+}): Promise<Result> {
+  const text = input.body.trim();
+  if (!text) return { ok: false, error: 'Comment cannot be empty' };
+  if (text.length > 4000) return { ok: false, error: 'Comment is too long' };
+  if (input.stars != null && (input.stars < 1 || input.stars > 5)) {
+    return { ok: false, error: 'Invalid rating' };
+  }
+
+  const user = await getSignedInUser();
+  if (!user) return NOT_SIGNED_IN;
+
+  const supabase = await createClient();
+  // Belt-and-suspenders: filter on user_id even though RLS already enforces
+  // it — this way a tampered commentId from the client returns 0 rows
+  // updated instead of "succeeding" against someone else's row.
+  const { data, error } = await supabase
+    .from('story_comments')
+    .update({
+      body: text,
+      stars: input.stars ?? null,
+    })
+    .eq('id', input.commentId)
+    .eq('user_id', user.id)
+    .select('id');
+
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return { ok: false, error: 'Comment not found or not yours' };
+  }
+
+  revalidatePath(`/[locale]/s/${input.storySlug}`, 'page');
+  return { ok: true, data: undefined };
+}

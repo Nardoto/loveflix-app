@@ -22,6 +22,10 @@ export type StoryComment = {
   date: string;
   body: string;
   likes: number;
+  // Set ONLY for real Supabase rows. Used by the client to decide whether to
+  // show Edit/Delete buttons (`c.userId === currentUserId`). Mock comments
+  // leave this undefined so they're never editable.
+  userId?: string;
 };
 
 // ---------------------------------------------------------------------------

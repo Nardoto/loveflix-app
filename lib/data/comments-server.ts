@@ -93,6 +93,7 @@ function rowToComment(row: RealCommentRow): StoryComment {
     date: relativeDate(row.created_at),
     body: row.body,
     likes: row.likes_count,
+    userId: row.user_id,
   };
 }
 

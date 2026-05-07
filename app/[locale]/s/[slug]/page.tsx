@@ -249,6 +249,7 @@ export default async function StoryDetailPage({
         initialCount={ratingCount}
         isComingSoon={!!story.isComingSoon}
         isSignedIn={!!currentUser}
+        currentUserId={currentUser?.id ?? null}
       />
 
       {related.length > 0 && (
