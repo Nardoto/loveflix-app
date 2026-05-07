@@ -314,6 +314,139 @@ export function Player({
     }
   }, [tier, tokenError, story.videoKey, story.audioKeyByLocale]);
 
+  // ============================================================
+  // MediaSession — lock screen / Bluetooth / background audio
+  // ============================================================
+  // Without this block: iOS Safari (PWA) pauses the audio ~30s after the
+  // screen locks, Android shows a generic "Chrome" notification with no
+  // cover, and Bluetooth headset / car / smartwatch buttons do nothing.
+  // With it: the OS treats us as a real audio app — cover + title in the
+  // lock screen, scrubber works there, and iOS keeps the session alive.
+
+  // Metadata: re-runs when the story or audio language changes. Wrapped in
+  // try/catch because some embedded WebViews throw on the MediaMetadata
+  // constructor even when navigator.mediaSession is defined.
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: story.title,
+        artist: `Audiobook · ${audioLocale.toUpperCase()}`,
+        album: 'AllureTV — Romance Audiobooks',
+        artwork: [
+          { src: story.cover, sizes: '96x96', type: 'image/jpeg' },
+          { src: story.cover, sizes: '192x192', type: 'image/jpeg' },
+          { src: story.cover, sizes: '384x384', type: 'image/jpeg' },
+          { src: story.cover, sizes: '512x512', type: 'image/jpeg' },
+        ],
+      });
+    } catch {
+      // Defensive — older Edge / WebViews.
+    }
+  }, [story.id, story.title, story.cover, audioLocale]);
+
+  // Action handlers. We re-read refs inside each callback (instead of
+  // closing over `activeMedia`) so seeks always operate on whichever
+  // element is currently active, even right after switchMode swaps them.
+  // Each setActionHandler is guarded because Safari throws on actions it
+  // doesn't recognise (e.g. seekto on older versions) and one throw would
+  // skip all the handlers that come after.
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    const set = (action: MediaSessionAction, handler: MediaSessionActionHandler | null) => {
+      try {
+        navigator.mediaSession.setActionHandler(action, handler);
+      } catch {
+        // Action not supported on this UA — skip silently.
+      }
+    };
+    const getMedia = () =>
+      (mode === 'video' ? videoRef.current : audioRef.current);
+    set('play', () => {
+      const m = getMedia();
+      m?.play().catch(() => {});
+      setIsPlaying(true);
+    });
+    set('pause', () => {
+      getMedia()?.pause();
+      setIsPlaying(false);
+    });
+    set('seekbackward', (details) => {
+      const m = getMedia();
+      if (!m) return;
+      const offset = details.seekOffset ?? 10;
+      m.currentTime = Math.max(0, m.currentTime - offset);
+    });
+    set('seekforward', (details) => {
+      const m = getMedia();
+      if (!m) return;
+      const offset = details.seekOffset ?? 10;
+      const max = isFinite(m.duration) ? m.duration : m.currentTime + offset;
+      m.currentTime = Math.min(max, m.currentTime + offset);
+    });
+    set('seekto', (details) => {
+      const m = getMedia();
+      if (!m || details.seekTime == null) return;
+      m.currentTime = details.seekTime;
+      setTime(details.seekTime);
+    });
+    set('stop', () => {
+      getMedia()?.pause();
+      setIsPlaying(false);
+    });
+    return () => {
+      set('play', null);
+      set('pause', null);
+      set('seekbackward', null);
+      set('seekforward', null);
+      set('seekto', null);
+      set('stop', null);
+    };
+  }, [mode]);
+
+  // Mirror our internal play/pause flag into the OS UI so the lock-screen
+  // button matches reality (otherwise it can show "play" while audio plays).
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+  }, [isPlaying]);
+
+  // Position state — drives the scrubber on the lock screen. Guarded
+  // against the brief window before loadedmetadata where duration is NaN
+  // or Infinity (Chrome throws on that and silently disables the scrubber
+  // for the rest of the session).
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    if (typeof navigator.mediaSession.setPositionState !== 'function') return;
+    if (!isFinite(duration) || duration <= 0) return;
+    try {
+      navigator.mediaSession.setPositionState({
+        duration,
+        position: Math.min(Math.max(0, time), duration),
+        playbackRate: speed,
+      });
+    } catch {
+      // Inconsistent state — next tick will correct it.
+    }
+  }, [duration, speed, time]);
+
+  // Clear the OS session when the player unmounts so the user doesn't see
+  // a phantom "AllureTV — paused" notification after closing the player.
+  useEffect(() => {
+    return () => {
+      if (!('mediaSession' in navigator)) return;
+      navigator.mediaSession.metadata = null;
+      navigator.mediaSession.playbackState = 'none';
+      if (typeof navigator.mediaSession.setPositionState === 'function') {
+        try {
+          navigator.mediaSession.setPositionState();
+        } catch {
+          /* ignore */
+        }
+      }
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col">
       {/* Click-to-toggle layer covers media area only (excludes controls + top bar).
