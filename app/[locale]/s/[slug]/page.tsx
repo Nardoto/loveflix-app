@@ -59,8 +59,11 @@ export default async function StoryDetailPage({
 
   return (
     <>
-      {/* Cinematic hero */}
-      <section className="relative h-[70vh] min-h-[500px] md:h-[80vh] w-full overflow-hidden">
+      {/* Cinematic hero. min-h em vez de h fixo: se o conteúdo crescer
+          (título de 3 linhas + sinopse + botões), a section se estende
+          em vez de cortar os elementos pra cima do topbar. overflow-hidden
+          mantido só pro scale-105 do Image não vazar. */}
+      <section className="relative min-h-[70vh] md:min-h-[80vh] w-full overflow-hidden">
         <Image
           src={story.cover}
           alt={story.title}
@@ -71,10 +74,8 @@ export default async function StoryDetailPage({
         />
         <div className="absolute inset-0 hero-overlay" />
 
-        {/* Back button — top-left, above the title, separated from the
-            topbar so 55+ users have a clear "voltar" sem precisar usar
-            o botão do navegador. z-30 fica abaixo do topbar (z-40) mas
-            acima do hero overlay. */}
+        {/* Back button — top-left, separado do topbar pra 55+ ter um
+            "voltar" óbvio sem precisar do back do navegador. */}
         <Link
           href="/"
           aria-label="Voltar"
@@ -84,9 +85,11 @@ export default async function StoryDetailPage({
           <span className="hidden sm:inline">Voltar</span>
         </Link>
 
-        {/* pt-28 reserva espaço pro topbar (h-16/18 = 64-72px) +
-            o botão Voltar não esconder o título. */}
-        <div className="relative h-full flex flex-col justify-end pt-28 pb-16 md:pb-24 px-5 md:px-10 lg:px-14 max-w-3xl">
+        {/* Conteúdo flui de cima pra baixo a partir do pt-28 (espaço pro
+            topbar h-16/18 + folga do botão Voltar). Sem h-full / justify-end
+            que antes forçavam stack pro fim e vazavam pra cima quando
+            o conteúdo não cabia. */}
+        <div className="relative pt-28 md:pt-32 pb-16 md:pb-24 px-5 md:px-10 lg:px-14 max-w-3xl">
           <div className="flex items-center gap-2 mb-3 md:mb-4 flex-wrap">
             {story.isComingSoon && (
               <Badge variant="comingSoon">
