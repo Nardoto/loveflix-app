@@ -12,6 +12,7 @@ import {
 } from '@/components/admin/AdminUI';
 import { Button } from '@/components/ui/button';
 import { PRICE_IDS } from '@/lib/stripe';
+import { getFxToUsd, type FxRates } from '@/lib/fx';
 
 const SUPABASE_CONFIGURED = !!(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -24,10 +25,6 @@ const PRICE_CENTS: Record<string, { cents: number; currency: 'usd' | 'brl' | 'eu
 if (PRICE_IDS.usd) PRICE_CENTS[PRICE_IDS.usd] = { cents: 1499, currency: 'usd' };
 if (PRICE_IDS.brl) PRICE_CENTS[PRICE_IDS.brl] = { cents: 7990, currency: 'brl' };
 if (PRICE_IDS.eur) PRICE_CENTS[PRICE_IDS.eur] = { cents: 1399, currency: 'eur' };
-
-// Naive USD-equivalent FX so we can show one consolidated MRR figure.
-// Replace with a daily-cached conversion table if accuracy matters.
-const TO_USD: Record<string, number> = { usd: 1, brl: 0.2, eur: 1.08 };
 
 type Sub = {
   user_id: string;
@@ -51,7 +48,9 @@ async function loadSubs(): Promise<{
   active: number;
   trialing: number;
   cancelingAtPeriodEnd: number;
+  fx: FxRates;
 }> {
+  const fx = await getFxToUsd();
   const empty = {
     subs: [] as Sub[],
     mrrUsd: 0,
@@ -59,6 +58,7 @@ async function loadSubs(): Promise<{
     active: 0,
     trialing: 0,
     cancelingAtPeriodEnd: 0,
+    fx,
   };
   if (!SUPABASE_CONFIGURED) return empty;
   try {
@@ -94,7 +94,7 @@ async function loadSubs(): Promise<{
         if (s.cancel_at_period_end) canceling += 1;
         const meta = s.price_id ? PRICE_CENTS[s.price_id] : undefined;
         if (meta) {
-          mrrCentsUsd += meta.cents * (TO_USD[meta.currency] ?? 1);
+          mrrCentsUsd += meta.cents * fx[meta.currency];
           mrrCentsBy[meta.currency] += meta.cents;
         }
       } else if (s.status === 'trialing') {
@@ -113,6 +113,7 @@ async function loadSubs(): Promise<{
       active,
       trialing,
       cancelingAtPeriodEnd: canceling,
+      fx,
     };
   } catch {
     return empty;
@@ -135,7 +136,11 @@ const FMT_BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'B
 const FMT_EUR = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 });
 
 export default async function AdminSubscriptionsPage() {
-  const { subs, mrrUsd, mrrByCurrency, active, trialing, cancelingAtPeriodEnd } = await loadSubs();
+  const { subs, mrrUsd, mrrByCurrency, active, trialing, cancelingAtPeriodEnd, fx } = await loadSubs();
+  const fxLabel =
+    fx.source === 'ecb'
+      ? `BCE · ${new Date(fx.date).toLocaleDateString('pt-BR')}`
+      : 'câmbio offline (estimado)';
 
   return (
     <>
@@ -162,9 +167,9 @@ export default async function AdminSubscriptionsPage() {
       <StatGrid>
         <Stat
           label="MRR (USD eq.)"
-          value={`$${mrrUsd.toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
-          delta={`${active} ativas`}
-          deltaTone={active > 0 ? 'up' : 'neutral'}
+          value={FMT_USD.format(mrrUsd)}
+          delta={fxLabel}
+          deltaTone={fx.source === 'ecb' ? 'up' : 'down'}
         />
         <Stat
           label="Ativas"
