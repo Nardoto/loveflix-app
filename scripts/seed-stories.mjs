@@ -48,15 +48,23 @@ const sb = createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: false } })
 // inline source + Windows path escaping.
 function dumpCatalog() {
   const dumper = resolve(here, 'dump-catalog.ts');
-  // shell: true on Windows concatenates the args with spaces and skips
-  // quoting — paths like "MEU YOUTUBE" with a space then get split. We
-  // call npx via its .cmd shim directly with shell: false so Node spawns
-  // it natively and the args are passed verbatim.
+  // Windows spawn quirks:
+  //   • shell: false — Node can't find `npx.cmd` via PATHEXT; spawn fails
+  //     with no exit code (status: null).
+  //   • shell: true — Node concatenates args with spaces and SKIPS
+  //     quoting, so a path with "MEU YOUTUBE" gets split.
+  // Solution: shell: true + manually quote the dumper path so cmd.exe
+  // sees one token, not two.
+  const dumperArg = process.platform === 'win32' ? `"${dumper}"` : dumper;
   const r = spawnSync(
-    process.platform === 'win32' ? 'npx.cmd' : 'npx',
-    ['--yes', 'tsx', dumper],
-    { encoding: 'utf8', cwd: root },
+    'npx',
+    ['--yes', 'tsx', dumperArg],
+    { encoding: 'utf8', cwd: root, shell: true },
   );
+  if (r.error) {
+    console.error('✗ spawn failed:', r.error.message);
+    process.exit(1);
+  }
   if (r.status !== 0 || !r.stdout) {
     console.error('✗ tsx dump-catalog.ts failed (exit', r.status, ')');
     if (r.stderr) console.error('  stderr:', r.stderr.slice(0, 1500));
