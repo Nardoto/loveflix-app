@@ -81,7 +81,9 @@ async function loadFromSupabase(): Promise<Story[] | null> {
     const { data, error } = await sb
       .from('stories')
       .select('*, story_audio(locale, audio_src, audio_key)')
-      .order('created_at', { ascending: true });
+      // DESC: novidades em destaque (Hero, Trending, Hot, rows de gênero
+      // pegam os primeiros N — usuária precisa ver o que acabou de chegar).
+      .order('created_at', { ascending: false });
     if (error || !data || data.length === 0) return null;
     return (data as RawStoryRow[]).map(rowToStory);
   } catch {
