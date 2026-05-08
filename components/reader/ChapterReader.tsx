@@ -16,6 +16,7 @@ import {
 } from 'react';
 import Image from 'next/image';
 import { ArrowLeft, Heart, Settings2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/lib/navigation';
 import type { Story } from '@/lib/data/stories';
 import {
@@ -45,6 +46,7 @@ export function ChapterReader({
   final: FinalBlock | null;
   totalWords: number;
 }) {
+  const t = useTranslations('reader');
   const [theme, setTheme] = useState<Theme>('dark');
   const [fontSize, setFontSize] = useState<FontSize>('md');
   const [chromeHidden, setChromeHidden] = useState(false);
@@ -171,8 +173,8 @@ export function ChapterReader({
 
   const eyebrowText =
     currentChapter < 0
-      ? 'Cover'
-      : (chapters[currentChapter]?.eyebrow ?? 'Reading');
+      ? t('cover')
+      : (chapters[currentChapter]?.eyebrow ?? t('settings'));
 
   return (
     <div
@@ -198,7 +200,7 @@ export function ChapterReader({
       >
         <Link
           href={`/s/${story.slug}` as never}
-          aria-label="Close reader"
+          aria-label={t('closeReader')}
           className="grid place-items-center size-10 rounded-full hover:bg-white/5 transition-colors -ml-1"
         >
           <ArrowLeft className="size-5" />
@@ -226,7 +228,7 @@ export function ChapterReader({
               className="object-cover"
             />
           </div>
-          <p className="reader-eyebrow mb-3">A Romance Novel</p>
+          <p className="reader-eyebrow mb-3">{t('aRomanceNovel')}</p>
           <h1 className="reader-title text-4xl md:text-5xl mb-5 max-w-md">
             {story.title}
           </h1>
@@ -237,7 +239,7 @@ export function ChapterReader({
             onClick={beginReading}
             className="px-8 py-3.5 rounded-full bg-gradient-to-r from-[color:var(--reader-rose)] to-[color:var(--reader-accent-soft)] text-white font-bold text-xs tracking-[0.25em] uppercase shadow-xl shadow-black/30 hover:scale-[1.03] transition-transform"
           >
-            Begin reading
+            {t('beginReading')}
           </button>
         </section>
       )}
@@ -267,11 +269,11 @@ export function ChapterReader({
         <div className="flex-1 min-w-0 text-xs text-[color:var(--reader-text-mute)] tabular-nums">
           <p className="text-[10px] uppercase tracking-[0.25em] mb-0.5">
             {currentChapter >= 0
-              ? `${eyebrowText} · ${currentChapter + 1} of ${chapters.length}`
-              : 'Cover'}
+              ? t('chapterOf', { eyebrow: eyebrowText, current: currentChapter + 1, total: chapters.length })
+              : t('cover')}
           </p>
           <p className="text-[color:var(--reader-text-dim)]">
-            {Math.round(progress)}% · {minutesLeft} min left
+            {t('progressLabel', { percent: Math.round(progress), minutes: minutesLeft })}
           </p>
         </div>
         <button
@@ -281,7 +283,7 @@ export function ChapterReader({
             setChromeHidden(false);
           }}
           className="grid place-items-center size-10 rounded-full hover:bg-white/5 transition-colors"
-          aria-label="Reader settings"
+          aria-label={t('readerSettings')}
         >
           <Settings2 className="size-5" />
         </button>
@@ -294,20 +296,20 @@ export function ChapterReader({
       >
         <div className="flex items-center justify-between mb-4">
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[color:var(--reader-text-mute)]">
-            Reading
+            {t('settings')}
           </p>
           <button
             onClick={() => setShowSheet(false)}
             className="text-xs text-[color:var(--reader-text-dim)] hover:text-[color:var(--reader-text)]"
           >
-            Done
+            {t('done')}
           </button>
         </div>
 
         {/* Font size */}
         <div className="mb-5">
           <p className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--reader-text-mute)] mb-2">
-            Text size
+            {t('textSize')}
           </p>
           <div className="grid grid-cols-4 gap-1 rounded-full bg-black/15 p-1">
             {(
@@ -328,7 +330,7 @@ export function ChapterReader({
                     : 'text-[color:var(--reader-text-dim)] hover:text-[color:var(--reader-text)]',
                 )}
                 style={{ fontSize: `${opt.size}px` }}
-                aria-label={`Text size ${opt.v}`}
+                aria-label={t('textSizeAria', { size: opt.v })}
               >
                 {opt.label}
               </button>
@@ -339,29 +341,29 @@ export function ChapterReader({
         {/* Theme */}
         <div>
           <p className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--reader-text-mute)] mb-2">
-            Theme
+            {t('theme')}
           </p>
           <div className="grid grid-cols-3 gap-2">
             {(
               [
-                { key: 'light', label: 'Cream', bg: '#fbf6ee', fg: '#2a1f1a' },
-                { key: 'sepia', label: 'Sepia', bg: '#f4e8d0', fg: '#3a2a1c' },
-                { key: 'dark', label: 'Night', bg: '#0a0710', fg: '#ece4ea' },
+                { key: 'light', label: t('themes.cream'), bg: '#fbf6ee', fg: '#2a1f1a' },
+                { key: 'sepia', label: t('themes.sepia'), bg: '#f4e8d0', fg: '#3a2a1c' },
+                { key: 'dark', label: t('themes.night'), bg: '#0a0710', fg: '#ece4ea' },
               ] as Array<{ key: Theme; label: string; bg: string; fg: string }>
-            ).map((t) => (
+            ).map((opt) => (
               <button
-                key={t.key}
-                onClick={() => setTheme(t.key)}
+                key={opt.key}
+                onClick={() => setTheme(opt.key)}
                 className={cn(
                   'rounded-xl p-3 border transition-all text-left',
-                  theme === t.key
+                  theme === opt.key
                     ? 'border-[color:var(--reader-accent)] ring-1 ring-[color:var(--reader-accent)]'
                     : 'border-transparent opacity-70 hover:opacity-100',
                 )}
-                style={{ background: t.bg, color: t.fg }}
+                style={{ background: opt.bg, color: opt.fg }}
               >
                 <span className="block text-[10px] font-bold tracking-[0.25em] uppercase">
-                  {t.label}
+                  {opt.label}
                 </span>
                 <span
                   className="block font-serif italic text-base mt-1"

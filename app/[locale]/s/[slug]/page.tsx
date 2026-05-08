@@ -25,17 +25,6 @@ import { isStoryHot } from '@/lib/data/hot';
 import { FlameIcon } from '@/components/icons/FlameIcon';
 import { SparkleIcon } from '@/components/icons/SparkleIcon';
 
-const GENRE_LABELS: Record<string, string> = {
-  mafia: 'Mafia Romance',
-  billionaire: 'Billionaire Romance',
-  forbidden: 'Forbidden Romance',
-  secret_baby: 'Secret Baby',
-  second_chance: 'Second Chance',
-  arranged: 'Arranged Marriage',
-  royal: 'Royal Romance',
-  mood: 'Mood Piece',
-};
-
 export default async function StoryDetailPage({
   params,
 }: {
@@ -44,6 +33,8 @@ export default async function StoryDetailPage({
   const { locale, slug } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('home');
+  const tStory = await getTranslations('story');
+  const tGenre = await getTranslations('genres');
 
   const story = await getStoryBySlug(slug);
   if (!story) notFound();
@@ -95,11 +86,11 @@ export default async function StoryDetailPage({
             "voltar" óbvio sem precisar do back do navegador. */}
         <Link
           href="/"
-          aria-label="Voltar"
+          aria-label={tStory('back')}
           className="absolute top-20 md:top-24 left-4 md:left-8 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-sm text-white text-[12px] font-bold transition-colors"
         >
           <ArrowLeft className="size-4" />
-          <span className="hidden sm:inline">Voltar</span>
+          <span className="hidden sm:inline">{tStory('back')}</span>
         </Link>
 
         {/* Conteúdo flui de cima pra baixo a partir do pt-28 (espaço pro
@@ -117,17 +108,17 @@ export default async function StoryDetailPage({
             {!story.isComingSoon && isStoryHot(story) && (
               <Badge variant="hot">
                 <FlameIcon className="size-3" />
-                Hot
+                {tStory('hot')}
               </Badge>
             )}
             {story.isFree && (
               <Badge variant="free">
                 <SparkleIcon className="size-3" />
-                Free to listen
+                {tStory('freeToListen')}
               </Badge>
             )}
             <span className="text-[11px] md:text-xs font-bold uppercase tracking-[0.25em] text-gold-bright">
-              {GENRE_LABELS[story.genre]}
+              {tGenre(story.genre as never)}
             </span>
           </div>
 
@@ -157,12 +148,12 @@ export default async function StoryDetailPage({
             )}
             <span className="flex items-center gap-1 text-gold-bright">
               <Star className="size-4 fill-current" />
-              {ratingAvg.toFixed(1)} ({ratingCount} reviews)
+              {ratingAvg.toFixed(1)} ({tStory('reviewsCount', { count: ratingCount })})
             </span>
             {hasAudio && (
               <span className="flex items-center gap-1.5">
                 <Languages className="size-4" />
-                4 languages
+                {tStory('languages', { count: 4 })}
               </span>
             )}
           </div>
@@ -176,13 +167,13 @@ export default async function StoryDetailPage({
               <Button asChild size="lg">
                 <Link href={`/s/${story.slug}/watch?mode=video` as never}>
                   <Play className="fill-current" />
-                  Watch
+                  {tStory('watch')}
                 </Link>
               </Button>
             ) : (
               <Button size="lg" variant="glass" disabled>
                 <Play className="fill-current" />
-                Watch — Coming Soon
+                {tStory('watchComingSoon')}
               </Button>
             )}
 
@@ -190,15 +181,12 @@ export default async function StoryDetailPage({
               <Button asChild size="lg" variant="glass">
                 <Link href={`/s/${story.slug}/watch?mode=audio` as never}>
                   <Headphones />
-                  Listen
+                  {tStory('listen')}
                 </Link>
               </Button>
             )}
 
             {hasEbook && ebookDownloadUrl ? (
-              // PDF disponível — link direto pro R2 com download attribute. <a>
-              // nativo (não Link) porque o roteador do Next intercepta e
-              // ignora o download attr.
               <Button asChild size="lg" variant="glass">
                 <a
                   href={ebookDownloadUrl}
@@ -207,16 +195,14 @@ export default async function StoryDetailPage({
                   rel="noopener noreferrer"
                 >
                   <Download />
-                  Baixar PDF
+                  {tStory('downloadPdf')}
                 </a>
               </Button>
             ) : hasEbook ? (
-              // Story marcada como tendo ebook mas sem PDF subido ainda —
-              // mantém o reader hardcoded como fallback.
               <Button asChild size="lg" variant="glass">
                 <Link href={`/s/${story.slug}/read` as never}>
                   <BookOpen />
-                  Read
+                  {tStory('read')}
                 </Link>
               </Button>
             ) : null}
@@ -230,8 +216,7 @@ export default async function StoryDetailPage({
 
           {!hasAnyMedia && (
             <div className="mt-6 text-sm text-gold-bright bg-gold/15 rounded-xl px-4 py-3 max-w-md">
-              <strong className="font-bold">Coming Soon.</strong> This story is still in production.
-              We&apos;ll notify you when the audiobook drops.
+              <strong className="font-bold">{tStory('comingSoonTitle')}</strong> {tStory('comingSoonDesc')}
             </div>
           )}
         </div>
@@ -242,27 +227,27 @@ export default async function StoryDetailPage({
         <div className="grid md:grid-cols-3 gap-6">
           <div>
             <h3 className="text-xs font-bold uppercase tracking-widest text-text-mute mb-2">
-              Tropes
+              {tStory('tropes')}
             </h3>
             <div className="flex flex-wrap gap-1.5">
-              {story.tropes.map((t) => (
-                <Badge key={t} variant="genre">
-                  {t}
+              {story.tropes.map((trope) => (
+                <Badge key={trope} variant="genre">
+                  {trope}
                 </Badge>
               ))}
             </div>
           </div>
           <div>
             <h3 className="text-xs font-bold uppercase tracking-widest text-text-mute mb-2">
-              Genre
+              {tStory('genre')}
             </h3>
             <p className="font-serif italic text-rose-bright text-lg">
-              {GENRE_LABELS[story.genre]}
+              {tGenre(story.genre as never)}
             </p>
           </div>
           <div>
             <h3 className="text-xs font-bold uppercase tracking-widest text-text-mute mb-2">
-              Channel
+              {tStory('channel')}
             </h3>
             <Link
               href={`/channels/${author.id}` as never}
@@ -283,7 +268,7 @@ export default async function StoryDetailPage({
                 <p className="font-bold text-white text-sm group-hover:text-rose-bright transition-colors">
                   {author.name}
                 </p>
-                <p className="text-xs text-text-dim">{author.tagline} · view channel →</p>
+                <p className="text-xs text-text-dim">{author.tagline} · {tStory('viewChannel')}</p>
               </div>
             </Link>
           </div>
@@ -313,7 +298,7 @@ export default async function StoryDetailPage({
       />
 
       {related.length > 0 && (
-        <Row title="More Like This" highlight="Like This" stories={related} />
+        <Row title={tStory('moreLikeThis')} highlight={tStory('moreLikeThisHighlight')} stories={related} />
       )}
     </>
   );

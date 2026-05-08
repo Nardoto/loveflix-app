@@ -2,6 +2,7 @@
 
 import { useTransition, useState } from 'react';
 import { Loader2, CreditCard, Sparkles } from 'lucide-react';
+import { useTranslations, useLocale } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -28,6 +29,8 @@ export function AccountSubscription({
   currencySymbol?: string;
   currencyAmount?: string;
 }) {
+  const t = useTranslations('subscription');
+  const locale = useLocale();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
@@ -35,7 +38,7 @@ export function AccountSubscription({
     subscription &&
     (subscription.status === 'active' || subscription.status === 'trialing');
   const renewsOn = subscription?.current_period_end
-    ? new Date(subscription.current_period_end).toLocaleDateString('en-US', {
+    ? new Date(subscription.current_period_end).toLocaleDateString(locale, {
         month: 'long',
         day: 'numeric',
         year: 'numeric',
@@ -72,26 +75,26 @@ export function AccountSubscription({
         <Badge variant={isActive ? 'hot' : 'genre'} className="mb-3">
           {isActive
             ? subscription?.status === 'trialing'
-              ? 'Trial'
-              : 'Active'
-            : 'Free'}
+              ? t('trial')
+              : t('active')
+            : t('free')}
         </Badge>
         <h3 className="font-serif italic text-2xl font-bold text-white mb-1">
-          {isActive ? 'Monthly Plan' : 'Free account'}
+          {isActive ? t('monthlyPlan') : t('freeAccount')}
         </h3>
         <p className="text-text-dim text-sm mb-4">
           {isActive && renewsOn ? (
             subscription?.cancel_at_period_end ? (
               <>
-                Ends on <span className="text-text-soft">{renewsOn}</span>
+                {t('endsOn')} <span className="text-text-soft">{renewsOn}</span>
               </>
             ) : (
               <>
-                Renews on <span className="text-text-soft">{renewsOn}</span>
+                {t('renewsOn')} <span className="text-text-soft">{renewsOn}</span>
               </>
             )
           ) : (
-            <>Upgrade for full access to premium stories.</>
+            <>{t('upgradeMessage')}</>
           )}
         </p>
         {isActive ? (
@@ -99,7 +102,7 @@ export function AccountSubscription({
             {currencySymbol}
             {currencyAmount}
             <span className="text-sm text-text-dim font-normal ml-1">
-              /month
+              {t('perMonth')}
             </span>
           </p>
         ) : (
@@ -110,11 +113,11 @@ export function AccountSubscription({
           >
             {pending ? (
               <>
-                <Loader2 className="size-4 animate-spin" /> Loading…
+                <Loader2 className="size-4 animate-spin" /> {t('loading')}
               </>
             ) : (
               <>
-                <Sparkles className="size-4" /> Upgrade — {priceLabel}
+                <Sparkles className="size-4" /> {t('upgrade', { priceLabel })}
               </>
             )}
           </Button>
@@ -126,7 +129,7 @@ export function AccountSubscription({
 
       <div className="bg-bg-elevated rounded-2xl p-6 space-y-3 shadow-lg shadow-black/30">
         <h3 className="font-serif italic text-xl font-bold text-white">
-          Manage subscription
+          {t('manageTitle')}
         </h3>
         {isActive ? (
           <>
@@ -138,24 +141,23 @@ export function AccountSubscription({
             >
               {pending ? (
                 <>
-                  <Loader2 className="size-4 animate-spin" /> Loading portal…
+                  <Loader2 className="size-4 animate-spin" /> {t('loadingPortal')}
                 </>
               ) : (
                 <>
-                  <CreditCard className="size-4" /> Manage in Stripe portal
+                  <CreditCard className="size-4" /> {t('manageInPortal')}
                 </>
               )}
             </Button>
             <p className="text-[11px] text-text-mute mt-3">
-              You&apos;ll be redirected to Stripe to update your card,
-              download invoices, or cancel.
+              {t('stripeRedirectMessage')}
             </p>
           </>
         ) : (
           <p className="text-sm text-text-dim">
             {hasStripe
-              ? 'Manage your subscription here once you upgrade.'
-              : 'Stripe is not configured yet. Connect Stripe in admin settings.'}
+              ? t('manageWhenUpgraded')
+              : t('stripeNotConfigured')}
           </p>
         )}
         {error && (

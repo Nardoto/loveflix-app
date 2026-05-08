@@ -25,6 +25,7 @@ export default async function HomePage({
   setRequestLocale(locale);
   const t = await getTranslations('home.rows');
   const tHero = await getTranslations('home.hero');
+  const tHl = await getTranslations('home.highlights');
 
   // Read from Supabase (with hardcoded fallback when the table is empty —
   // a fresh deploy still renders a non-blank home).
@@ -74,17 +75,17 @@ export default async function HomePage({
 
       <HotShowcase stories={localeHot} />
 
-      <Row title={t('trending')} highlight="Trending" stories={trendingRow} />
-      <Row title="Free to Listen" highlight="Free" stories={freeRow} />
+      <Row title={t('trending')} highlight={tHl('trending')} stories={trendingRow} />
+      <Row title={t('free')} highlight={tHl('free')} stories={freeRow} />
       <Row
-        title="Billionaire Romance"
-        highlight="Billionaire"
+        title={t('billionaire')}
+        highlight={tHl('billionaire')}
         stories={billionaireRow}
       />
-      <Row title="Mafia & Dark Romance" highlight="Mafia" stories={mafiaRow} />
-      <Row title="Forbidden Stories" highlight="Forbidden" stories={forbiddenRow} />
-      <Row title="Secret Baby" highlight="Secret" stories={secretBabyRow} />
-      <Row title="Short Mood Pieces" highlight="Mood" stories={moodRow} />
+      <Row title={t('mafia')} highlight={tHl('mafia')} stories={mafiaRow} />
+      <Row title={t('forbidden')} highlight={tHl('forbidden')} stories={forbiddenRow} />
+      <Row title={t('secretBaby')} highlight={tHl('secret')} stories={secretBabyRow} />
+      <Row title={t('mood')} highlight={tHl('mood')} stories={moodRow} />
     </>
   );
 }

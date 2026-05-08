@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Mail, Loader2, CheckCircle2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 
@@ -12,6 +13,8 @@ export function LoginForm({
   returnTo: string;
   initialError?: string;
 }) {
+  const t = useTranslations('auth');
+  const tCommon = useTranslations('common');
   const [mode, setMode] = useState<'choose' | 'email'>('choose');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState<'google' | 'email' | null>(null);
@@ -63,16 +66,14 @@ export function LoginForm({
           <CheckCircle2 className="size-7" />
         </div>
         <h2 className="font-serif italic text-2xl font-bold text-white mb-2">
-          Check your email
+          {t('checkEmailTitle')}
         </h2>
         <p className="text-text-dim text-sm leading-relaxed mb-1">
-          We sent a magic link to
+          {t('magicLinkSentTo')}
         </p>
         <p className="font-bold text-white mb-4 break-all">{email}</p>
         <p className="text-text-mute text-xs leading-relaxed">
-          Click the link in the email to finish signing in. The link works for
-          one hour. You can close this tab — opening the email on any device
-          will sign you in there.
+          {t('magicLinkInstructions')}
         </p>
         <button
           type="button"
@@ -83,7 +84,7 @@ export function LoginForm({
           }}
           className="mt-6 text-sm text-text-dim hover:text-rose-bright transition-colors"
         >
-          Use a different email
+          {t('useDifferentEmail')}
         </button>
       </div>
     );
@@ -103,13 +104,13 @@ export function LoginForm({
         ) : (
           <GoogleLogo />
         )}
-        <span>Continue with Google</span>
+        <span>{t('continueWithGoogle')}</span>
       </button>
 
       <div className="flex items-center gap-3 my-2">
         <div className="h-px bg-white/10 flex-1" />
         <span className="text-xs text-text-mute uppercase tracking-widest">
-          or
+          {tCommon('or')}
         </span>
         <div className="h-px bg-white/10 flex-1" />
       </div>
@@ -123,13 +124,13 @@ export function LoginForm({
           className="w-full h-12 rounded-xl bg-bg-deep border border-white/10 text-white font-bold inline-flex items-center justify-center gap-3 hover:border-rose-bright/40 hover:bg-bg-deep/80 active:scale-[0.99] transition-all disabled:opacity-60"
         >
           <Mail className="size-5" />
-          <span>Continue with email</span>
+          <span>{t('continueWithEmail')}</span>
         </button>
       ) : (
         <form onSubmit={sendMagicLink} className="space-y-3">
           <label className="block">
             <span className="text-xs font-bold uppercase tracking-widest text-text-mute mb-2 block">
-              Email
+              {t('emailLabel')}
             </span>
             <input
               type="email"
@@ -137,7 +138,7 @@ export function LoginForm({
               autoFocus
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder={t('emailPlaceholder')}
               autoComplete="email"
               className="w-full h-12 bg-bg-deep rounded-xl px-4 text-white placeholder:text-text-mute focus:outline-none focus:ring-2 focus:ring-rose/40 border border-white/10"
             />
@@ -150,11 +151,11 @@ export function LoginForm({
           >
             {loading === 'email' ? (
               <>
-                <Loader2 className="size-4 animate-spin" /> Sending link…
+                <Loader2 className="size-4 animate-spin" /> {t('sendingLink')}
               </>
             ) : (
               <>
-                <Mail className="size-4" /> Send magic link
+                <Mail className="size-4" /> {t('sendMagicLink')}
               </>
             )}
           </Button>
@@ -166,7 +167,7 @@ export function LoginForm({
             }}
             className="w-full text-sm text-text-dim hover:text-rose-bright transition-colors py-1"
           >
-            ← Back
+            {t('backArrow')}
           </button>
         </form>
       )}

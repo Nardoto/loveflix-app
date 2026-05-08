@@ -1,4 +1,4 @@
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import Image from 'next/image';
@@ -45,6 +45,7 @@ export default async function AccountPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations('account');
 
   const user = await getUser();
   if (!user) {
@@ -110,7 +111,7 @@ export default async function AccountPage({
         )}
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-widest text-text-mute">
-            Welcome back
+            {t('welcomeBack')}
           </p>
           <h1 className="font-serif italic text-2xl sm:text-3xl md:text-4xl font-bold text-white truncate">
             {displayName}
@@ -129,32 +130,32 @@ export default async function AccountPage({
 
       <section className="mb-10">
         <h2 className="font-serif italic text-2xl font-bold text-white mb-4">
-          Preferences
+          {t('preferences')}
         </h2>
         <div className="bg-bg-elevated rounded-2xl shadow-lg shadow-black/30 [&>*+*]:relative [&>*+*]:before:absolute [&>*+*]:before:left-5 [&>*+*]:before:right-5 [&>*+*]:before:top-0 [&>*+*]:before:h-px [&>*+*]:before:bg-white/5">
-          <PreferenceRow icon={<Globe />} label="Language" value={locale.toUpperCase()} />
-          <PreferenceRow icon={<BellRing />} label="Notifications" value="Allowed" />
-          <PreferenceRow icon={<Heart />} label="Mature content" value="On" />
+          <PreferenceRow icon={<Globe />} label={t('language')} value={locale.toUpperCase()} />
+          <PreferenceRow icon={<BellRing />} label={t('notifications')} value={t('allowed')} />
+          <PreferenceRow icon={<Heart />} label={t('matureContent')} value={t('on')} />
         </div>
       </section>
 
       <section className="mb-10">
         <div className="flex items-baseline justify-between mb-4">
           <h2 className="font-serif italic text-2xl font-bold text-white">
-            Minha Lista
+            {t('myList')}
           </h2>
           {favPreview.length > 0 && (
             <Link
               href={'/list' as never}
               className="text-[13px] font-bold uppercase tracking-wider text-rose-bright hover:text-rose inline-flex items-center gap-1"
             >
-              Ver todos <ArrowRight className="size-3.5" />
+              {t('seeAll')} <ArrowRight className="size-3.5" />
             </Link>
           )}
         </div>
         {favPreview.length === 0 ? (
           <div className="bg-bg-elevated rounded-2xl p-6 text-center text-text-dim shadow-lg shadow-black/30">
-            <p>Toca no + de qualquer story pra salvar aqui.</p>
+            <p>{t('emptyMyListTip')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -188,7 +189,7 @@ export default async function AccountPage({
           variant="ghost"
           className="text-rose hover:text-rose-bright"
         >
-          <LogOut /> Sign out
+          <LogOut /> {t('signOut')}
         </Button>
       </form>
     </div>

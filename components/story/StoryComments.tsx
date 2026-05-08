@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import Image from 'next/image';
 import { Star, Heart, MessageCircle, Send, Loader2, LogIn, Pencil, Trash2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -59,6 +60,9 @@ export function StoryComments({
   /** Avatar URL from Google for the optimistic UI. */
   currentUserAvatar?: string | null;
 }) {
+  const t = useTranslations('comments');
+  const tCommon = useTranslations('common');
+
   // ── New top-level comment from the viewer ───────────────────────────────
   const [userRating, setUserRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -119,7 +123,7 @@ export function StoryComments({
   const saveEdit = (commentId: string, originalHadStars: boolean) => {
     const text = editDraft.trim();
     if (!text) {
-      setEditError('Comentário não pode ficar vazio');
+      setEditError(t('errorEmpty'));
       return;
     }
     setEditError(null);
@@ -147,7 +151,7 @@ export function StoryComments({
   };
 
   const removeComment = (commentId: string) => {
-    if (!confirm('Apagar esse comentário?')) return;
+    if (!confirm(t('deleteConfirm'))) return;
     // Optimistic hide
     setOverrides((prev) => ({
       ...prev,
@@ -340,16 +344,15 @@ export function StoryComments({
               <LogIn className="size-6" />
             </div>
             <h3 className="font-serif italic text-2xl font-bold text-white text-center mb-2">
-              Sign in to {signInPromptFor === 'like' ? 'like' : signInPromptFor === 'reply' ? 'reply' : 'comment'}
+              {t(`signInTitle.${signInPromptFor}` as never)}
             </h3>
             <p className="text-text-dim text-center text-sm mb-6 leading-relaxed">
-              Join AllureTV — it&apos;s free and takes a minute. You&apos;ll be able to
-              comment, rate stories, and save your favorites.
+              {t('signInBody')}
             </p>
             <div className="flex flex-col gap-2">
               <Button asChild variant="rose" className="w-full">
                 <Link href={signInHref as never}>
-                  <LogIn className="size-4" /> Sign in / Create account
+                  <LogIn className="size-4" /> {t('signInCta')}
                 </Link>
               </Button>
               <Button
@@ -357,7 +360,7 @@ export function StoryComments({
                 className="w-full"
                 onClick={() => setSignInPromptFor(null)}
               >
-                Maybe later
+                {t('signInLater')}
               </Button>
             </div>
           </div>
@@ -367,7 +370,7 @@ export function StoryComments({
       <div className="flex items-center gap-2 mb-6">
         <MessageCircle className="size-5 text-rose-bright" />
         <h2 className="font-serif italic text-2xl md:text-3xl font-bold text-white">
-          {isComingSoon ? 'Anticipation' : 'Reviews & Comments'}
+          {isComingSoon ? t('headingAnticipation') : t('headingReviews')}
         </h2>
       </div>
 
@@ -392,13 +395,13 @@ export function StoryComments({
               ))}
             </div>
             <p className="text-xs text-text-dim mt-1">
-              {initialCount.toLocaleString()} reviews
+              {t('reviewsCount', { count: initialCount })}
             </p>
           </div>
 
           <div className="md:pl-6">
             <p className="text-xs font-bold uppercase tracking-widest text-text-mute mb-2">
-              Your rating
+              {t('yourRating')}
             </p>
             <div className="flex items-center gap-1 mb-4">
               {[1, 2, 3, 4, 5].map((n) => (
@@ -407,7 +410,7 @@ export function StoryComments({
                   onMouseEnter={() => setHoverRating(n)}
                   onMouseLeave={() => setHoverRating(0)}
                   onClick={() => setUserRating(n)}
-                  aria-label={`Rate ${n} star${n > 1 ? 's' : ''}`}
+                  aria-label={t('rateAria', { n, plural: n > 1 ? 's' : '' })}
                   className="p-1 hover:scale-110 transition-transform"
                 >
                   <Star
@@ -423,16 +426,16 @@ export function StoryComments({
             </div>
             <p className="text-sm text-text-dim">
               {userRating === 0
-                ? 'Tap a star to rate this story'
+                ? t('tapToRate')
                 : userRating === 5
-                ? 'Loved it!'
+                ? t('ratingLabels.loved')
                 : userRating === 4
-                ? 'Really good'
+                ? t('ratingLabels.great')
                 : userRating === 3
-                ? 'It was okay'
+                ? t('ratingLabels.okay')
                 : userRating === 2
-                ? 'Not great'
-                : 'Not for me'}
+                ? t('ratingLabels.meh')
+                : t('ratingLabels.bad')}
             </p>
           </div>
         </div>
@@ -441,15 +444,15 @@ export function StoryComments({
       {/* New comment box */}
       <div className="bg-bg-elevated rounded-2xl p-5 md:p-6 mb-8 shadow-lg shadow-black/30">
         <p className="text-xs font-bold uppercase tracking-widest text-text-mute mb-3">
-          {isComingSoon ? 'Drop a note' : 'Leave a comment'}
+          {isComingSoon ? t('dropNote') : t('leaveComment')}
         </p>
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder={
             isComingSoon
-              ? `Tell the team what you think about "${storyTitle}"…`
-              : `Share what you thought of "${storyTitle}"…`
+              ? t('placeholderAnticipation', { title: storyTitle })
+              : t('placeholderReview', { title: storyTitle })
           }
           rows={3}
           className="w-full bg-bg-deep rounded-xl px-4 py-3 text-text-soft placeholder:text-text-mute focus:outline-none focus:ring-2 focus:ring-rose/40 resize-none shadow-inner shadow-black/40"
@@ -459,11 +462,11 @@ export function StoryComments({
             {postError ? (
               <span className="text-rose-bright">{postError}</span>
             ) : userRating > 0 ? (
-              `Rating ${userRating}★ · posting as you`
+              t('ratingHint', { stars: userRating })
             ) : isComingSoon ? (
-              'Posting as you'
+              t('postingHint')
             ) : (
-              'Star rating is optional — comment freely.'
+              t('ratingOptional')
             )}
           </p>
           <Button
@@ -474,11 +477,11 @@ export function StoryComments({
           >
             {isPosting ? (
               <>
-                <Loader2 className="size-4 animate-spin" /> Posting…
+                <Loader2 className="size-4 animate-spin" /> {t('posting')}
               </>
             ) : (
               <>
-                <Send className="size-4" /> Post
+                <Send className="size-4" /> {t('post')}
               </>
             )}
           </Button>
@@ -518,12 +521,12 @@ export function StoryComments({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-white">
-                        {currentUserName ?? 'Você'}
+                        {currentUserName ?? tCommon('you')}
                       </span>
                       <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-rose/20 text-rose-bright">
-                        Você
+                        {t('youBadge')}
                       </span>
-                      <span className="text-xs text-text-mute">· agora</span>
+                      <span className="text-xs text-text-mute">· {tCommon('justNow')}</span>
                     </div>
                     {p.stars > 0 && (
                       <div className="flex items-center gap-0.5 mt-0.5">
@@ -584,7 +587,7 @@ export function StoryComments({
                       <span className="font-bold text-white">{c.user}</span>
                       {isOwn && (
                         <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-rose/20 text-rose-bright">
-                          Você
+                          {t('youBadge')}
                         </span>
                       )}
                       <span className="text-xs text-text-mute">· {c.date}</span>
@@ -616,7 +619,7 @@ export function StoryComments({
                             key={n}
                             type="button"
                             onClick={() => setEditStars(n)}
-                            aria-label={`Avaliar com ${n} estrela${n > 1 ? 's' : ''}`}
+                            aria-label={t('rateEditAria', { n, plural: n > 1 ? 's' : '' })}
                             className="p-0.5 hover:scale-110 transition-transform"
                           >
                             <Star
@@ -642,7 +645,7 @@ export function StoryComments({
                         {editError ? (
                           <span className="text-rose-bright">{editError}</span>
                         ) : (
-                          <span className="text-text-mute">Editando seu comentário</span>
+                          <span className="text-text-mute">{t('editing')}</span>
                         )}
                       </p>
                       <div className="flex items-center gap-2">
@@ -652,7 +655,7 @@ export function StoryComments({
                           onClick={cancelEdit}
                           disabled={isSavingEdit}
                         >
-                          Cancelar
+                          {tCommon('cancel')}
                         </Button>
                         <Button
                           variant="rose"
@@ -662,10 +665,10 @@ export function StoryComments({
                         >
                           {isSavingEdit ? (
                             <>
-                              <Loader2 className="size-3.5 animate-spin" /> Salvando
+                              <Loader2 className="size-3.5 animate-spin" /> {tCommon('saving')}
                             </>
                           ) : (
-                            'Salvar'
+                            tCommon('save')
                           )}
                         </Button>
                       </div>
@@ -676,7 +679,7 @@ export function StoryComments({
                     {displayBody}
                     {ov?.body && (
                       <span className="ml-2 text-[10px] uppercase tracking-widest text-text-mute">
-                        (editado)
+                        ({t('edited')})
                       </span>
                     )}
                   </p>
@@ -687,7 +690,7 @@ export function StoryComments({
                     type="button"
                     onClick={() => toggleLike(c.id)}
                     aria-pressed={likeState.liked}
-                    aria-label={likeState.liked ? 'Unlike' : 'Like'}
+                    aria-label={likeState.liked ? t('unlike') : t('like')}
                     className={cn(
                       'inline-flex items-center gap-1.5 transition-colors active:scale-95',
                       likeState.liked
@@ -708,7 +711,7 @@ export function StoryComments({
                     onClick={() => toggleReplyBox(c.id)}
                     className="hover:text-rose-bright transition-colors active:scale-95"
                   >
-                    {replyState.open ? 'Cancel' : 'Reply'}
+                    {replyState.open ? t('cancelReply') : t('reply')}
                   </button>
                   {isOwn && !isEditing && (
                     <>
@@ -716,17 +719,17 @@ export function StoryComments({
                         type="button"
                         onClick={() => beginEdit(c)}
                         className="inline-flex items-center gap-1 hover:text-rose-bright transition-colors active:scale-95 ml-auto"
-                        aria-label="Editar comentário"
+                        aria-label={t('editAria')}
                       >
-                        <Pencil className="size-3.5" /> Editar
+                        <Pencil className="size-3.5" /> {tCommon('edit')}
                       </button>
                       <button
                         type="button"
                         onClick={() => removeComment(c.id)}
                         className="inline-flex items-center gap-1 hover:text-rose-bright transition-colors active:scale-95"
-                        aria-label="Apagar comentário"
+                        aria-label={t('deleteAria')}
                       >
-                        <Trash2 className="size-3.5" /> Apagar
+                        <Trash2 className="size-3.5" /> {tCommon('delete')}
                       </button>
                     </>
                   )}
@@ -742,10 +745,10 @@ export function StoryComments({
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <span className="grid place-items-center size-6 rounded-full bg-gradient-to-br from-rose to-rose-deep text-white text-[10px] font-bold">
-                            Y
+                            {tCommon('yourInitial')}
                           </span>
-                          <span className="text-xs font-bold text-white">You</span>
-                          <span className="text-[10px] text-text-mute">· just now</span>
+                          <span className="text-xs font-bold text-white">{tCommon('you')}</span>
+                          <span className="text-[10px] text-text-mute">· {tCommon('justNow')}</span>
                         </div>
                         <p className="text-sm text-text-soft leading-relaxed">
                           {r.body}
@@ -756,7 +759,7 @@ export function StoryComments({
                       <textarea
                         value={replyState.draft}
                         onChange={(e) => setReplyDraft(c.id, e.target.value)}
-                        placeholder={`Reply to ${c.user}…`}
+                        placeholder={t('replyPlaceholder', { user: c.user })}
                         rows={2}
                         className="w-full bg-bg-deep rounded-xl px-3 py-2 text-sm text-text-soft placeholder:text-text-mute focus:outline-none focus:ring-2 focus:ring-rose/40 resize-none shadow-inner shadow-black/40"
                       />
@@ -769,11 +772,11 @@ export function StoryComments({
                         >
                           {replyState.sending ? (
                             <>
-                              <Loader2 className="size-3.5 animate-spin" /> Sending
+                              <Loader2 className="size-3.5 animate-spin" /> {t('sending')}
                             </>
                           ) : (
                             <>
-                              <Send className="size-3.5" /> Reply
+                              <Send className="size-3.5" /> {t('reply')}
                             </>
                           )}
                         </Button>
@@ -788,9 +791,7 @@ export function StoryComments({
       ) : (
         <div className="bg-bg-elevated rounded-2xl p-8 text-center shadow-md shadow-black/20">
           <p className="text-text-dim italic">
-            {isComingSoon
-              ? 'Be the first to drop a note about this upcoming story.'
-              : 'Be the first to leave a review for this story.'}
+            {isComingSoon ? t('emptyAnticipation') : t('emptyReview')}
           </p>
         </div>
       )}

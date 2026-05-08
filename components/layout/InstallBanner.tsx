@@ -11,7 +11,7 @@
 
 import Image from 'next/image';
 import { Share, X, Plus, Check, ChevronRight } from 'lucide-react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useInstall } from './InstallProvider';
 
 const COPY: Record<
@@ -81,6 +81,7 @@ const COPY: Record<
 
 export function InstallBanner() {
   const locale = useLocale();
+  const tInstall = useTranslations('install');
   const {
     canPromptNative,
     canShowIOSGuide,
@@ -124,11 +125,11 @@ export function InstallBanner() {
             />
             <div className="flex-1 min-w-0">
               <p className="font-bold text-[15px] text-white leading-tight">
-                {needsSafariSwitch ? 'Abre no Safari pra instalar' : t.title}
+                {needsSafariSwitch ? tInstall('safariSwitchTitle') : t.title}
               </p>
               <p className="text-xs text-text-dim mt-1 leading-snug line-clamp-2">
                 {needsSafariSwitch
-                  ? 'Apple só permite instalar PWA pelo Safari (não Chrome/Firefox no iPhone).'
+                  ? tInstall('safariSwitchDesc')
                   : isIOS
                     ? t.iosCta
                     : t.desc}

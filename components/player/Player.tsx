@@ -19,6 +19,7 @@ import {
   Film,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -63,6 +64,8 @@ export function Player({
   initialLocale: string;
 }) {
   const router = useRouter();
+  const tErr = useTranslations('player.errors');
+  const tCommon = useTranslations('common');
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { token, tier, loading: tokenLoading, error: tokenError } = useMediaToken();
@@ -306,13 +309,13 @@ export function Player({
   const onMediaError = useCallback(() => {
     setLoading(false);
     if (tier === 'free' && (story.videoKey || story.audioKeyByLocale)) {
-      setMediaError('Esse título é exclusivo pra assinantes. Faça upgrade pra assistir.');
+      setMediaError(tErr('subscriberOnly'));
     } else if (tokenError) {
-      setMediaError('Não consegui autorizar a reprodução. Tente recarregar a página.');
+      setMediaError(tErr('auth'));
     } else {
-      setMediaError('Não foi possível carregar a mídia. Verifique sua conexão e tente de novo.');
+      setMediaError(tErr('generic'));
     }
-  }, [tier, tokenError, story.videoKey, story.audioKeyByLocale]);
+  }, [tier, tokenError, story.videoKey, story.audioKeyByLocale, tErr]);
 
   // ============================================================
   // MediaSession — lock screen / Bluetooth / background audio
@@ -477,6 +480,10 @@ export function Player({
           onEnded={() => setIsPlaying(false)}
           onError={onMediaError}
           playsInline
+          // Metadata only until user hits play. Browsers default varies (some
+          // start downloading body); pinning to metadata makes egress
+          // predictable and the catalog → player handoff snappy.
+          preload="metadata"
         />
       )}
       {hasAudio && (
@@ -489,7 +496,10 @@ export function Player({
           onPause={() => setIsPlaying(false)}
           onEnded={() => setIsPlaying(false)}
           onError={onMediaError}
-          preload="auto"
+          // metadata, not auto: just pulls duration/seek table on mount; the
+          // body streams in once the user hits play. Saves dozens of MB of
+          // R2 egress for users who open the player but bounce.
+          preload="metadata"
         />
       )}
 
@@ -507,13 +517,13 @@ export function Player({
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/85 backdrop-blur-sm p-6">
           <div className="max-w-md text-center">
             <div className="text-2xl font-serif italic font-bold text-white mb-3">
-              Tudo pronto, menos o playback
+              {tErr('title')}
             </div>
             <p className="text-text-soft mb-5">{mediaError}</p>
             <div className="flex flex-wrap items-center justify-center gap-3">
               {tier === 'free' && (
                 <Button asChild variant="rose">
-                  <Link href="/account">Ver planos</Link>
+                  <Link href="/account">{tErr('viewPlans')}</Link>
                 </Button>
               )}
               <Button
@@ -524,13 +534,13 @@ export function Player({
                   activeMedia?.load();
                 }}
               >
-                Tentar de novo
+                {tCommon('retry')}
               </Button>
               <Button
                 variant="ghost"
                 onClick={() => router.back()}
               >
-                Voltar
+                {tCommon('back')}
               </Button>
             </div>
           </div>

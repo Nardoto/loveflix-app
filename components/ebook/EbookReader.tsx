@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Heart, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import type { EbookPage } from '@/lib/data/ebook';
@@ -16,6 +17,7 @@ export function EbookReader({
   story: Story;
   pages: EbookPage[];
 }) {
+  const t = useTranslations('reader');
   const [index, setIndex] = useState(0);
   const total = pages.length;
   const page = pages[index];
@@ -47,7 +49,7 @@ export function EbookReader({
     <div className="fixed inset-0 z-50 bg-[#1f1812] text-[#e8dac7] flex flex-col">
       {/* Top bar */}
       <header className="shrink-0 h-14 px-4 md:px-6 flex items-center gap-3 bg-[#1a1410]/95 backdrop-blur-xl shadow-lg shadow-black/40">
-        <Button asChild variant="ghost" size="icon" aria-label="Close ebook">
+        <Button asChild variant="ghost" size="icon" aria-label={t('closeReader')}>
           <Link href={`/s/${story.slug}` as never}>
             <X />
           </Link>
@@ -68,13 +70,13 @@ export function EbookReader({
             <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden mb-6 shadow-2xl">
               <Image src={story.cover} alt={story.title} fill priority sizes="600px" className="object-cover" />
             </div>
-            <p className="text-[11px] uppercase tracking-[0.4em] text-[#c9577a] mb-3">A Romance Novel</p>
+            <p className="text-[11px] uppercase tracking-[0.4em] text-[#c9577a] mb-3">{t('aRomanceNovel')}</p>
             <h1 className="font-serif italic font-black text-3xl md:text-5xl mb-4 text-[#f5e9d6] leading-tight">
               {story.title}
             </h1>
             <p className="text-sm text-[#a89b85] mb-6 leading-relaxed max-w-sm">{story.synopsis}</p>
             <Button onClick={goNext} size="lg" variant="rose">
-              Begin reading <ChevronRight />
+              {t('beginReading')} <ChevronRight />
             </Button>
           </div>
         )}

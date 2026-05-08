@@ -1,4 +1,4 @@
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { redirect } from 'next/navigation';
 import Image from 'next/image';
 import { LoginForm } from '@/components/auth/LoginForm';
@@ -14,6 +14,7 @@ export default async function LoginPage({
   const { locale } = await params;
   const { returnTo, error } = await searchParams;
   setRequestLocale(locale);
+  const t = await getTranslations('login');
 
   // If already signed in, just bounce them where they wanted to go.
   const user = await getUser();
@@ -49,10 +50,10 @@ export default async function LoginPage({
             priority
           />
           <h1 className="font-serif italic text-3xl md:text-4xl font-bold text-white mb-2">
-            Welcome
+            {t('welcome')}
           </h1>
           <p className="text-text-dim text-sm">
-            Sign in to continue listening, reading, and reviewing.
+            {t('subtitle')}
           </p>
         </div>
 
@@ -62,9 +63,9 @@ export default async function LoginPage({
         />
 
         <p className="text-xs text-text-mute text-center mt-6 leading-relaxed">
-          By continuing you agree to AllureTV&apos;s terms.
+          {t('disclaimerTerms')}
           <br />
-          We&apos;ll only email you about your account — never spam.
+          {t('disclaimerEmail')}
         </p>
       </div>
     </div>
