@@ -1,4 +1,6 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 import { getStoryBySlug } from '@/lib/data/stories-server';
 import { authors as hardcodedAuthors } from '@/lib/data/authors';
 import { createServiceClient } from '@/lib/supabase/server';
@@ -37,6 +39,13 @@ export default async function EditStoryPage({
 
   return (
     <>
+      <Link
+        href="/admin/stories"
+        className="inline-flex items-center gap-1.5 text-text-dim hover:text-white text-[13px] font-bold uppercase tracking-wider mb-4 transition-colors"
+      >
+        <ArrowLeft className="size-4" />
+        Voltar para stories
+      </Link>
       <PageHead
         title="Editar story"
         subtitle={`/s/${story.slug} · id ${story.id}`}

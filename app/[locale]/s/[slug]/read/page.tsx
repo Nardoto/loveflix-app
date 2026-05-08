@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { ChapterReader } from '@/components/reader/ChapterReader';
-import { findStory } from '@/lib/data/stories';
+import { getStoryBySlug } from '@/lib/data/stories-server';
 import { ebookPages } from '@/lib/data/ebook';
 import { groupIntoChapters } from '@/lib/data/chapters';
 import { getUser } from '@/lib/auth-helpers';
@@ -14,7 +14,7 @@ export default async function ReadPage({
   const { locale, slug } = await params;
   setRequestLocale(locale);
 
-  const story = findStory(slug);
+  const story = await getStoryBySlug(slug);
   if (!story) notFound();
   if (!story.hasEbook) notFound();
 

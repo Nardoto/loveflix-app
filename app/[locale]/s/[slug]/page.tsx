@@ -14,7 +14,7 @@ import { Link } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Row } from '@/components/catalog/Row';
-import { findStory, allStories } from '@/lib/data/stories';
+import { getStoryBySlug, getStoriesByGenre } from '@/lib/data/stories-server';
 import { getAuthorFor } from '@/lib/data/authors';
 import { getCommentsForStory } from '@/lib/data/comments-server';
 import { getUser } from '@/lib/auth-helpers';
@@ -43,7 +43,7 @@ export default async function StoryDetailPage({
   setRequestLocale(locale);
   const t = await getTranslations('home');
 
-  const story = findStory(slug);
+  const story = await getStoryBySlug(slug);
   if (!story) notFound();
 
   const hasVideo = !!(story.videoSrc || story.videoKey);
@@ -61,8 +61,8 @@ export default async function StoryDetailPage({
   const author = getAuthorFor(story);
 
   // "More like this" — same genre, different stories.
-  const related = allStories
-    .filter((s) => s.genre === story.genre && s.id !== story.id)
+  const related = (await getStoriesByGenre(story.genre))
+    .filter((s) => s.id !== story.id)
     .slice(0, 12);
 
   return (

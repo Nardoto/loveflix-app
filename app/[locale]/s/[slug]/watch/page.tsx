@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { Player } from '@/components/player/Player';
-import { findStory } from '@/lib/data/stories';
+import { getStoryBySlug } from '@/lib/data/stories-server';
 import { getUser } from '@/lib/auth-helpers';
 
 export default async function WatchPage({
@@ -15,7 +15,7 @@ export default async function WatchPage({
   const { mode } = await searchParams;
   setRequestLocale(locale);
 
-  const story = findStory(slug);
+  const story = await getStoryBySlug(slug);
   if (!story) notFound();
   if (!story.videoSrc && !story.audioByLocale && !story.videoKey && !story.audioKeyByLocale) notFound();
 
