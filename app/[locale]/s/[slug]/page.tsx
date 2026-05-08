@@ -9,7 +9,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-import { Play, Headphones, BookOpen, Plus, Star, Clock, Clock3, Languages, ArrowLeft, Download } from 'lucide-react';
+import { Play, Headphones, BookOpen, Star, Clock, Clock3, Languages, ArrowLeft, Download } from 'lucide-react';
 import { Link } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,8 @@ import { getAuthorFor } from '@/lib/data/authors';
 import { getCommentsForStory } from '@/lib/data/comments-server';
 import { getUser } from '@/lib/auth-helpers';
 import { StoryComments } from '@/components/story/StoryComments';
+import { FavoriteAddButton } from '@/components/story/FavoriteToggle';
+import { isFavorite } from '@/lib/data/favorites-server';
 import { isStoryHot } from '@/lib/data/hot';
 import { FlameIcon } from '@/components/icons/FlameIcon';
 import { SparkleIcon } from '@/components/icons/SparkleIcon';
@@ -60,6 +62,10 @@ export default async function StoryDetailPage({
   // to avoid an empty page. See lib/data/comments-server.ts for the merge rules.
   const [{ comments: storyComments, ratingAvg, ratingCount }, currentUser] =
     await Promise.all([getCommentsForStory(story), getUser()]);
+
+  // Favorito é per-user — só consulta se a usuária está logada. Para
+  // anônimos, o botão fica como "+" e o click leva pro login.
+  const isFav = currentUser ? await isFavorite(currentUser.id, slug) : false;
 
   const author = getAuthorFor(story);
 
@@ -215,9 +221,11 @@ export default async function StoryDetailPage({
               </Button>
             ) : null}
 
-            <Button variant="glass" size="icon" aria-label="Add to list">
-              <Plus />
-            </Button>
+            <FavoriteAddButton
+              storySlug={story.slug}
+              initial={isFav}
+              loginReturnTo={`/${locale}/s/${story.slug}`}
+            />
           </div>
 
           {!hasAnyMedia && (

@@ -65,7 +65,7 @@ export function MobileNav({
       icon: <Diamond className="size-5" />,
       label: t('genres'),
     },
-    { href: '/account', icon: <Heart className="size-5" />, label: t('myList') },
+    { href: '/list', icon: <Heart className="size-5" />, label: t('myList') },
     {
       href: '/account',
       icon: <User className="size-5" />,

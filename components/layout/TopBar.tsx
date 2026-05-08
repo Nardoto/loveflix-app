@@ -100,7 +100,7 @@ export function TopBar({ user }: { user?: TopBarUser } = {}) {
               HOT
             </Link>
             <Link
-              href="/account"
+              href="/list"
               className="hover:text-rose-bright transition-colors font-medium"
             >
               {t('myList')}

@@ -2,12 +2,14 @@ import { setRequestLocale } from 'next-intl/server';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import Image from 'next/image';
-import { Heart, Globe, BellRing, LogOut } from 'lucide-react';
+import { Heart, Globe, BellRing, LogOut, ArrowRight } from 'lucide-react';
+import { Link } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { getUser } from '@/lib/auth-helpers';
 import { signOut } from '@/app/actions/auth';
 import { createClient } from '@/lib/supabase/server';
 import { AccountSubscription } from '@/components/account/AccountSubscription';
+import { getFavoritesForUser } from '@/lib/data/favorites-server';
 import { pickCurrency, PRICE_DISPLAY } from '@/lib/stripe';
 
 // Supabase Google OAuth populates user.user_metadata with these fields:
@@ -75,6 +77,10 @@ export default async function AccountPage({
 
   const hasStripe = !!process.env.STRIPE_SECRET_KEY;
 
+  // Preview da Minha Lista — primeiras 6 stories. Lazy enough; getFavorites
+  // resolve em uma query.
+  const favPreview = (await getFavoritesForUser(user.id)).slice(0, 6);
+
   // Pick the price in the user's currency for the Upgrade button label.
   const h = await headers();
   const country =
@@ -133,12 +139,47 @@ export default async function AccountPage({
       </section>
 
       <section className="mb-10">
-        <h2 className="font-serif italic text-2xl font-bold text-white mb-4">
-          My List
-        </h2>
-        <div className="bg-bg-elevated rounded-2xl p-6 text-center text-text-dim shadow-lg shadow-black/30">
-          <p>Your favorited stories will appear here.</p>
+        <div className="flex items-baseline justify-between mb-4">
+          <h2 className="font-serif italic text-2xl font-bold text-white">
+            Minha Lista
+          </h2>
+          {favPreview.length > 0 && (
+            <Link
+              href={'/list' as never}
+              className="text-[13px] font-bold uppercase tracking-wider text-rose-bright hover:text-rose inline-flex items-center gap-1"
+            >
+              Ver todos <ArrowRight className="size-3.5" />
+            </Link>
+          )}
         </div>
+        {favPreview.length === 0 ? (
+          <div className="bg-bg-elevated rounded-2xl p-6 text-center text-text-dim shadow-lg shadow-black/30">
+            <p>Toca no + de qualquer story pra salvar aqui.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {favPreview.map((s) => (
+              <Link
+                key={s.id}
+                href={`/s/${s.slug}` as never}
+                className="group relative aspect-video rounded-lg overflow-hidden bg-bg-card ring-1 ring-white/10 hover:ring-white/30 transition-all"
+              >
+                <Image
+                  src={s.cover}
+                  alt={s.title}
+                  fill
+                  sizes="(max-width: 640px) 50vw, 33vw"
+                  className="object-cover object-[center_28%] group-hover:scale-[1.04] transition-transform duration-500"
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-2.5">
+                  <p className="text-[12px] font-serif italic font-semibold text-white line-clamp-2 leading-tight">
+                    {s.title}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
       <form action={signOut}>
