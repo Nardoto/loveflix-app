@@ -1,7 +1,7 @@
 // Client-side helper that chunks a File and PUTs each part to a presigned R2 URL.
 // Designed for the Studio dialog. Handles 500 MB+ files reliably.
 
-export type AssetKind = 'video' | 'audio' | 'cover' | 'ebook-image';
+export type AssetKind = 'video' | 'audio' | 'cover' | 'ebook-image' | 'ebook';
 
 export type PresignArgs = {
   storySlug: string;

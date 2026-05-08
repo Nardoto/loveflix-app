@@ -35,6 +35,7 @@ type RawStoryRow = {
   has_ebook: boolean;
   video_src: string | null;
   video_key: string | null;
+  ebook_key: string | null;
   story_audio?: Array<{
     locale: 'en' | 'de' | 'fr' | 'es';
     audio_src: string | null;
@@ -67,6 +68,7 @@ function rowToStory(row: RawStoryRow): Story {
     hasEbook: row.has_ebook || undefined,
     videoSrc: row.video_src ?? undefined,
     videoKey: row.video_key ?? undefined,
+    ebookKey: row.ebook_key ?? undefined,
     audioByLocale: Object.keys(audioByLocale).length ? audioByLocale : undefined,
     audioKeyByLocale: Object.keys(audioKeyByLocale).length
       ? audioKeyByLocale

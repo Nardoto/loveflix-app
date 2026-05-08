@@ -66,6 +66,7 @@ export default async function EditStoryPage({
           coverUrl: story.cover,
           videoKey: story.videoKey ?? null,
           audioKeys: story.audioKeyByLocale ?? {},
+          ebookKey: story.ebookKey ?? null,
         }}
         authors={authors.map((a) => ({
           id: a.id,

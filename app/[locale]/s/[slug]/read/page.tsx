@@ -24,6 +24,13 @@ export default async function ReadPage({
     redirect(`/${locale}/login?returnTo=${encodeURIComponent(`/${locale}/s/${slug}/read`)}`);
   }
 
+  // Story tem PDF subido pelo admin — manda direto pro download. O reader
+  // hardcoded só serve as stories antigas (legadas) que têm has_ebook=true
+  // sem ebook_key.
+  if (story.ebookKey) {
+    redirect(`https://${process.env.NEXT_PUBLIC_MEDIA_DOMAIN}/${story.ebookKey}`);
+  }
+
   const { cover, chapters, final, totalWords } = groupIntoChapters(ebookPages);
 
   return (

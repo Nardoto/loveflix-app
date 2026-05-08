@@ -32,6 +32,7 @@ function humanZod(err: z.ZodError): string {
     totalMinutes: 'Duração',
     coverKey: 'Capa',
     videoKey: 'Vídeo',
+    ebookKey: 'Ebook',
     audioKeyByLocale: 'Áudio',
   };
   const lines = err.issues.map((i) => {
@@ -82,6 +83,7 @@ const CreateInput = z.object({
   // without a video and be flagged Coming Soon).
   coverKey: z.string().min(1),
   videoKey: z.string().optional(),
+  ebookKey: z.string().optional(),
   // Locale → R2 key. Empty when the title is text-only / coming-soon.
   // Zod v4: z.record(enum, value) is EXHAUSTIVE — exige todas as chaves
   // do enum. Pra aceitar parcial (só EN, ou só DE, etc.) precisa de
@@ -126,8 +128,11 @@ export async function createStory(
     is_coming_soon: v.isComingSoon,
     age_rating: v.ageRating,
     total_minutes: v.totalMinutes,
-    has_ebook: v.hasEbook,
+    // Se subiu o PDF, força has_ebook=true (consistência); caso contrário,
+    // respeita o toggle do admin.
+    has_ebook: v.hasEbook || !!v.ebookKey,
     video_key: v.videoKey ?? null,
+    ebook_key: v.ebookKey ?? null,
     author_id: v.authorId ?? null,
     published_at: v.isComingSoon ? null : new Date().toISOString(),
   };
@@ -208,6 +213,12 @@ export async function updateStory(
     update.cover = publicMediaUrl(v.coverKey);
   }
   if (v.videoKey !== undefined) update.video_key = v.videoKey;
+  if (v.ebookKey !== undefined) {
+    update.ebook_key = v.ebookKey;
+    // Subiu o PDF, acende o flag se ainda estava off — sem sobrescrever
+    // o toggle quando o admin removeu o PDF (só reseta ao deletar a story).
+    if (v.ebookKey) update.has_ebook = true;
+  }
   if (v.slug !== storySlug && v.slug !== undefined) update.slug = v.slug;
 
   const { error } = await sb.from('stories').update(update).eq('slug', storySlug);
@@ -255,7 +266,7 @@ export async function deleteStory(storySlug: string): Promise<Result> {
   // Pull keys first so we can clean up R2 objects after the row is gone.
   const { data: story } = await sb
     .from('stories')
-    .select('id, cover_key, video_key, story_audio(audio_key)')
+    .select('id, cover_key, video_key, ebook_key, story_audio(audio_key)')
     .eq('slug', storySlug)
     .single();
 
@@ -268,6 +279,7 @@ export async function deleteStory(storySlug: string): Promise<Result> {
   const keys: string[] = [];
   if (story.cover_key) keys.push(story.cover_key);
   if (story.video_key) keys.push(story.video_key);
+  if (story.ebook_key) keys.push(story.ebook_key);
   for (const a of (story.story_audio ?? []) as Array<{ audio_key: string | null }>) {
     if (a.audio_key) keys.push(a.audio_key);
   }

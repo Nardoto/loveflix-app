@@ -37,7 +37,7 @@ function client(): S3Client {
   return _client;
 }
 
-export type AssetKind = 'video' | 'audio' | 'cover' | 'ebook-image';
+export type AssetKind = 'video' | 'audio' | 'cover' | 'ebook-image' | 'ebook';
 
 export type ObjectKey = string; // e.g. stories/{slug}/book{N}/video.mp4
 
@@ -64,6 +64,10 @@ export function buildKey(input: {
     case 'ebook-image': {
       const idx = String(input.pageIndex ?? 0).padStart(3, '0');
       return `${base}/ebook/page-${idx}.jpg`;
+    }
+    case 'ebook': {
+      const ext = (input.filename?.split('.').pop() ?? 'pdf').toLowerCase();
+      return `${base}/ebook.${ext}`;
     }
   }
 }

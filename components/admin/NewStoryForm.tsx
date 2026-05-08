@@ -32,6 +32,7 @@ import {
   Heart,
   Sparkle,
   Flame,
+  BookOpen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useMultipartUpload, type UploadKind } from '@/lib/upload/useMultipartUpload';
@@ -120,6 +121,7 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
   const [videoKey, setVideoKey] = useState<string | null>(null);
   const [videoFilename, setVideoFilename] = useState<string | null>(null);
   const [audioKeys, setAudioKeys] = useState<Partial<Record<'en' | 'de' | 'fr' | 'es', string>>>({});
+  const [ebookKey, setEbookKey] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -172,6 +174,7 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
       hasEbook: meta.hasEbook,
       coverKey,
       videoKey: videoKey ?? undefined,
+      ebookKey: ebookKey ?? undefined,
       audioKeyByLocale: Object.fromEntries(
         Object.entries(audioKeys).filter(([, v]) => !!v),
       ),
@@ -239,6 +242,7 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
               coverKey={coverKey}
               videoKey={videoKey}
               audioKeys={audioKeys}
+              ebookKey={ebookKey}
               onCoverUploaded={(key, file) => {
                 setCoverKey(key);
                 if (file) setCoverPreviewUrl(URL.createObjectURL(file));
@@ -250,6 +254,10 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
               onAudioUploaded={(locale, key) =>
                 setAudioKeys((prev) => ({ ...prev, [locale]: key }))
               }
+              onEbookUploaded={(key) => {
+                setEbookKey(key);
+                if (!meta.hasEbook) setMeta((m) => ({ ...m, hasEbook: true }));
+              }}
               onCoverClear={() => {
                 setCoverKey(null);
                 setCoverPreviewUrl(null);
@@ -265,6 +273,7 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
                   return next;
                 })
               }
+              onEbookClear={() => setEbookKey(null)}
             />
           )}
           {step === 'review' && (
@@ -446,24 +455,30 @@ function MediaStep({
   coverKey,
   videoKey,
   audioKeys,
+  ebookKey,
   onCoverUploaded,
   onVideoUploaded,
   onAudioUploaded,
+  onEbookUploaded,
   onCoverClear,
   onVideoClear,
   onAudioClear,
+  onEbookClear,
 }: {
   slug: string;
   isComingSoon: boolean;
   coverKey: string | null;
   videoKey: string | null;
   audioKeys: Partial<Record<'en' | 'de' | 'fr' | 'es', string>>;
+  ebookKey: string | null;
   onCoverUploaded: (key: string, file?: File) => void;
   onVideoUploaded: (key: string, file?: File) => void;
   onAudioUploaded: (locale: 'en' | 'de' | 'fr' | 'es', key: string) => void;
+  onEbookUploaded: (key: string) => void;
   onCoverClear: () => void;
   onVideoClear: () => void;
   onAudioClear: (locale: 'en' | 'de' | 'fr' | 'es') => void;
+  onEbookClear: () => void;
 }) {
   return (
     <div className="space-y-6">
@@ -516,6 +531,21 @@ function MediaStep({
             />
           ))}
         </div>
+      </Section>
+
+      <Section
+        title="Ebook (PDF)"
+        hint="Opcional. Sobe quando o PDF estiver pronto — usuárias com a story na lista vão poder baixar."
+      >
+        <UploadSlot
+          slug={slug}
+          kind="ebook"
+          accept="application/pdf"
+          existing={ebookKey}
+          onUploaded={(key) => onEbookUploaded(key)}
+          onClear={onEbookClear}
+          label="Escolher PDF"
+        />
       </Section>
     </div>
   );
@@ -970,6 +1000,8 @@ function UploadSlot({
               <ImageIcon className="size-5" />
             ) : kind === 'video' ? (
               <Video className="size-5" />
+            ) : kind === 'ebook' ? (
+              <BookOpen className="size-5" />
             ) : (
               <Music className="size-5" />
             )}

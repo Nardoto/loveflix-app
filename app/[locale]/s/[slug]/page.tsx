@@ -9,7 +9,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-import { Play, Headphones, BookOpen, Plus, Star, Clock, Clock3, Languages, ArrowLeft } from 'lucide-react';
+import { Play, Headphones, BookOpen, Plus, Star, Clock, Clock3, Languages, ArrowLeft, Download } from 'lucide-react';
 import { Link } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +49,9 @@ export default async function StoryDetailPage({
   const hasVideo = !!(story.videoSrc || story.videoKey);
   const hasAudio = !!(story.audioByLocale || story.audioKeyByLocale);
   const hasEbook = !!story.hasEbook;
+  const ebookDownloadUrl = story.ebookKey
+    ? `https://${process.env.NEXT_PUBLIC_MEDIA_DOMAIN}/${story.ebookKey}`
+    : null;
   const hasAnyMedia = hasVideo || hasAudio || hasEbook;
 
   // Comments + aggregate rating. Tries Supabase first; falls back to seeded
@@ -186,14 +189,31 @@ export default async function StoryDetailPage({
               </Button>
             )}
 
-            {hasEbook && (
+            {hasEbook && ebookDownloadUrl ? (
+              // PDF disponível — link direto pro R2 com download attribute. <a>
+              // nativo (não Link) porque o roteador do Next intercepta e
+              // ignora o download attr.
+              <Button asChild size="lg" variant="glass">
+                <a
+                  href={ebookDownloadUrl}
+                  download
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Download />
+                  Baixar PDF
+                </a>
+              </Button>
+            ) : hasEbook ? (
+              // Story marcada como tendo ebook mas sem PDF subido ainda —
+              // mantém o reader hardcoded como fallback.
               <Button asChild size="lg" variant="glass">
                 <Link href={`/s/${story.slug}/read` as never}>
                   <BookOpen />
                   Read
                 </Link>
               </Button>
-            )}
+            ) : null}
 
             <Button variant="glass" size="icon" aria-label="Add to list">
               <Plus />

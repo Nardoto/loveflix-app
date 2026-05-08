@@ -36,6 +36,7 @@ export type Story = {
   audioKeyByLocale?: Record<string, string>;
   coverKey?: string;
   hasEbook?: boolean;
+  ebookKey?: string;
 };
 
 const s = (n: number, fields: Omit<Story, 'id' | 'cover'> & { cover?: string }): Story => {

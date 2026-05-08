@@ -13,7 +13,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 
-export type UploadKind = 'video' | 'audio' | 'cover' | 'ebook-image';
+export type UploadKind = 'video' | 'audio' | 'cover' | 'ebook-image' | 'ebook';
 
 type StartArgs = {
   storySlug: string;

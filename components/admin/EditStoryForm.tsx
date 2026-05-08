@@ -21,6 +21,7 @@ import {
   EyeOff,
   Check,
   RefreshCw,
+  BookOpen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useMultipartUpload, type UploadKind } from '@/lib/upload/useMultipartUpload';
@@ -76,6 +77,7 @@ type StoryInit = {
   coverUrl: string;
   videoKey: string | null;
   audioKeys: Record<string, string>;
+  ebookKey: string | null;
 };
 
 export function EditStoryForm({
@@ -101,6 +103,7 @@ export function EditStoryForm({
   const [coverKey, setCoverKey] = useState<string | null>(story.coverKey);
   const [videoKey, setVideoKey] = useState<string | null>(story.videoKey);
   const [audioKeys, setAudioKeys] = useState<Record<string, string>>(story.audioKeys);
+  const [ebookKey, setEbookKey] = useState<string | null>(story.ebookKey);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
@@ -120,6 +123,7 @@ export function EditStoryForm({
         hasEbook: meta.hasEbook,
         coverKey: coverKey ?? undefined,
         videoKey: videoKey ?? undefined,
+        ebookKey: ebookKey ?? undefined,
         // Strip undefined antes de enviar — partialRecord aceita keys
         // omitidas mas não keys com undefined.
         audioKeyByLocale: Object.fromEntries(
@@ -269,6 +273,19 @@ export function EditStoryForm({
               }
             />
           ))}
+          <AssetSlot
+            slug={story.slug}
+            kind="ebook"
+            label="Ebook (PDF)"
+            icon={<BookOpen className="size-4" />}
+            currentKey={ebookKey}
+            accept="application/pdf"
+            onUploaded={(key) => {
+              setEbookKey(key);
+              // Acende o toggle automaticamente — operadora não precisa lembrar.
+              if (!meta.hasEbook) setMeta((m) => ({ ...m, hasEbook: true }));
+            }}
+          />
         </div>
       </section>
 

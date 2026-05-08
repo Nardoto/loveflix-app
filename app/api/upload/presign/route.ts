@@ -8,7 +8,7 @@ const PART_SIZE = 50 * 1024 * 1024; // 50 MB
 const Body = z.object({
   storySlug: z.string().min(1).regex(/^[a-z0-9-]+$/),
   bookNumber: z.number().int().min(1).max(99),
-  kind: z.enum(['video', 'audio', 'cover', 'ebook-image']),
+  kind: z.enum(['video', 'audio', 'cover', 'ebook-image', 'ebook']),
   locale: z.enum(['en', 'de', 'fr', 'es']).optional(),
   filename: z.string().optional(),
   pageIndex: z.number().int().min(0).optional(),
