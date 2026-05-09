@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { Play, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
+import { FlameIcon } from '@/components/icons/FlameIcon';
+import { isStoryHot } from '@/lib/data/hot';
 import type { Story } from '@/lib/data/stories';
 
 const GENRE_LABELS: Record<Story['genre'], string> = {
@@ -215,6 +217,8 @@ export function HeroCarousel({ stories, labels }: Props) {
 }
 
 function Slide({ story, labels }: { story: Story; labels: Props['labels'] }) {
+  const hot = isStoryHot(story);
+
   return (
     <div className="relative w-full aspect-[16/9] md:aspect-[21/9] lg:aspect-[24/9] rounded-2xl md:rounded-3xl overflow-hidden bg-bg-card shadow-2xl shadow-black/60">
       <Image
@@ -234,6 +238,21 @@ function Slide({ story, labels }: { story: Story; labels: Props['labels'] }) {
             'linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.55) 35%, rgba(0,0,0,0.15) 60%, rgba(0,0,0,0) 80%), linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,0.65) 100%)',
         }}
       />
+
+      {/* Hero HOT badge — pill com flame + glow pulsante. Pousa no topo-direito
+          do slide pra não competir com o título/sinopse à esquerda. Visual
+          diferente da tarja em barra dos cards de baixo: aqui o objetivo é
+          chamar atenção sem invadir a leitura. */}
+      {hot && (
+        <div className="absolute top-3 right-3 sm:top-5 sm:right-5 md:top-7 md:right-7 z-10">
+          <div className="relative inline-flex items-center gap-1.5 md:gap-2 h-8 md:h-9 px-3 md:px-4 rounded-full bg-gradient-to-r from-red-700 via-orange-500 to-red-700 shadow-[0_4px_18px_rgba(220,38,38,0.65)] animate-hot-glow ring-1 ring-orange-300/40">
+            <FlameIcon flicker className="size-4 md:size-[18px] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]" />
+            <span className="text-[11px] md:text-xs font-extrabold uppercase tracking-[0.28em] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">
+              Hot
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="relative h-full flex flex-col justify-end pb-5 sm:pb-7 md:pb-10 pl-5 sm:pl-7 md:pl-10 pr-5 max-w-2xl">
         <span className="text-[10px] sm:text-[11px] md:text-xs font-bold uppercase tracking-[0.28em] text-gold-bright mb-2 md:mb-3">
