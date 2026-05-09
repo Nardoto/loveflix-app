@@ -311,3 +311,72 @@ export async function unpublishStory(storySlug: string): Promise<Result> {
     isComingSoon: true,
   });
 }
+
+// =====================================================================
+// Bulk actions — operadora seleciona N stories na lista e aplica em massa
+// =====================================================================
+
+const BulkInput = z.object({
+  slugs: z.array(z.string().min(1).regex(SLUG_RE)).min(1).max(200),
+});
+
+export async function bulkPublish(slugs: string[]): Promise<Result<{ count: number }>> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { ok: false, error: 'Forbidden' };
+  const parsed = BulkInput.safeParse({ slugs });
+  if (!parsed.success) return { ok: false, error: 'Lista inválida' };
+
+  const sb = createServiceClient();
+  const { error, count } = await sb
+    .from('stories')
+    .update({
+      is_coming_soon: false,
+      published_at: new Date().toISOString(),
+    }, { count: 'exact' })
+    .in('slug', parsed.data.slugs);
+  if (error) return { ok: false, error: error.message };
+
+  revalidateTag('stories', { expire: 0 });
+  revalidatePath('/');
+  revalidatePath('/admin/stories');
+  return { ok: true, data: { count: count ?? 0 } };
+}
+
+export async function bulkUnpublish(slugs: string[]): Promise<Result<{ count: number }>> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { ok: false, error: 'Forbidden' };
+  const parsed = BulkInput.safeParse({ slugs });
+  if (!parsed.success) return { ok: false, error: 'Lista inválida' };
+
+  const sb = createServiceClient();
+  const { error, count } = await sb
+    .from('stories')
+    .update({
+      is_coming_soon: true,
+      published_at: null,
+    }, { count: 'exact' })
+    .in('slug', parsed.data.slugs);
+  if (error) return { ok: false, error: error.message };
+
+  revalidateTag('stories', { expire: 0 });
+  revalidatePath('/');
+  revalidatePath('/admin/stories');
+  return { ok: true, data: { count: count ?? 0 } };
+}
+
+export async function bulkDelete(slugs: string[]): Promise<Result<{ count: number }>> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { ok: false, error: 'Forbidden' };
+  const parsed = BulkInput.safeParse({ slugs });
+  if (!parsed.success) return { ok: false, error: 'Lista inválida' };
+
+  // Itera chamando deleteStory pra reaproveitar a limpeza R2 (cover, video,
+  // ebook, audios). Pra 200 stories isso dá no máx 200 deletes em série —
+  // aceitável pra ação manual; se virar gargalo, paraleliza com Promise.all.
+  let count = 0;
+  for (const slug of parsed.data.slugs) {
+    const r = await deleteStory(slug);
+    if (r.ok) count += 1;
+  }
+  return { ok: true, data: { count } };
+}

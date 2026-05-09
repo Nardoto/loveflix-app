@@ -35,6 +35,8 @@ type RawStoryRow = {
   video_src: string | null;
   video_key: string | null;
   ebook_key: string | null;
+  published_at: string | null;
+  created_at: string;
   story_audio?: Array<{
     locale: 'en' | 'de' | 'fr' | 'es';
     audio_src: string | null;
@@ -68,6 +70,8 @@ function rowToStory(row: RawStoryRow): Story {
     videoSrc: row.video_src ?? undefined,
     videoKey: row.video_key ?? undefined,
     ebookKey: row.ebook_key ?? undefined,
+    publishedAt: row.published_at ?? null,
+    createdAt: row.created_at ?? undefined,
     audioByLocale: Object.keys(audioByLocale).length ? audioByLocale : undefined,
     audioKeyByLocale: Object.keys(audioKeyByLocale).length
       ? audioKeyByLocale
@@ -128,4 +132,49 @@ export async function getHotStoriesByGenre(genre: Genre): Promise<Story[]> {
 export async function getFreeStories(): Promise<Story[]> {
   const all = await getAllStories();
   return all.filter((s) => s.isFree);
+}
+
+export type StoryMetrics = {
+  commentCount: number;
+  ratedCount: number;
+  avgRating: number;
+};
+
+/**
+ * Métricas por story pra lista admin (estilo YouTube Studio).
+ * Agrega story_comments em memória — escala bem pra ~poucos milhares de
+ * comments. Quando passar disso, criar uma RPC server-side ou migrar pra
+ * `story_rating_aggregate` view (precisa GRANT extra).
+ */
+export async function getStoryMetrics(): Promise<Map<string, StoryMetrics>> {
+  const out = new Map<string, StoryMetrics>();
+  if (!SUPABASE_CONFIGURED) return out;
+  try {
+    const sb = createServiceClient();
+    const { data } = await sb
+      .from('story_comments')
+      .select('story_slug, stars');
+    if (!data) return out;
+
+    const buckets = new Map<string, { sum: number; rated: number; total: number }>();
+    for (const row of data as Array<{ story_slug: string; stars: number | null }>) {
+      const b = buckets.get(row.story_slug) ?? { sum: 0, rated: 0, total: 0 };
+      b.total += 1;
+      if (row.stars != null) {
+        b.sum += row.stars;
+        b.rated += 1;
+      }
+      buckets.set(row.story_slug, b);
+    }
+    for (const [slug, b] of buckets) {
+      out.set(slug, {
+        commentCount: b.total,
+        ratedCount: b.rated,
+        avgRating: b.rated > 0 ? b.sum / b.rated : 0,
+      });
+    }
+  } catch {
+    /* keep empty map */
+  }
+  return out;
 }
