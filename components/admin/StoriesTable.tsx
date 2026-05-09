@@ -477,9 +477,23 @@ export function StoriesTable({
                         </div>
                       </td>
 
-                      {/* Quick actions: hover → ícones + menu 3 pontos */}
+                      {/* Quick actions */}
                       <td className="px-3 py-3 text-right">
-                        <div className="inline-flex items-center gap-1">
+                        <div className="inline-flex items-center gap-1.5">
+                          {/* Ver no site — pill com texto, sempre visível.
+                              Aparece em todas as stories: pra Coming Soon
+                              também leva pra detail page (ainda dá pra ver
+                              capa e sinopse, mesmo sem player). */}
+                          <a
+                            href={`/s/${s.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose/15 hover:bg-rose/25 text-rose-bright hover:text-white text-[12px] font-bold transition-colors"
+                            title="Abrir no site (nova aba)"
+                          >
+                            <ExternalLink className="size-3.5" />
+                            Ver
+                          </a>
                           <Link
                             href={`/admin/stories/${s.slug}`}
                             className="size-7 grid place-items-center rounded-full text-text-dim hover:text-white hover:bg-white/[0.06] transition-colors"
@@ -488,16 +502,6 @@ export function StoriesTable({
                           >
                             <Pencil className="size-3.5" />
                           </Link>
-                          <a
-                            href={`/s/${s.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="size-7 grid place-items-center rounded-full text-text-dim hover:text-white hover:bg-white/[0.06] transition-colors"
-                            title="Abrir no site"
-                            aria-label="Abrir no site"
-                          >
-                            <ExternalLink className="size-3.5" />
-                          </a>
                           <Dropdown.Root>
                             <Dropdown.Trigger asChild>
                               <button
@@ -512,8 +516,23 @@ export function StoriesTable({
                               <Dropdown.Content
                                 align="end"
                                 sideOffset={6}
-                                className="min-w-[180px] rounded-xl bg-bg-elevated border border-white/[0.08] shadow-2xl shadow-black/60 p-1 z-50"
+                                className="min-w-[200px] rounded-xl bg-bg-elevated border border-white/[0.08] shadow-2xl shadow-black/60 p-1 z-50"
                               >
+                                <DropItem asChild>
+                                  <a
+                                    href={`/s/${s.slug}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <ExternalLink className="size-4" /> Ver no site
+                                  </a>
+                                </DropItem>
+                                <DropItem asChild>
+                                  <Link href={`/admin/stories/${s.slug}`}>
+                                    <Pencil className="size-4" /> Editar
+                                  </Link>
+                                </DropItem>
+                                <Dropdown.Separator className="h-px bg-white/[0.06] my-1" />
                                 <DropItem
                                   onSelect={() =>
                                     runRow(isPublished ? 'unpublish' : 'publish', s.slug, s.title)
@@ -603,15 +622,19 @@ function SortHead({
 function DropItem({
   onSelect,
   destructive,
+  asChild,
   children,
 }: {
-  onSelect: () => void;
+  onSelect?: () => void;
   destructive?: boolean;
+  /** Renderiza o filho direto (pra <a>/<Link>) — Radix repassa props. */
+  asChild?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <Dropdown.Item
       onSelect={onSelect}
+      asChild={asChild}
       className={[
         'flex items-center gap-2 px-3 py-2 text-[13px] rounded-lg cursor-pointer outline-none',
         destructive
