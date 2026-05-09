@@ -11,7 +11,6 @@ import { unstable_cache } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/server';
 import { allStories as hardcoded, type Story, type Genre } from './stories';
 import { isStoryHot } from './hot';
-import { getAuthorFor } from './authors';
 
 const SUPABASE_CONFIGURED = !!(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -124,11 +123,6 @@ export async function getHotStories(): Promise<Story[]> {
 export async function getHotStoriesByGenre(genre: Genre): Promise<Story[]> {
   const hot = await getHotStories();
   return hot.filter((s) => s.genre === genre);
-}
-
-export async function getStoriesByAuthor(authorId: string): Promise<Story[]> {
-  const all = await getAllStories();
-  return all.filter((s) => getAuthorFor(s).id === authorId);
 }
 
 export async function getFreeStories(): Promise<Story[]> {

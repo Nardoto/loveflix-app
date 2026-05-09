@@ -4,7 +4,6 @@ import { setRequestLocale } from 'next-intl/server';
 import { Clock, Headphones } from 'lucide-react';
 import { Row } from '@/components/catalog/Row';
 import { allStories, type Story } from '@/lib/data/stories';
-import { authors, getAuthorFor, filterByAuthor } from '@/lib/data/authors';
 import { filterByLocale } from '@/lib/data/locale-filter';
 
 export const dynamic = 'force-dynamic';
@@ -81,14 +80,6 @@ export default async function GenreDetailPage({
   const totalMin = list.reduce((acc, s) => acc + (s.totalMinutes ?? 0), 0);
   const avgMin = Math.round(totalMin / list.length);
 
-  // One row per channel that has stories in this genre
-  const channelRows = authors
-    .map((a) => ({
-      author: a,
-      stories: filterByAuthor(list, a.id),
-    }))
-    .filter((c) => c.stories.length >= 2);
-
   const hot = list.filter((s) => s.isHot);
 
   return (
@@ -132,15 +123,6 @@ export default async function GenreDetailPage({
       {hot.length >= 2 && (
         <Row title="Hot in this genre" highlight="Hot" stories={hot} />
       )}
-
-      {channelRows.map(({ author, stories }) => (
-        <Row
-          key={author.id}
-          title={`From ${author.name}`}
-          highlight={author.name}
-          stories={stories}
-        />
-      ))}
     </>
   );
 }

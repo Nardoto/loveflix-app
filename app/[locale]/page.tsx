@@ -2,7 +2,6 @@ import { setRequestLocale } from 'next-intl/server';
 import { getTranslations } from 'next-intl/server';
 import { HeroCarousel } from '@/components/catalog/HeroCarousel';
 import { Row } from '@/components/catalog/Row';
-import { AuthorPills } from '@/components/catalog/AuthorPills';
 import { HotShowcase } from '@/components/catalog/HotShowcase';
 import { getAllStories } from '@/lib/data/stories-server';
 import { isStoryHot } from '@/lib/data/hot';
@@ -66,12 +65,6 @@ export default async function HomePage({
         stories={heroSlides}
         labels={{ watchNow: tHero('watchNow'), moreInfo: tHero('moreInfo') }}
       />
-
-      {/* Genre filtering already happens (a) per-row below and (b) via the
-          /genres page in the main nav, so we don't double up with chips here.
-          The author pills come right after the hero — channel-following is
-          the primary discovery path on AllureTV. */}
-      <AuthorPills />
 
       <HotShowcase stories={localeHot} />
 

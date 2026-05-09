@@ -6,7 +6,6 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/lib/navigation';
 import { Badge } from '@/components/ui/badge';
 import type { Story } from '@/lib/data/stories';
-import { getAuthorFor, creatorName } from '@/lib/data/authors';
 import { isStoryHot } from '@/lib/data/hot';
 import { SparkleIcon } from '@/components/icons/SparkleIcon';
 import { FlameIcon } from '@/components/icons/FlameIcon';
@@ -23,7 +22,6 @@ import { FlameIcon } from '@/components/icons/FlameIcon';
 
 export function StoryCard({ story }: { story: Story }) {
   const t = useTranslations('home');
-  const author = getAuthorFor(story);
   const hot = isStoryHot(story);
   const audioLocales = Object.keys(
     story.audioKeyByLocale ?? story.audioByLocale ?? {},
@@ -88,22 +86,11 @@ export function StoryCard({ story }: { story: Story }) {
         <h3 className="font-serif italic text-[14px] md:text-[15px] font-semibold text-white leading-snug line-clamp-2 min-h-[2.4em]">
           {story.title}
         </h3>
-        <div className="mt-1 flex items-baseline justify-between gap-2">
-          <p className="text-[11px] text-text-dim leading-none flex items-baseline gap-1 truncate min-w-0">
-            <span className="opacity-70">by</span>
-            <span
-              className="text-gold-bright text-[14px] translate-y-[1px] truncate"
-              style={{ fontFamily: author.font }}
-            >
-              {creatorName(author)}
-            </span>
+        {audioLocales.length > 0 && (
+          <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-text-mute">
+            {audioLocales.map((l) => l.toUpperCase()).join(' · ')}
           </p>
-          {audioLocales.length > 0 && (
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-text-mute shrink-0">
-              {audioLocales.map((l) => l.toUpperCase()).join(' · ')}
-            </p>
-          )}
-        </div>
+        )}
       </div>
     </Link>
   );

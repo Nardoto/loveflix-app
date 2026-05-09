@@ -11,7 +11,7 @@
 
 import { fazendeiro, magnata, stories } from '../lib/data/stories';
 import { placeholders } from '../lib/data/placeholders';
-import { authors, getAuthorFor } from '../lib/data/authors';
+import { authors } from '../lib/data/authors';
 
 const real = [fazendeiro, magnata, ...stories];
 const phs = placeholders.map((p) => ({ ...p, id: `ph_${p.id}` }));
@@ -21,7 +21,7 @@ const out = {
   authors: authors.map((a, i) => ({ ...a, display_order: i })),
   stories: all.map((s) => ({
     ...s,
-    author_id: getAuthorFor(s).id,
+    author_id: authors[0].id,
   })),
 };
 

@@ -15,7 +15,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Row } from '@/components/catalog/Row';
 import { getStoryBySlug, getStoriesByGenre } from '@/lib/data/stories-server';
-import { getAuthorFor } from '@/lib/data/authors';
 import { getCommentsForStory } from '@/lib/data/comments-server';
 import { getUser } from '@/lib/auth-helpers';
 import { StoryComments } from '@/components/story/StoryComments';
@@ -57,8 +56,6 @@ export default async function StoryDetailPage({
   // Favorito é per-user — só consulta se a usuária está logada. Para
   // anônimos, o botão fica como "+" e o click leva pro login.
   const isFav = currentUser ? await isFavorite(currentUser.id, slug) : false;
-
-  const author = getAuthorFor(story);
 
   // "More like this" — same genre, different stories.
   const related = (await getStoriesByGenre(story.genre))
@@ -222,9 +219,9 @@ export default async function StoryDetailPage({
         </div>
       </section>
 
-      {/* Tropes / author / details */}
+      {/* Tropes / details */}
       <section className="px-5 md:px-10 lg:px-14 mt-12 md:mt-16 max-w-5xl">
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 gap-6">
           <div>
             <h3 className="text-xs font-bold uppercase tracking-widest text-text-mute mb-2">
               {tStory('tropes')}
@@ -244,33 +241,6 @@ export default async function StoryDetailPage({
             <p className="font-serif italic text-rose-bright text-lg">
               {tGenre(story.genre as never)}
             </p>
-          </div>
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-widest text-text-mute mb-2">
-              {tStory('channel')}
-            </h3>
-            <Link
-              href={`/channels/${author.id}` as never}
-              className="flex items-center gap-2 group"
-            >
-              <span
-                className={`relative size-9 rounded-full overflow-hidden bg-gradient-to-br ${author.color}`}
-              >
-                <Image
-                  src={author.avatar}
-                  alt={author.name}
-                  fill
-                  sizes="36px"
-                  className="object-cover"
-                />
-              </span>
-              <div>
-                <p className="font-bold text-white text-sm group-hover:text-rose-bright transition-colors">
-                  {author.name}
-                </p>
-                <p className="text-xs text-text-dim">{author.tagline} · {tStory('viewChannel')}</p>
-              </div>
-            </Link>
           </div>
         </div>
       </section>
