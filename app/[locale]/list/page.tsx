@@ -1,23 +1,17 @@
 import { redirect } from 'next/navigation';
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { Heart } from 'lucide-react';
 import { Link } from '@/lib/navigation';
 import { StoryCard } from '@/components/catalog/StoryCard';
 import { getUser } from '@/lib/auth-helpers';
 import { getFavoritesForUser } from '@/lib/data/favorites-server';
 
-// Lista pessoal — fresca a cada visita. unstable_cache não vale a pena
-// per-user; o write path (revalidateTag) já invalida quando favorita.
+// Per-user — força fresh a cada visita. revalidateTag('favorites') invalida
+// o helper, mas a page em si nunca pode ser estática.
 export const dynamic = 'force-dynamic';
 
 type Filter = 'all' | 'video' | 'ebook' | 'soon';
-
-const FILTERS: Array<{ id: Filter; label: string }> = [
-  { id: 'all', label: 'Todas' },
-  { id: 'video', label: 'Com vídeo' },
-  { id: 'ebook', label: 'Com ebook' },
-  { id: 'soon', label: 'Coming Soon' },
-];
+const FILTER_IDS: Filter[] = ['all', 'video', 'ebook', 'soon'];
 
 export default async function MyListPage({
   params,
@@ -29,6 +23,7 @@ export default async function MyListPage({
   const { locale } = await params;
   const { filter: rawFilter } = await searchParams;
   setRequestLocale(locale);
+  const t = await getTranslations('myList');
 
   const user = await getUser();
   if (!user) {
@@ -36,9 +31,9 @@ export default async function MyListPage({
   }
 
   const allFavs = await getFavoritesForUser(user.id);
-  const filter: Filter = (
-    FILTERS.find((f) => f.id === rawFilter)?.id ?? 'all'
-  ) as Filter;
+  const filter: Filter = FILTER_IDS.includes(rawFilter as Filter)
+    ? (rawFilter as Filter)
+    : 'all';
 
   const filtered = allFavs.filter((s) => {
     if (filter === 'video') return !!(s.videoKey || s.videoSrc);
@@ -47,16 +42,25 @@ export default async function MyListPage({
     return true;
   });
 
+  const FILTERS: Array<{ id: Filter; label: string }> = [
+    { id: 'all', label: t('filterAll') },
+    { id: 'video', label: t('filterVideo') },
+    { id: 'ebook', label: t('filterEbook') },
+    { id: 'soon', label: t('filterSoon') },
+  ];
+
   return (
     <div className="px-4 md:px-10 lg:px-14 pt-24 pb-20 max-w-[1400px] mx-auto">
       <header className="mb-8">
         <h1 className="font-serif italic font-black text-3xl md:text-5xl text-white tracking-tight mb-2">
-          Minha Lista
+          {t('title')}
         </h1>
         <p className="text-text-dim text-sm">
           {allFavs.length === 0
-            ? 'Você ainda não salvou nenhuma story.'
-            : `${allFavs.length} ${allFavs.length === 1 ? 'salva' : 'salvas'}`}
+            ? t('empty')
+            : t(allFavs.length === 1 ? 'countSingular' : 'countPlural', {
+                count: allFavs.length,
+              })}
         </p>
       </header>
 
@@ -83,7 +87,20 @@ export default async function MyListPage({
       )}
 
       {filtered.length === 0 ? (
-        <EmptyState hasAny={allFavs.length > 0} />
+        <EmptyState
+          hasAny={allFavs.length > 0}
+          title={
+            allFavs.length > 0
+              ? t('emptyFilterTitle')
+              : t('emptyListTitle')
+          }
+          desc={
+            allFavs.length > 0
+              ? t('emptyFilterDesc')
+              : t('emptyListDesc')
+          }
+          cta={t('cta')}
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8">
           {filtered.map((s) => (
@@ -95,26 +112,32 @@ export default async function MyListPage({
   );
 }
 
-function EmptyState({ hasAny }: { hasAny: boolean }) {
+function EmptyState({
+  hasAny,
+  title,
+  desc,
+  cta,
+}: {
+  hasAny: boolean;
+  title: string;
+  desc: string;
+  cta: string;
+}) {
   return (
     <div className="rounded-2xl bg-bg-card border border-white/[0.06] p-12 text-center">
       <div className="size-14 mx-auto rounded-full bg-rose/15 grid place-items-center text-rose-bright mb-4">
         <Heart className="size-6" />
       </div>
-      <h2 className="font-serif italic text-xl text-white mb-2">
-        {hasAny ? 'Nada nesse filtro' : 'Sua lista está vazia'}
-      </h2>
-      <p className="text-text-dim text-sm max-w-sm mx-auto">
-        {hasAny
-          ? 'Tenta outro filtro acima ou volta na home pra adicionar mais.'
-          : 'Toca no + de qualquer story pra salvar aqui. As que tiverem PDF, você pode baixar.'}
-      </p>
-      <Link
-        href={'/' as never}
-        className="inline-flex mt-6 px-5 py-2.5 rounded-full bg-rose text-white text-sm font-bold hover:bg-rose-bright transition-colors"
-      >
-        Explorar stories
-      </Link>
+      <h2 className="font-serif italic text-xl text-white mb-2">{title}</h2>
+      <p className="text-text-dim text-sm max-w-sm mx-auto">{desc}</p>
+      {!hasAny && (
+        <Link
+          href={'/' as never}
+          className="inline-flex mt-6 px-5 py-2.5 rounded-full bg-rose text-white text-sm font-bold hover:bg-rose-bright transition-colors"
+        >
+          {cta}
+        </Link>
+      )}
     </div>
   );
 }

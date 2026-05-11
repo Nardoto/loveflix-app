@@ -255,5 +255,24 @@
     "perMonth": "/month",
     "cta": "Subscribe now",
     "freeStories": "Listen to our free stories anytime — no account needed."
+  },
+  "myList": {
+    "title": "My List",
+    "countSingular": "{count} saved",
+    "countPlural": "{count} saved",
+    "empty": "You haven't saved any stories yet.",
+    "filterAll": "All",
+    "filterVideo": "With video",
+    "filterEbook": "With ebook",
+    "filterSoon": "Coming Soon",
+    "emptyFilterTitle": "Nothing in this filter",
+    "emptyFilterDesc": "Try another filter above or head back home to add more.",
+    "emptyListTitle": "Your list is empty",
+    "emptyListDesc": "Tap the + on any story to save it here. The ones with a PDF, you can download.",
+    "cta": "Explore stories",
+    "viewAll": "View all",
+    "previewEmpty": "Tap the + on any story to save it here.",
+    "addAria": "Add to my list",
+    "removeAria": "Remove from my list"
   }
 }

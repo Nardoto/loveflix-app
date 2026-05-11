@@ -255,5 +255,24 @@
     "perMonth": "/Monat",
     "cta": "Jetzt abonnieren",
     "freeStories": "Hören Sie unsere kostenlosen Geschichten — ohne Konto."
+  },
+  "myList": {
+    "title": "Meine Liste",
+    "countSingular": "{count} gespeichert",
+    "countPlural": "{count} gespeichert",
+    "empty": "Du hast noch keine Geschichten gespeichert.",
+    "filterAll": "Alle",
+    "filterVideo": "Mit Video",
+    "filterEbook": "Mit E-Book",
+    "filterSoon": "Demnächst",
+    "emptyFilterTitle": "Nichts in diesem Filter",
+    "emptyFilterDesc": "Versuche einen anderen Filter oben oder gehe zurück zur Startseite.",
+    "emptyListTitle": "Deine Liste ist leer",
+    "emptyListDesc": "Tippe auf das + bei einer Geschichte, um sie hier zu speichern. Die mit PDF kannst du herunterladen.",
+    "cta": "Geschichten entdecken",
+    "viewAll": "Alle anzeigen",
+    "previewEmpty": "Tippe auf das + bei einer Geschichte, um sie hier zu speichern.",
+    "addAria": "Zu meiner Liste hinzufügen",
+    "removeAria": "Aus meiner Liste entfernen"
   }
 }

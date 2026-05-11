@@ -1,13 +1,18 @@
 'use client';
 
-// Botões de "Adicionar à Lista". Dois sabores:
-//   <FavoriteAddButton>: pill grande pra story detail (Plus / Check)
-//   <FavoriteHeart>: ícone de coração pequeno no canto do StoryCard
+// Add-to-list buttons. Two variants:
+//   <FavoriteAddButton>: pill on the story detail (Plus / Check)
+//   <FavoriteHeart>: small heart on the StoryCard corner
 //
-// Ambos chamam as mesmas server actions; o `Heart` para a propagação do
-// click pra não navegar pra story quando o usuário só quer favoritar.
+// Originally used useOptimistic — but in this codebase the parent server
+// component doesn't re-run on a server-action revalidate (the action just
+// invalidates a tag), so useOptimistic snapped back to the stale `initial`
+// after every click. Plain useState + router.refresh() is simpler and
+// behaves the way the user expects.
 
-import { useOptimistic, useTransition } from 'react';
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Plus, Check, Heart, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { addFavorite, removeFavorite } from '@/app/actions/favorites';
@@ -15,29 +20,34 @@ import { addFavorite, removeFavorite } from '@/app/actions/favorites';
 type Props = {
   storySlug: string;
   initial: boolean;
-  /** Se a usuária não está logada, redireciona pro login com returnTo. */
+  /** Where to send the user if they aren't logged in. */
   loginReturnTo?: string;
 };
 
-function useToggle({ storySlug, initial, loginReturnTo }: Props) {
-  const [isFav, setOptimistic] = useOptimistic(initial);
+function useFavToggle({ storySlug, initial, loginReturnTo }: Props) {
+  const [isFav, setIsFav] = useState(initial);
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
 
   const toggle = () => {
+    const next = !isFav;
+    // Optimistic: flip immediately so the click feels instant.
+    setIsFav(next);
     startTransition(async () => {
-      const next = !isFav;
-      setOptimistic(next);
       const res = next
         ? await addFavorite(storySlug)
         : await removeFavorite(storySlug);
-      if (!res.ok) {
-        if (res.error === 'Não autenticado' && loginReturnTo) {
-          window.location.href = `/login?returnTo=${encodeURIComponent(loginReturnTo)}`;
-          return;
-        }
-        // Reverte otimista ao falhar.
-        setOptimistic(!next);
+      if (res.ok) {
+        // Sync the rest of the page (e.g. /account preview, /list count).
+        router.refresh();
+        return;
       }
+      if (res.error === 'Não autenticado' && loginReturnTo) {
+        window.location.href = `/login?returnTo=${encodeURIComponent(loginReturnTo)}`;
+        return;
+      }
+      // Revert the optimistic flip on real failures.
+      setIsFav(!next);
     });
   };
 
@@ -45,12 +55,13 @@ function useToggle({ storySlug, initial, loginReturnTo }: Props) {
 }
 
 export function FavoriteAddButton(props: Props) {
-  const { isFav, pending, toggle } = useToggle(props);
+  const t = useTranslations('myList');
+  const { isFav, pending, toggle } = useFavToggle(props);
   return (
     <Button
       variant="glass"
       size="icon"
-      aria-label={isFav ? 'Remover da minha lista' : 'Adicionar à minha lista'}
+      aria-label={isFav ? t('removeAria') : t('addAria')}
       onClick={toggle}
       disabled={pending}
       className={isFav ? 'text-emerald-400 hover:text-emerald-300' : undefined}
@@ -67,15 +78,16 @@ export function FavoriteAddButton(props: Props) {
 }
 
 /**
- * Heart overlay pro StoryCard. Sempre visível em mobile; aparece on-hover
- * em desktop. stopPropagation para não navegar pra story ao clicar.
+ * Heart overlay for StoryCard. Always visible on mobile; hover on desktop.
+ * stopPropagation prevents the wrapping Link from navigating on click.
  */
 export function FavoriteHeart(props: Props) {
-  const { isFav, pending, toggle } = useToggle(props);
+  const t = useTranslations('myList');
+  const { isFav, pending, toggle } = useFavToggle(props);
   return (
     <button
       type="button"
-      aria-label={isFav ? 'Remover da minha lista' : 'Adicionar à minha lista'}
+      aria-label={isFav ? t('removeAria') : t('addAria')}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
