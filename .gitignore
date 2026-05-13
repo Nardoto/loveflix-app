@@ -44,4 +44,7 @@ next-env.d.ts
 /scripts/r2-import/_workspace
 /scripts/r2-import/node_modules
 
+# QR generator outputs (regenerable, can be large)
+/qr-output
+
 .vercel
