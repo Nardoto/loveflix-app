@@ -100,19 +100,19 @@ export function tierIsSubscriber(tier?: SubscriptionTier | null): boolean {
 /**
  * Paywall policy:
  *   Catálogo (capas, títulos, sinopses) é público — qualquer pessoa abre.
- *   QUALQUER conteúdo (vídeo, áudio, ebook PDF) exige assinatura ativa.
- *   Admin emails (lib/auth-helpers.isAdminEmail) ganham acesso automático
- *   via getSubscriptionTier (retorna 'active'). is_free e is_premium flags
- *   ficam no DB como metadata mas não influenciam mais o gate — uma única
- *   regra simplifica o produto e fecha sabotagem.
- *
- *   Coming Soon stories não passam pelo gate: o CTA já é "Coming Soon"
- *   (Sem media disponível ainda) e a usuária consegue salvar na lista.
+ *   Conteúdo (vídeo, áudio, ebook) por padrão exige assinatura ativa OU
+ *   admin email. Duas exceções:
+ *     - is_coming_soon: o CTA já é "Coming Soon"; sem media.
+ *     - is_free: o admin marcou essa story como amostra grátis (teaser
+ *       de marketing); abre pra qualquer um, inclusive anônimo. O token
+ *       de mídia ganha um keyPrefix scoped pra essa story só, evitando
+ *       que vaze o token e funcione em conteúdo pago.
  */
 export function storyRequiresUpgrade(
-  story: { isComingSoon?: boolean },
+  story: { isComingSoon?: boolean; isFree?: boolean },
   userTier: SubscriptionTier | null | undefined,
 ): boolean {
   if (story.isComingSoon) return false;
+  if (story.isFree) return false;
   return !tierIsSubscriber(userTier);
 }

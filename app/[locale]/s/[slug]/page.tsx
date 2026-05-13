@@ -18,6 +18,7 @@ import { getStoryBySlug, getStoriesByGenre } from '@/lib/data/stories-server';
 import { getCommentsForStory } from '@/lib/data/comments-server';
 import { getUser, getSubscriptionTier, storyRequiresUpgrade } from '@/lib/auth-helpers';
 import { StoryComments } from '@/components/story/StoryComments';
+import { MediaTokenPrefetch } from '@/components/player/MediaTokenPrefetch';
 import { FavoriteAddButton } from '@/components/story/FavoriteToggle';
 import { isFavorite } from '@/lib/data/favorites-server';
 import { isStoryHot } from '@/lib/data/hot';
@@ -73,6 +74,12 @@ export default async function StoryDetailPage({
 
   return (
     <>
+      {/* Pré-aquece o token de mídia em background assim que a tela de
+          detalhe monta. Quando a usuária clica Watch/Listen, o Player já
+          encontra o token em cache e seta <video src> sem esperar
+          /api/media/sign-token — economiza 50-150ms no startup. */}
+      {hasAnyMedia && !needsUpgrade && <MediaTokenPrefetch slug={story.slug} />}
+
       {/* Cinematic hero. min-h em vez de h fixo: se o conteúdo crescer
           (título de 3 linhas + sinopse + botões), a section se estende
           em vez de cortar os elementos pra cima do topbar. overflow-hidden

@@ -68,7 +68,12 @@ export function Player({
   const tCommon = useTranslations('common');
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const { token, tier, loading: tokenLoading, error: tokenError } = useMediaToken();
+  // Passa o slug pro endpoint — quando a story é `is_free=true`, o server
+  // assina um token scoped (tier=active + keyPrefix='stories/<slug>/') que
+  // libera o playback mesmo pra anônimos. Pra stories pagas, o slug não
+  // afeta o token retornado.
+  const { token, tier, loading: tokenLoading, error: tokenError } =
+    useMediaToken(story.slug);
 
   const hasVideo = !!(story.videoSrc || story.videoKey);
   const hasAudio = !!(story.audioByLocale || story.audioKeyByLocale);
@@ -469,6 +474,11 @@ export function Player({
         <video
           ref={videoRef}
           src={videoSrcResolved}
+          // Shown until canplay fires. Without it the user sees a black
+          // rectangle during the moov-atom fetch — perceived as "the app is
+          // frozen". The cover image is already on the CDN from the detail
+          // page, so it lands instantly.
+          poster={story.cover}
           className={cn(
             'absolute inset-0 w-full h-full object-contain',
             mode !== 'video' && 'invisible',
