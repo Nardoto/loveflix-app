@@ -35,6 +35,7 @@ type RawStoryRow = {
   video_src: string | null;
   video_key: string | null;
   ebook_key: string | null;
+  ebook_image_count: number | null;
   published_at: string | null;
   created_at: string;
   story_audio?: Array<{
@@ -70,6 +71,7 @@ function rowToStory(row: RawStoryRow): Story {
     videoSrc: row.video_src ?? undefined,
     videoKey: row.video_key ?? undefined,
     ebookKey: row.ebook_key ?? undefined,
+    ebookImageCount: row.ebook_image_count ?? 0,
     publishedAt: row.published_at ?? null,
     createdAt: row.created_at ?? undefined,
     audioByLocale: Object.keys(audioByLocale).length ? audioByLocale : undefined,

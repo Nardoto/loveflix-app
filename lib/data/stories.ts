@@ -37,6 +37,8 @@ export type Story = {
   coverKey?: string;
   hasEbook?: boolean;
   ebookKey?: string;
+  /** Quantas imagens a galeria do reader tem. 0 ou ausente = sem ilustrações. */
+  ebookImageCount?: number;
   // Datas só populadas quando vêm do Supabase — stories hardcoded ficam undefined.
   // Usadas pelo /admin/stories pra coluna Data (estilo YouTube Studio).
   publishedAt?: string | null;

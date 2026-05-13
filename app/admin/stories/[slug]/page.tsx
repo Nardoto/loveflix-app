@@ -2,8 +2,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { getStoryBySlug } from '@/lib/data/stories-server';
+import { getAllScriptsForStory, listEbookImageKeys, type Locale } from '@/lib/data/scripts-server';
 import { authors as hardcodedAuthors } from '@/lib/data/authors';
 import { createServiceClient } from '@/lib/supabase/server';
+import { getUser, isAdminEmail } from '@/lib/auth-helpers';
+import { signMediaToken } from '@/lib/media-token';
 import { PageHead } from '@/components/admin/AdminUI';
 import { EditStoryForm } from '@/components/admin/EditStoryForm';
 
@@ -32,10 +35,37 @@ export default async function EditStoryPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const story = await getStoryBySlug(slug);
+  const [story, authors, scriptsByLocale] = await Promise.all([
+    getStoryBySlug(slug),
+    loadAuthors(),
+    getAllScriptsForStory(slug),
+  ]);
   if (!story) notFound();
 
-  const authors = await loadAuthors();
+  // Imagens da galeria do ebook — admin sempre tier=active via isAdminEmail.
+  // O token tem TTL longo (2h) que vale a sessão de edição inteira.
+  const imageKeys = listEbookImageKeys(slug, story.ebookImageCount ?? 0);
+  const mediaDomain = process.env.NEXT_PUBLIC_MEDIA_DOMAIN ?? '';
+  let imageUrls: string[] = [];
+  if (imageKeys.length > 0 && mediaDomain) {
+    const user = await getUser();
+    if (user && isAdminEmail(user.email)) {
+      const token = await signMediaToken({
+        userId: user.id,
+        tier: 'active',
+        expirySeconds: 7200,
+      });
+      imageUrls = imageKeys.map(
+        (k) => `https://${mediaDomain}/${k}?token=${token}`,
+      );
+    }
+  }
+
+  const initialScripts: Partial<Record<Locale, string>> = {};
+  (['en', 'de', 'fr', 'es'] as const).forEach((l) => {
+    const s = scriptsByLocale[l];
+    if (s) initialScripts[l] = s.content;
+  });
 
   return (
     <>
@@ -67,6 +97,8 @@ export default async function EditStoryPage({
           videoKey: story.videoKey ?? null,
           audioKeys: story.audioKeyByLocale ?? {},
           ebookKey: story.ebookKey ?? null,
+          ebookImageUrls: imageUrls,
+          initialScripts,
         }}
         authors={authors.map((a) => ({
           id: a.id,

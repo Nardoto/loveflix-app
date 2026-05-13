@@ -31,6 +31,8 @@ import {
   publishStory,
   unpublishStory,
 } from '@/app/actions/admin-stories';
+import { EbookImageGallery } from './EbookImageGallery';
+import { EbookScriptTabs } from './EbookScriptTabs';
 
 type Genre =
   | 'mafia'
@@ -78,6 +80,10 @@ type StoryInit = {
   videoKey: string | null;
   audioKeys: Record<string, string>;
   ebookKey: string | null;
+  /** URLs pré-resolvidas (com token) das ilustrações já existentes. */
+  ebookImageUrls: string[];
+  /** Roteiro markdown por idioma carregado do servidor. */
+  initialScripts: Partial<Record<'en' | 'de' | 'fr' | 'es', string>>;
 };
 
 export function EditStoryForm({
@@ -276,18 +282,33 @@ export function EditStoryForm({
           <AssetSlot
             slug={story.slug}
             kind="ebook"
-            label="Ebook (PDF)"
+            label="Ebook PDF (legado)"
             icon={<BookOpen className="size-4" />}
             currentKey={ebookKey}
             accept="application/pdf"
             onUploaded={(key) => {
               setEbookKey(key);
-              // Acende o toggle automaticamente — operadora não precisa lembrar.
               if (!meta.hasEbook) setMeta((m) => ({ ...m, hasEbook: true }));
             }}
           />
         </div>
+        <p className="text-[11px] text-text-mute mt-3">
+          O PDF acima é o modo legado. Pra novas stories, prefira usar o
+          <strong className="text-text-soft"> Roteiro & Ilustrações </strong>
+          abaixo — fica mais bonito no app e funciona em qualquer idioma.
+        </p>
       </section>
+
+      <EbookImageGallery
+        slug={story.slug}
+        initialImageUrls={story.ebookImageUrls}
+      />
+
+      <EbookScriptTabs
+        slug={story.slug}
+        initialScripts={story.initialScripts}
+        imageCount={story.ebookImageUrls.length}
+      />
 
       {error && (
         <div className="rounded-xl bg-red-500/10 border border-red-500/30 p-4 text-sm text-red-300">
