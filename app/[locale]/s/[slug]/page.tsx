@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Row } from '@/components/catalog/Row';
 import { getStoryBySlug, getStoriesByGenre } from '@/lib/data/stories-server';
 import { getCommentsForStory } from '@/lib/data/comments-server';
-import { getUser, getSubscriptionTier, tierIsSubscriber } from '@/lib/auth-helpers';
+import { getUser, getSubscriptionTier, storyRequiresUpgrade } from '@/lib/auth-helpers';
 import { StoryComments } from '@/components/story/StoryComments';
 import { FavoriteAddButton } from '@/components/story/FavoriteToggle';
 import { isFavorite } from '@/lib/data/favorites-server';
@@ -58,15 +58,11 @@ export default async function StoryDetailPage({
   // anônimos, o botão fica como "+" e o click leva pro login.
   const isFav = currentUser ? await isFavorite(currentUser.id, slug) : false;
 
-  // Paywall: premium-only stories trocam Watch/Listen por CTA pra
-  // assinatura. Free (is_free=true) sempre vence — uma story marcada
-  // premium+free passa direto pelo gate.
+  // Paywall global: qualquer não-assinante (anônimo incluído) cai no CTA
+  // de upgrade quando tenta watch/listen/download. Coming Soon segue
+  // próprio fluxo (sem media pra reproduzir).
   const userTier = await getSubscriptionTier();
-  const needsUpgrade =
-    !!story.isPremium &&
-    !story.isFree &&
-    !story.isComingSoon &&
-    !tierIsSubscriber(userTier);
+  const needsUpgrade = storyRequiresUpgrade(story, userTier);
   const upgradeHref =
     `/account?upgrade=required&from=/${locale}/s/${story.slug}` as const;
 

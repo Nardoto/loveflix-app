@@ -24,13 +24,12 @@ export default async function ReadPage({
     redirect(`/${locale}/login?returnTo=${encodeURIComponent(`/${locale}/s/${slug}/read`)}`);
   }
 
-  // Premium gate antes de qualquer redirect pro PDF.
-  if (story.isPremium && !story.isFree) {
-    const sub = await isSubscriber();
-    if (!sub) {
-      const from = `/${locale}/s/${slug}`;
-      redirect(`/${locale}/account?upgrade=required&from=${encodeURIComponent(from)}`);
-    }
+  // Paywall global — TODO ebook exige assinatura antes de qualquer
+  // redirect pro PDF / render do reader.
+  const sub = await isSubscriber();
+  if (!sub) {
+    const from = `/${locale}/s/${slug}`;
+    redirect(`/${locale}/account?upgrade=required&from=${encodeURIComponent(from)}`);
   }
 
   // Story tem PDF subido pelo admin — manda direto pro download. O reader

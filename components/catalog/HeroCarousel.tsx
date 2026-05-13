@@ -9,7 +9,7 @@ import { FlameIcon } from '@/components/icons/FlameIcon';
 import { isStoryHot } from '@/lib/data/hot';
 import type { Story } from '@/lib/data/stories';
 import type { SubscriptionTier } from '@/lib/auth-helpers';
-import { tierIsSubscriber } from '@/lib/auth-helpers';
+import { storyRequiresUpgrade } from '@/lib/auth-helpers';
 
 const GENRE_LABELS: Record<Story['genre'], string> = {
   mafia: 'Mafia Romance',
@@ -230,11 +230,7 @@ function Slide({
 }) {
   const hot = isStoryHot(story);
   const isLocked =
-    userTier !== undefined &&
-    !!story.isPremium &&
-    !story.isFree &&
-    !story.isComingSoon &&
-    !tierIsSubscriber(userTier);
+    userTier !== undefined && storyRequiresUpgrade(story, userTier);
 
   return (
     <div className="relative w-full aspect-[16/9] md:aspect-[21/9] lg:aspect-[24/9] rounded-2xl md:rounded-3xl overflow-hidden bg-bg-card shadow-2xl shadow-black/60">

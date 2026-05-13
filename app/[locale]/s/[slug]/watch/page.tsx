@@ -28,16 +28,13 @@ export default async function WatchPage({
     redirect(`/${locale}/login?returnTo=${encodeURIComponent(target)}`);
   }
 
-  // Premium gate — story marcada is_premium e não-free exige assinatura
-  // active/trialing. Admin emails entram (ver isSubscriber). Sem isso, o
-  // Player carregaria e só falharia em /api/media/sign-token; mais cedo é
-  // melhor.
-  if (story.isPremium && !story.isFree) {
-    const sub = await isSubscriber();
-    if (!sub) {
-      const from = `/${locale}/s/${slug}`;
-      redirect(`/${locale}/account?upgrade=required&from=${encodeURIComponent(from)}`);
-    }
+  // Paywall global — TODO conteúdo exige assinatura. Admin emails passam
+  // (isSubscriber retorna true via getSubscriptionTier). Coming Soon não
+  // chega aqui (caem no notFound acima).
+  const sub = await isSubscriber();
+  if (!sub) {
+    const from = `/${locale}/s/${slug}`;
+    redirect(`/${locale}/account?upgrade=required&from=${encodeURIComponent(from)}`);
   }
 
   const initialMode = mode === 'video' ? 'video' : 'audio';

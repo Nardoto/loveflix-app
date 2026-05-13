@@ -7,7 +7,7 @@ import { Link } from '@/lib/navigation';
 import { Badge } from '@/components/ui/badge';
 import type { Story } from '@/lib/data/stories';
 import type { SubscriptionTier } from '@/lib/auth-helpers';
-import { tierIsSubscriber } from '@/lib/auth-helpers';
+import { storyRequiresUpgrade } from '@/lib/auth-helpers';
 import { isStoryHot } from '@/lib/data/hot';
 import { SparkleIcon } from '@/components/icons/SparkleIcon';
 import { FlameIcon } from '@/components/icons/FlameIcon';
@@ -41,15 +41,12 @@ export function StoryCard({
   const audioLocales = Object.keys(
     story.audioKeyByLocale ?? story.audioByLocale ?? {},
   );
-  // Free always wins — a free story flagged "premium" by accident shouldn't
-  // hide behind a paywall. The badge only shows when tier was explicitly
-  // passed (userTier !== undefined).
+  // Paywall global: qualquer não-assinante vê a tarja em todas as stories
+  // (exceto Coming Soon — esse já tem o próprio banner). is_free / is_premium
+  // do DB são ignorados pela regra atual. Quando tier é undefined (page que
+  // não fetcha o user), pula pra evitar tarja errada no SSR/SSG.
   const showPremiumBadge =
-    userTier !== undefined &&
-    !!story.isPremium &&
-    !story.isFree &&
-    !story.isComingSoon &&
-    !tierIsSubscriber(userTier);
+    userTier !== undefined && storyRequiresUpgrade(story, userTier);
 
   return (
     <Link
