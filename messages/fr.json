@@ -238,6 +238,12 @@
     "theme": "Thème",
     "chapterOf": "{eyebrow} · {current} sur {total}",
     "progressLabel": "{percent}% · {minutes} min restantes",
+    "back": "Retour",
+    "close": "Fermer",
+    "estimatedTime": "{minutes} min de lecture",
+    "endTitle": "Fin",
+    "endTagline": "Merci d'avoir lu.",
+    "localeFallback": "Pas encore traduit — voici la version en {locale}.",
     "themes": {
       "cream": "Crème",
       "sepia": "Sépia",
