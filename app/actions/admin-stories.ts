@@ -53,22 +53,31 @@ function humanZod(err: z.ZodError): string {
   return Array.from(new Set(lines)).join(' · ');
 }
 
+const GenreEnum = z.enum([
+  'mafia',
+  'billionaire',
+  'forbidden',
+  'secret_baby',
+  'second_chance',
+  'arranged',
+  'royal',
+  'mood',
+]);
+
 const CreateInput = z.object({
   // The form generates the slug client-side from the title; we still
   // validate it here.
   slug: z.string().min(3).max(120).regex(SLUG_RE, 'slug must be a-z 0-9 -'),
   title: z.string().min(3).max(280),
   synopsis: z.string().min(10).max(4000),
-  genre: z.enum([
-    'mafia',
-    'billionaire',
-    'forbidden',
-    'secret_baby',
-    'second_chance',
-    'arranged',
-    'royal',
-    'mood',
-  ]),
+  /** Tag principal — usada como categoria visual primária. */
+  genre: GenreEnum,
+  /**
+   * Array completo de tags (inclui o primário). Permite N gêneros por
+   * story. Se omitido, o servidor monta `[genre]`. Cap em 5 pra evitar
+   * abuso. Validação extra checa inclusão do primário.
+   */
+  genres: z.array(GenreEnum).min(1).max(5).optional(),
   tropes: z.array(z.string().min(1).max(60)).max(20).default([]),
   authorId: z.string().min(1).optional(),
   totalMinutes: z.number().int().min(1).max(600).default(45),
@@ -113,6 +122,12 @@ export async function createStory(
   // with hardcoded numeric ids.
   const id = `st_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
+  // genres array: usa o que o form mandou, ou monta a partir do singular.
+  // Garante que o primário esteja na lista (se cliente esquecer) e dedup.
+  const genresArr = Array.from(
+    new Set<string>([v.genre, ...(v.genres ?? [])]),
+  );
+
   const insertRow = {
     id,
     slug: v.slug,
@@ -120,6 +135,7 @@ export async function createStory(
     cover: publicMediaUrl(v.coverKey),
     cover_key: v.coverKey,
     genre: v.genre,
+    genres: genresArr,
     tropes: v.tropes,
     synopsis: v.synopsis,
     is_free: v.isFree,
@@ -196,6 +212,14 @@ export async function updateStory(
   if (v.title !== undefined) update.title = v.title;
   if (v.synopsis !== undefined) update.synopsis = v.synopsis;
   if (v.genre !== undefined) update.genre = v.genre;
+  // genres array: cliente pode mandar a lista completa. Se mandou só
+  // o singular, monta `[genre]` no banco pra manter o array sincronizado.
+  if (v.genres !== undefined) {
+    const primary = v.genre ?? v.genres[0];
+    update.genres = Array.from(new Set<string>([primary, ...v.genres]));
+  } else if (v.genre !== undefined) {
+    update.genres = [v.genre];
+  }
   if (v.tropes !== undefined) update.tropes = v.tropes;
   if (v.authorId !== undefined) update.author_id = v.authorId;
   if (v.totalMinutes !== undefined) update.total_minutes = v.totalMinutes;

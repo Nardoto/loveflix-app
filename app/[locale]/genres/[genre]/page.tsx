@@ -5,6 +5,7 @@ import { Clock, Headphones } from 'lucide-react';
 import { Row } from '@/components/catalog/Row';
 import { allStories, type Story } from '@/lib/data/stories';
 import { filterByLocale } from '@/lib/data/locale-filter';
+import { storyHasGenre } from '@/lib/data/genre-helpers';
 import { getSubscriptionTier } from '@/lib/auth-helpers';
 
 export const dynamic = 'force-dynamic';
@@ -71,7 +72,7 @@ export default async function GenreDetailPage({
 
   const meta = GENRE_META[genre];
   const list = filterByLocale(
-    allStories.filter((s) => s.genre === genre),
+    allStories.filter((s) => storyHasGenre(s, genre)),
     locale,
   );
   const featured = list.find((s) => s.isHot) ?? list[0];

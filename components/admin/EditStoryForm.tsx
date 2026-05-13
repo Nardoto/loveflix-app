@@ -69,6 +69,8 @@ type StoryInit = {
   title: string;
   synopsis: string;
   genre: Genre;
+  /** Array completo de tags (inclui o primário). Vazio = só o primário. */
+  genres?: Genre[];
   totalMinutes: number;
   isFree: boolean;
   isHot: boolean;
@@ -95,10 +97,26 @@ export function EditStoryForm({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [meta, setMeta] = useState({
+  // genreSecondary: o primeiro gênero DIFERENTE do primário no array salvo.
+  // Se a story tem só 1 gênero, fica vazio.
+  const initialSecondary: Genre | '' =
+    (story.genres ?? []).find((g) => g !== story.genre) ?? '';
+  const [meta, setMeta] = useState<{
+    title: string;
+    synopsis: string;
+    genre: Genre;
+    genreSecondary: Genre | '';
+    totalMinutes: number;
+    isFree: boolean;
+    isHot: boolean;
+    isPremium: boolean;
+    isComingSoon: boolean;
+    hasEbook: boolean;
+  }>({
     title: story.title,
     synopsis: story.synopsis,
     genre: story.genre,
+    genreSecondary: initialSecondary,
     totalMinutes: story.totalMinutes,
     isFree: story.isFree,
     isHot: story.isHot,
@@ -115,12 +133,17 @@ export function EditStoryForm({
 
   const handleSave = () => {
     setError(null);
+    const genres: Genre[] =
+      meta.genreSecondary && meta.genreSecondary !== meta.genre
+        ? [meta.genre, meta.genreSecondary]
+        : [meta.genre];
     startTransition(async () => {
       const res = await updateStory(story.slug, {
         slug: story.slug,
         title: meta.title,
         synopsis: meta.synopsis,
         genre: meta.genre,
+        genres,
         totalMinutes: meta.totalMinutes,
         isFree: meta.isFree,
         isHot: meta.isHot,
@@ -207,9 +230,33 @@ export function EditStoryForm({
               <select
                 className="input"
                 value={meta.genre}
-                onChange={(e) => setMeta({ ...meta, genre: e.target.value as Genre })}
+                onChange={(e) => {
+                  const next = e.target.value as Genre;
+                  setMeta((m) => ({
+                    ...m,
+                    genre: next,
+                    // Se o secundário virou igual ao primário, limpa.
+                    genreSecondary: m.genreSecondary === next ? '' : m.genreSecondary,
+                  }));
+                }}
               >
                 {GENRES.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Gênero adicional (opcional)">
+              <select
+                className="input"
+                value={meta.genreSecondary}
+                onChange={(e) =>
+                  setMeta({ ...meta, genreSecondary: e.target.value as Genre | '' })
+                }
+              >
+                <option value="">— Nenhum —</option>
+                {GENRES.filter((g) => g.id !== meta.genre).map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.label}
                   </option>

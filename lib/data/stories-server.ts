@@ -23,6 +23,7 @@ type RawStoryRow = {
   cover: string;
   cover_key: string | null;
   genre: Story['genre'];
+  genres: Story['genre'][] | null;
   tropes: string[] | null;
   synopsis: string;
   is_free: boolean;
@@ -59,6 +60,7 @@ function rowToStory(row: RawStoryRow): Story {
     cover: row.cover,
     coverKey: row.cover_key ?? undefined,
     genre: row.genre,
+    genres: row.genres && row.genres.length > 0 ? row.genres : undefined,
     tropes: row.tropes ?? [],
     synopsis: row.synopsis,
     isFree: row.is_free || undefined,
@@ -116,9 +118,13 @@ export async function getStoryBySlug(slug: string): Promise<Story | undefined> {
   return all.find((s) => s.slug === slug);
 }
 
+// storyHasGenre vive em lib/data/genre-helpers.ts (pure, isomorphic).
+import { storyHasGenre } from './genre-helpers';
+export { storyHasGenre };
+
 export async function getStoriesByGenre(genre: Genre): Promise<Story[]> {
   const all = await getAllStories();
-  return all.filter((s) => s.genre === genre);
+  return all.filter((s) => storyHasGenre(s, genre));
 }
 
 export async function getHotStories(): Promise<Story[]> {
@@ -128,7 +134,7 @@ export async function getHotStories(): Promise<Story[]> {
 
 export async function getHotStoriesByGenre(genre: Genre): Promise<Story[]> {
   const hot = await getHotStories();
-  return hot.filter((s) => s.genre === genre);
+  return hot.filter((s) => storyHasGenre(s, genre));
 }
 
 export async function getFreeStories(): Promise<Story[]> {

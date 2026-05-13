@@ -6,6 +6,7 @@ import { HotShowcase } from '@/components/catalog/HotShowcase';
 import { getAllStories } from '@/lib/data/stories-server';
 import { isStoryHot } from '@/lib/data/hot';
 import { filterByLocale, isAvailableInLocale } from '@/lib/data/locale-filter';
+import { storyHasGenre } from '@/lib/data/genre-helpers';
 import { getSubscriptionTier } from '@/lib/auth-helpers';
 
 // Renderiza a home a cada request (sem cache de CDN nem de browser).
@@ -42,11 +43,13 @@ export default async function HomePage({
   const localeHot = localeAll.filter(isStoryHot);
 
   const freeRow = localeAll.filter((s) => s.isFree);
-  const billionaireRow = localeAll.filter((s) => s.genre === 'billionaire');
-  const mafiaRow = localeAll.filter((s) => s.genre === 'mafia');
-  const forbiddenRow = localeAll.filter((s) => s.genre === 'forbidden');
-  const secretBabyRow = localeAll.filter((s) => s.genre === 'secret_baby');
-  const moodRow = localeAll.filter((s) => s.genre === 'mood');
+  // storyHasGenre checa primário OU array — stories taggadas com 2 gêneros
+  // aparecem nas duas rows correspondentes.
+  const billionaireRow = localeAll.filter((s) => storyHasGenre(s, 'billionaire'));
+  const mafiaRow = localeAll.filter((s) => storyHasGenre(s, 'mafia'));
+  const forbiddenRow = localeAll.filter((s) => storyHasGenre(s, 'forbidden'));
+  const secretBabyRow = localeAll.filter((s) => storyHasGenre(s, 'secret_baby'));
+  const moodRow = localeAll.filter((s) => storyHasGenre(s, 'mood'));
   const trendingRow = localeAll.slice(0, 12);
 
   // Hero carousel — flagship titles + the latest playable releases

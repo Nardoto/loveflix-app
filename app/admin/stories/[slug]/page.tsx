@@ -99,6 +99,7 @@ export default async function EditStoryPage({
           ebookKey: story.ebookKey ?? null,
           ebookImageUrls: imageUrls,
           initialScripts,
+          genres: story.genres,
         }}
         authors={authors.map((a) => ({
           id: a.id,

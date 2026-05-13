@@ -83,7 +83,13 @@ type Meta = {
   title: string;
   slug: string;
   synopsis: string;
+  /** Gênero principal — usado pra rotular hero/detail. */
   genre: Genre;
+  /**
+   * Gênero secundário opcional. Vazio = só o primário.
+   * Permite a story aparecer em duas rows do catálogo.
+   */
+  genreSecondary: Genre | '';
   authorId: string;
   totalMinutes: number;
   isFree: boolean;
@@ -108,6 +114,7 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
     slug: '',
     synopsis: '',
     genre: 'mafia',
+    genreSecondary: '',
     authorId: authors[0]?.id ?? '',
     totalMinutes: 45,
     isFree: false,
@@ -158,11 +165,18 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
     if (!coverKey) return;
     setSubmitting(true);
     setSubmitError(null);
+    // Monta o array de gêneros: primário + secundário (se houver e diferente).
+    const genres: Genre[] =
+      meta.genreSecondary && meta.genreSecondary !== meta.genre
+        ? [meta.genre, meta.genreSecondary]
+        : [meta.genre];
+
     const res = await createStory({
       slug: meta.slug,
       title: meta.title,
       synopsis: meta.synopsis,
       genre: meta.genre,
+      genres,
       tropes: [],
       authorId: meta.authorId || undefined,
       totalMinutes: meta.totalMinutes,
@@ -401,15 +415,18 @@ function MetaStep({
           </select>
         </Field>
 
-        <Field label="Canal / Autor">
+        <Field label="Gênero adicional (opcional)">
           <select
-            value={meta.authorId}
-            onChange={(e) => setMeta({ ...meta, authorId: e.target.value })}
+            value={meta.genreSecondary}
+            onChange={(e) =>
+              setMeta({ ...meta, genreSecondary: e.target.value as Genre | '' })
+            }
             className="input"
           >
-            {authors.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name} ({a.tagline})
+            <option value="">— Nenhum —</option>
+            {GENRES.filter((g) => g.id !== meta.genre).map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.label}
               </option>
             ))}
           </select>

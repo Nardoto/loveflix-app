@@ -18,7 +18,17 @@ export type Story = {
   slug: string;
   title: string;
   cover: string; // /covers/NNN.jpg
+  /**
+   * Tag principal — usada como categoria primária no UI (hero label,
+   * detail page). Sempre presente.
+   */
   genre: Genre;
+  /**
+   * Tags adicionais. Permite uma story aparecer em N rows do catálogo.
+   * Pode incluir o gênero principal duplicado ou omitir; o filtro de
+   * catálogo verifica `genre === X OR genres.includes(X)` pra robustez.
+   */
+  genres?: Genre[];
   tropes: string[];
   synopsis: string;
   isFree?: boolean;

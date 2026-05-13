@@ -1,6 +1,7 @@
 // HOT collection — editorially curated "spicier" stories that get the
 // red-flame treatment. The dedicated /hot page groups them by sub-theme.
 import { allStories, type Story } from './stories';
+import { storyHasGenre } from './genre-helpers';
 
 const HOT_SLUGS = new Set([
   'he-had-never-touched-me',
@@ -34,4 +35,4 @@ export const isStoryHot = (story: Story): boolean =>
 export const hotStories: Story[] = allStories.filter(isStoryHot);
 
 export const hotByGenre = (genre: Story['genre']): Story[] =>
-  hotStories.filter((s) => s.genre === genre);
+  hotStories.filter((s) => storyHasGenre(s, genre));
