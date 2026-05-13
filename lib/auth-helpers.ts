@@ -25,6 +25,12 @@ export async function getUser() {
   }
 }
 
+/** True if the email is in ADMIN_EMAILS. Case-insensitive. */
+export function isAdminEmail(email?: string | null): boolean {
+  if (!email) return false;
+  return ADMIN_EMAILS.includes(email.toLowerCase());
+}
+
 /**
  * Studio access gate. MVP behavior:
  * - When Supabase IS configured: require a logged-in user whose email is in ADMIN_EMAILS.
@@ -40,9 +46,53 @@ export async function requireAdmin() {
   }
   const user = await getUser();
   if (!user) return { ok: false as const, status: 401, message: 'Not authenticated' };
-  const email = user.email?.toLowerCase();
-  if (!email || !ADMIN_EMAILS.includes(email)) {
+  if (!isAdminEmail(user.email)) {
     return { ok: false as const, status: 403, message: 'Forbidden' };
   }
   return { ok: true as const, user, setup: 'configured' as const };
+}
+
+// =====================================================================
+// Subscription tier — used by the paywall (premium stories gate watch /
+// listen / read for non-subscribers).
+// =====================================================================
+
+export type SubscriptionTier = 'active' | 'trialing' | 'free';
+
+/**
+ * Resolve the current user's subscription tier. Returns null for anonymous.
+ * Admin emails always return 'active' so the operator can QA premium content
+ * without seeding a Stripe row.
+ */
+export async function getSubscriptionTier(): Promise<SubscriptionTier | null> {
+  const user = await getUser();
+  if (!user) return null;
+  if (isAdminEmail(user.email)) return 'active';
+
+  if (!SUPABASE_CONFIGURED) return 'free';
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('subscriptions')
+      .select('status')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (data?.status === 'active' || data?.status === 'trialing') {
+      return data.status;
+    }
+  } catch {
+    /* table missing or RLS issue — fall through to free */
+  }
+  return 'free';
+}
+
+/** Convenience: true for active/trialing/admin; false for free or anonymous. */
+export async function isSubscriber(): Promise<boolean> {
+  const tier = await getSubscriptionTier();
+  return tier === 'active' || tier === 'trialing';
+}
+
+/** Pure helper for client components that already received a tier prop. */
+export function tierIsSubscriber(tier?: SubscriptionTier | null): boolean {
+  return tier === 'active' || tier === 'trialing';
 }

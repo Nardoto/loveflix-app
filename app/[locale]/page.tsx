@@ -6,6 +6,7 @@ import { HotShowcase } from '@/components/catalog/HotShowcase';
 import { getAllStories } from '@/lib/data/stories-server';
 import { isStoryHot } from '@/lib/data/hot';
 import { filterByLocale, isAvailableInLocale } from '@/lib/data/locale-filter';
+import { getSubscriptionTier } from '@/lib/auth-helpers';
 
 // Renderiza a home a cada request (sem cache de CDN nem de browser).
 // O catálogo em si continua cacheado em unstable_cache(stories, 60s)
@@ -25,10 +26,15 @@ export default async function HomePage({
   const t = await getTranslations('home.rows');
   const tHero = await getTranslations('home.hero');
   const tHl = await getTranslations('home.highlights');
+  const tPaywall = await getTranslations('paywall');
 
   // Read from Supabase (with hardcoded fallback when the table is empty —
   // a fresh deploy still renders a non-blank home).
-  const all = await getAllStories();
+  // Tier consultado em paralelo — alimenta tarja PREMIUM e botões locked.
+  const [all, userTier] = await Promise.all([
+    getAllStories(),
+    getSubscriptionTier(),
+  ]);
   // Reproduce the legacy split: `stories` excluded the two flagships +
   // placeholders. After migration both sets are mixed; we just filter on
   // the genre rows below — no need to slice anymore.
@@ -63,22 +69,28 @@ export default async function HomePage({
     <>
       <HeroCarousel
         stories={heroSlides}
-        labels={{ watchNow: tHero('watchNow'), moreInfo: tHero('moreInfo') }}
+        userTier={userTier}
+        labels={{
+          watchNow: tHero('watchNow'),
+          moreInfo: tHero('moreInfo'),
+          lockedCta: tPaywall('lockedButton'),
+        }}
       />
 
-      <HotShowcase stories={localeHot} />
+      <HotShowcase stories={localeHot} userTier={userTier} />
 
-      <Row title={t('trending')} highlight={tHl('trending')} stories={trendingRow} />
-      <Row title={t('free')} highlight={tHl('free')} stories={freeRow} />
+      <Row title={t('trending')} highlight={tHl('trending')} stories={trendingRow} userTier={userTier} />
+      <Row title={t('free')} highlight={tHl('free')} stories={freeRow} userTier={userTier} />
       <Row
         title={t('billionaire')}
         highlight={tHl('billionaire')}
         stories={billionaireRow}
+        userTier={userTier}
       />
-      <Row title={t('mafia')} highlight={tHl('mafia')} stories={mafiaRow} />
-      <Row title={t('forbidden')} highlight={tHl('forbidden')} stories={forbiddenRow} />
-      <Row title={t('secretBaby')} highlight={tHl('secret')} stories={secretBabyRow} />
-      <Row title={t('mood')} highlight={tHl('mood')} stories={moodRow} />
+      <Row title={t('mafia')} highlight={tHl('mafia')} stories={mafiaRow} userTier={userTier} />
+      <Row title={t('forbidden')} highlight={tHl('forbidden')} stories={forbiddenRow} userTier={userTier} />
+      <Row title={t('secretBaby')} highlight={tHl('secret')} stories={secretBabyRow} userTier={userTier} />
+      <Row title={t('mood')} highlight={tHl('mood')} stories={moodRow} userTier={userTier} />
     </>
   );
 }

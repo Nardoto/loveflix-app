@@ -256,6 +256,14 @@
     "cta": "S'abonner maintenant",
     "freeStories": "Écoutez nos histoires gratuites — sans compte."
   },
+  "paywall": {
+    "badge": "PREMIUM",
+    "requiredTitle": "Contenu Premium",
+    "requiredDesc": "Cette histoire est réservée aux abonnés. Activez votre abonnement pour la regarder, l'écouter et la lire.",
+    "lockedButton": "Premium — s'abonner",
+    "subscribeCta": "S'abonner",
+    "upgradeBanner": "Pour débloquer cette histoire, activez votre abonnement. Nous vous y ramenons directement ensuite."
+  },
   "myList": {
     "title": "Ma Liste",
     "countSingular": "{count} enregistrée",

@@ -256,6 +256,14 @@
     "cta": "Jetzt abonnieren",
     "freeStories": "Hören Sie unsere kostenlosen Geschichten — ohne Konto."
   },
+  "paywall": {
+    "badge": "PREMIUM",
+    "requiredTitle": "Premium-Inhalt",
+    "requiredDesc": "Diese Geschichte ist nur für Abonnenten verfügbar. Aktiviere deinen Plan, um sie zu sehen, hören und lesen.",
+    "lockedButton": "Premium — abonnieren",
+    "subscribeCta": "Abonnieren",
+    "upgradeBanner": "Um diese Geschichte freizuschalten, aktiviere dein Abo. Wir bringen dich danach direkt zurück."
+  },
   "myList": {
     "title": "Meine Liste",
     "countSingular": "{count} gespeichert",

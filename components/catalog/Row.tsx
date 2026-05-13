@@ -9,14 +9,16 @@ import { useRef, useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { StoryCard } from './StoryCard';
 import type { Story } from '@/lib/data/stories';
+import type { SubscriptionTier } from '@/lib/auth-helpers';
 
 type RowProps = {
   title: string;
   highlight?: string; // word inside title to render in italic rose
   stories: Story[];
+  userTier?: SubscriptionTier | null;
 };
 
-export function Row({ title, highlight, stories }: RowProps) {
+export function Row({ title, highlight, stories, userTier }: RowProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -79,7 +81,7 @@ export function Row({ title, highlight, stories }: RowProps) {
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           {stories.map((story) => (
-            <StoryCard key={story.id} story={story} />
+            <StoryCard key={story.id} story={story} userTier={userTier} />
           ))}
         </div>
 

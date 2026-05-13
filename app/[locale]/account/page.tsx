@@ -1,8 +1,8 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import Image from 'next/image';
-import { Heart, Globe, BellRing, LogOut, ArrowRight } from 'lucide-react';
+import { Heart, Globe, BellRing, LogOut, ArrowRight, Crown } from 'lucide-react';
 import { Link } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { getUser } from '@/lib/auth-helpers';
@@ -40,12 +40,40 @@ function pickAvatar(user: {
 
 export default async function AccountPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ upgrade?: string; from?: string }>;
 }) {
   const { locale } = await params;
+  const { upgrade, from } = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations('account');
+  const tPaywall = await getTranslations('paywall');
+
+  // Paywall return-to flow:
+  // 1) Premium gate redireciona pra /account?upgrade=required&from=/s/<slug>
+  //    → gravamos `from` em cookie de 1h (Stripe Checkout pode demorar).
+  // 2) Stripe success_url volta pra /account?upgrade=success
+  //    → lemos o cookie, validamos que é path interno (anti open-redirect),
+  //    apagamos o cookie e redirecionamos a usuária direto pra story.
+  const cookieStore = await cookies();
+  const upgradeRequired = upgrade === 'required';
+  if (upgradeRequired && from && from.startsWith('/')) {
+    cookieStore.set('paywall-from', from, {
+      httpOnly: false,
+      sameSite: 'lax',
+      maxAge: 60 * 60,
+      path: '/',
+    });
+  }
+  if (upgrade === 'success') {
+    const saved = cookieStore.get('paywall-from')?.value;
+    if (saved && saved.startsWith('/')) {
+      cookieStore.set('paywall-from', '', { maxAge: 0, path: '/' });
+      redirect(saved);
+    }
+  }
 
   const user = await getUser();
   if (!user) {
@@ -119,6 +147,24 @@ export default async function AccountPage({
           <p className="text-text-dim text-sm mt-1 truncate">{email}</p>
         </div>
       </header>
+
+      {upgradeRequired && (
+        <div className="mb-6 rounded-2xl border border-gold/40 bg-gradient-to-br from-gold/10 to-rose/10 p-5 shadow-lg shadow-gold/10">
+          <div className="flex items-start gap-3">
+            <span className="size-9 shrink-0 rounded-full bg-gradient-to-br from-gold-bright to-gold grid place-items-center text-bg-deep">
+              <Crown className="size-5" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <h2 className="font-serif italic font-bold text-lg text-white mb-1">
+                {tPaywall('requiredTitle')}
+              </h2>
+              <p className="text-sm text-text-soft leading-relaxed">
+                {tPaywall('upgradeBanner')}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <AccountSubscription
         subscription={subscription}

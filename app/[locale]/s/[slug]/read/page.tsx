@@ -4,7 +4,7 @@ import { ChapterReader } from '@/components/reader/ChapterReader';
 import { getStoryBySlug } from '@/lib/data/stories-server';
 import { ebookPages } from '@/lib/data/ebook';
 import { groupIntoChapters } from '@/lib/data/chapters';
-import { getUser } from '@/lib/auth-helpers';
+import { getUser, isSubscriber } from '@/lib/auth-helpers';
 
 export default async function ReadPage({
   params,
@@ -24,9 +24,18 @@ export default async function ReadPage({
     redirect(`/${locale}/login?returnTo=${encodeURIComponent(`/${locale}/s/${slug}/read`)}`);
   }
 
+  // Premium gate antes de qualquer redirect pro PDF.
+  if (story.isPremium && !story.isFree) {
+    const sub = await isSubscriber();
+    if (!sub) {
+      const from = `/${locale}/s/${slug}`;
+      redirect(`/${locale}/account?upgrade=required&from=${encodeURIComponent(from)}`);
+    }
+  }
+
   // Story tem PDF subido pelo admin — manda direto pro download. O reader
   // hardcoded só serve as stories antigas (legadas) que têm has_ebook=true
-  // sem ebook_key.
+  // sem ebook_key. (PDF in-app viewer entra no Bloco E, depois.)
   if (story.ebookKey) {
     redirect(`https://${process.env.NEXT_PUBLIC_MEDIA_DOMAIN}/${story.ebookKey}`);
   }

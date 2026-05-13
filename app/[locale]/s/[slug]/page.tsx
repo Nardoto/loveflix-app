@@ -9,14 +9,14 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-import { Play, Headphones, BookOpen, Star, Clock, Clock3, Languages, ArrowLeft, Download } from 'lucide-react';
+import { Play, Headphones, BookOpen, Star, Clock, Clock3, Languages, ArrowLeft, Download, Crown } from 'lucide-react';
 import { Link } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Row } from '@/components/catalog/Row';
 import { getStoryBySlug, getStoriesByGenre } from '@/lib/data/stories-server';
 import { getCommentsForStory } from '@/lib/data/comments-server';
-import { getUser } from '@/lib/auth-helpers';
+import { getUser, getSubscriptionTier, tierIsSubscriber } from '@/lib/auth-helpers';
 import { StoryComments } from '@/components/story/StoryComments';
 import { FavoriteAddButton } from '@/components/story/FavoriteToggle';
 import { isFavorite } from '@/lib/data/favorites-server';
@@ -34,6 +34,7 @@ export default async function StoryDetailPage({
   const t = await getTranslations('home');
   const tStory = await getTranslations('story');
   const tGenre = await getTranslations('genres');
+  const tPaywall = await getTranslations('paywall');
 
   const story = await getStoryBySlug(slug);
   if (!story) notFound();
@@ -56,6 +57,18 @@ export default async function StoryDetailPage({
   // Favorito é per-user — só consulta se a usuária está logada. Para
   // anônimos, o botão fica como "+" e o click leva pro login.
   const isFav = currentUser ? await isFavorite(currentUser.id, slug) : false;
+
+  // Paywall: premium-only stories trocam Watch/Listen por CTA pra
+  // assinatura. Free (is_free=true) sempre vence — uma story marcada
+  // premium+free passa direto pelo gate.
+  const userTier = await getSubscriptionTier();
+  const needsUpgrade =
+    !!story.isPremium &&
+    !story.isFree &&
+    !story.isComingSoon &&
+    !tierIsSubscriber(userTier);
+  const upgradeHref =
+    `/account?upgrade=required&from=/${locale}/s/${story.slug}` as const;
 
   // "More like this" — same genre, different stories.
   const related = (await getStoriesByGenre(story.genre))
@@ -160,49 +173,67 @@ export default async function StoryDetailPage({
           </p>
 
           <div className="flex flex-wrap items-center gap-3">
-            {hasVideo ? (
-              <Button asChild size="lg">
-                <Link href={`/s/${story.slug}/watch?mode=video` as never}>
-                  <Play className="fill-current" />
-                  {tStory('watch')}
+            {needsUpgrade ? (
+              // Premium-only: substitui Watch/Listen/Read por um único CTA
+              // dourado de assinatura. Mantém o botão de favoritar pra que
+              // a usuária consiga salvar pra depois.
+              <Button
+                asChild
+                size="lg"
+                className="bg-gradient-to-r from-gold-bright to-gold text-bg-deep hover:brightness-105"
+              >
+                <Link href={upgradeHref as never}>
+                  <Crown />
+                  {tPaywall('lockedButton')}
                 </Link>
               </Button>
             ) : (
-              <Button size="lg" variant="glass" disabled>
-                <Play className="fill-current" />
-                {tStory('watchComingSoon')}
-              </Button>
-            )}
+              <>
+                {hasVideo ? (
+                  <Button asChild size="lg">
+                    <Link href={`/s/${story.slug}/watch?mode=video` as never}>
+                      <Play className="fill-current" />
+                      {tStory('watch')}
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button size="lg" variant="glass" disabled>
+                    <Play className="fill-current" />
+                    {tStory('watchComingSoon')}
+                  </Button>
+                )}
 
-            {hasAudio && (
-              <Button asChild size="lg" variant="glass">
-                <Link href={`/s/${story.slug}/watch?mode=audio` as never}>
-                  <Headphones />
-                  {tStory('listen')}
-                </Link>
-              </Button>
-            )}
+                {hasAudio && (
+                  <Button asChild size="lg" variant="glass">
+                    <Link href={`/s/${story.slug}/watch?mode=audio` as never}>
+                      <Headphones />
+                      {tStory('listen')}
+                    </Link>
+                  </Button>
+                )}
 
-            {hasEbook && ebookDownloadUrl ? (
-              <Button asChild size="lg" variant="glass">
-                <a
-                  href={ebookDownloadUrl}
-                  download
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Download />
-                  {tStory('downloadPdf')}
-                </a>
-              </Button>
-            ) : hasEbook ? (
-              <Button asChild size="lg" variant="glass">
-                <Link href={`/s/${story.slug}/read` as never}>
-                  <BookOpen />
-                  {tStory('read')}
-                </Link>
-              </Button>
-            ) : null}
+                {hasEbook && ebookDownloadUrl ? (
+                  <Button asChild size="lg" variant="glass">
+                    <a
+                      href={ebookDownloadUrl}
+                      download
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Download />
+                      {tStory('downloadPdf')}
+                    </a>
+                  </Button>
+                ) : hasEbook ? (
+                  <Button asChild size="lg" variant="glass">
+                    <Link href={`/s/${story.slug}/read` as never}>
+                      <BookOpen />
+                      {tStory('read')}
+                    </Link>
+                  </Button>
+                ) : null}
+              </>
+            )}
 
             <FavoriteAddButton
               storySlug={story.slug}
@@ -211,7 +242,17 @@ export default async function StoryDetailPage({
             />
           </div>
 
-          {!hasAnyMedia && (
+          {needsUpgrade && (
+            <div className="mt-6 text-sm text-gold-bright bg-gold/10 border border-gold/30 rounded-xl px-4 py-3 max-w-lg">
+              <strong className="font-bold flex items-center gap-1.5 mb-1">
+                <Crown className="size-4" />
+                {tPaywall('requiredTitle')}
+              </strong>
+              {tPaywall('requiredDesc')}
+            </div>
+          )}
+
+          {!hasAnyMedia && !needsUpgrade && (
             <div className="mt-6 text-sm text-gold-bright bg-gold/15 rounded-xl px-4 py-3 max-w-md">
               <strong className="font-bold">{tStory('comingSoonTitle')}</strong> {tStory('comingSoonDesc')}
             </div>
@@ -268,7 +309,7 @@ export default async function StoryDetailPage({
       />
 
       {related.length > 0 && (
-        <Row title={tStory('moreLikeThis')} highlight={tStory('moreLikeThisHighlight')} stories={related} />
+        <Row title={tStory('moreLikeThis')} highlight={tStory('moreLikeThisHighlight')} stories={related} userTier={userTier} />
       )}
     </>
   );

@@ -5,6 +5,7 @@ import { Clock, Headphones } from 'lucide-react';
 import { Row } from '@/components/catalog/Row';
 import { allStories, type Story } from '@/lib/data/stories';
 import { filterByLocale } from '@/lib/data/locale-filter';
+import { getSubscriptionTier } from '@/lib/auth-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -81,6 +82,7 @@ export default async function GenreDetailPage({
   const avgMin = Math.round(totalMin / list.length);
 
   const hot = list.filter((s) => s.isHot);
+  const userTier = await getSubscriptionTier();
 
   return (
     <>
@@ -118,10 +120,10 @@ export default async function GenreDetailPage({
         </div>
       </section>
 
-      <Row title={`All ${meta.label}`} highlight="All" stories={list} />
+      <Row title={`All ${meta.label}`} highlight="All" stories={list} userTier={userTier} />
 
       {hot.length >= 2 && (
-        <Row title="Hot in this genre" highlight="Hot" stories={hot} />
+        <Row title="Hot in this genre" highlight="Hot" stories={hot} userTier={userTier} />
       )}
     </>
   );

@@ -256,6 +256,14 @@
     "cta": "Subscribe now",
     "freeStories": "Listen to our free stories anytime — no account needed."
   },
+  "paywall": {
+    "badge": "PREMIUM",
+    "requiredTitle": "Premium content",
+    "requiredDesc": "This story is for subscribers only. Activate your plan to watch, listen and read it.",
+    "lockedButton": "Premium — subscribe",
+    "subscribeCta": "Subscribe",
+    "upgradeBanner": "To unlock this story, activate your subscription. We'll take you right back to it after."
+  },
   "myList": {
     "title": "My List",
     "countSingular": "{count} saved",

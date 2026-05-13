@@ -2,12 +2,19 @@ import { Link } from '@/lib/navigation';
 import { StoryCard } from './StoryCard';
 import { FlameIcon } from '@/components/icons/FlameIcon';
 import type { Story } from '@/lib/data/stories';
+import type { SubscriptionTier } from '@/lib/auth-helpers';
 
 /**
  * HOT row — the spiciest stories with red/orange treatment instead of the
  * usual rose. Sits at the very top of the catalog to grab attention.
  */
-export function HotShowcase({ stories }: { stories: Story[] }) {
+export function HotShowcase({
+  stories,
+  userTier,
+}: {
+  stories: Story[];
+  userTier?: SubscriptionTier | null;
+}) {
   if (!stories.length) return null;
 
   return (
@@ -38,7 +45,7 @@ export function HotShowcase({ stories }: { stories: Story[] }) {
 
       <div className="row-track flex gap-2.5 md:gap-3 overflow-x-auto -mx-4 md:-mx-10 px-4 md:px-10 snap-x snap-mandatory scroll-smooth">
         {stories.map((s) => (
-          <StoryCard key={s.id} story={s} />
+          <StoryCard key={s.id} story={s} userTier={userTier} />
         ))}
       </div>
     </section>

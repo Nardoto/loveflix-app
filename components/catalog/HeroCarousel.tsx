@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { Play, Info, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, Info, ChevronLeft, ChevronRight, Crown } from 'lucide-react';
 import { Link } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { FlameIcon } from '@/components/icons/FlameIcon';
 import { isStoryHot } from '@/lib/data/hot';
 import type { Story } from '@/lib/data/stories';
+import type { SubscriptionTier } from '@/lib/auth-helpers';
+import { tierIsSubscriber } from '@/lib/auth-helpers';
 
 const GENRE_LABELS: Record<Story['genre'], string> = {
   mafia: 'Mafia Romance',
@@ -28,10 +30,11 @@ const GENRE_LABELS: Record<Story['genre'], string> = {
 // that motion-without-consent hurts comprehension; user advances explicitly.
 type Props = {
   stories: Story[];
-  labels: { watchNow: string; moreInfo: string };
+  labels: { watchNow: string; moreInfo: string; lockedCta: string };
+  userTier?: SubscriptionTier | null;
 };
 
-export function HeroCarousel({ stories, labels }: Props) {
+export function HeroCarousel({ stories, labels, userTier }: Props) {
   const [index, setIndex] = useState(0);
   const trackRef = useRef<HTMLDivElement>(null);
   const settlingRef = useRef(false);
@@ -168,7 +171,7 @@ export function HeroCarousel({ stories, labels }: Props) {
             aria-roledescription="slide"
             aria-hidden={N > 1 && (i === 0 || i === N + 1) ? 'true' : undefined}
           >
-            <Slide story={story} labels={labels} />
+            <Slide story={story} labels={labels} userTier={userTier} />
           </div>
         ))}
       </div>
@@ -216,8 +219,22 @@ export function HeroCarousel({ stories, labels }: Props) {
   );
 }
 
-function Slide({ story, labels }: { story: Story; labels: Props['labels'] }) {
+function Slide({
+  story,
+  labels,
+  userTier,
+}: {
+  story: Story;
+  labels: Props['labels'];
+  userTier?: SubscriptionTier | null;
+}) {
   const hot = isStoryHot(story);
+  const isLocked =
+    userTier !== undefined &&
+    !!story.isPremium &&
+    !story.isFree &&
+    !story.isComingSoon &&
+    !tierIsSubscriber(userTier);
 
   return (
     <div className="relative w-full aspect-[16/9] md:aspect-[21/9] lg:aspect-[24/9] rounded-2xl md:rounded-3xl overflow-hidden bg-bg-card shadow-2xl shadow-black/60">
@@ -268,16 +285,34 @@ function Slide({ story, labels }: { story: Story; labels: Props['labels'] }) {
         </p>
 
         <div className="flex flex-row gap-2.5 sm:gap-3">
-          <Button
-            asChild
-            size="lg"
-            className="h-11 sm:h-12 md:h-14 text-sm md:text-base px-5 md:px-7"
-          >
-            <Link href={`/s/${story.slug}/watch` as never}>
-              <Play className="fill-current" />
-              {labels.watchNow}
-            </Link>
-          </Button>
+          {isLocked ? (
+            // Premium gate: leva direto pro upgrade com returnTo pra detail.
+            <Button
+              asChild
+              size="lg"
+              className="h-11 sm:h-12 md:h-14 text-sm md:text-base px-5 md:px-7 bg-gradient-to-r from-gold-bright to-gold text-bg-deep hover:brightness-105"
+            >
+              <Link
+                href={
+                  `/account?upgrade=required&from=/s/${story.slug}` as never
+                }
+              >
+                <Crown />
+                {labels.lockedCta}
+              </Link>
+            </Button>
+          ) : (
+            <Button
+              asChild
+              size="lg"
+              className="h-11 sm:h-12 md:h-14 text-sm md:text-base px-5 md:px-7"
+            >
+              <Link href={`/s/${story.slug}/watch` as never}>
+                <Play className="fill-current" />
+                {labels.watchNow}
+              </Link>
+            </Button>
+          )}
           <Button
             asChild
             variant="glass"

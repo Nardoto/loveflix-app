@@ -1,11 +1,13 @@
 'use client';
 
 import Image from 'next/image';
-import { Clock3 } from 'lucide-react';
+import { Clock3, Crown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/lib/navigation';
 import { Badge } from '@/components/ui/badge';
 import type { Story } from '@/lib/data/stories';
+import type { SubscriptionTier } from '@/lib/auth-helpers';
+import { tierIsSubscriber } from '@/lib/auth-helpers';
 import { isStoryHot } from '@/lib/data/hot';
 import { SparkleIcon } from '@/components/icons/SparkleIcon';
 import { FlameIcon } from '@/components/icons/FlameIcon';
@@ -20,12 +22,34 @@ import { FlameIcon } from '@/components/icons/FlameIcon';
 // a peek of the next card hinting that the row scrolls. Desktop scales up
 // to ~420px so 3-4 cards stay visible on a 1440px screen.
 
-export function StoryCard({ story }: { story: Story }) {
+export function StoryCard({
+  story,
+  userTier,
+}: {
+  story: Story;
+  /**
+   * Subscription tier of the current viewer. When undefined, the card is
+   * rendered "tier-blind" (no PREMIUM badge — used in places that don't
+   * fetch the user yet). When passed, the card shows a gold PREMIUM badge
+   * for non-subscribers on premium stories.
+   */
+  userTier?: SubscriptionTier | null;
+}) {
   const t = useTranslations('home');
+  const tPaywall = useTranslations('paywall');
   const hot = isStoryHot(story);
   const audioLocales = Object.keys(
     story.audioKeyByLocale ?? story.audioByLocale ?? {},
   );
+  // Free always wins — a free story flagged "premium" by accident shouldn't
+  // hide behind a paywall. The badge only shows when tier was explicitly
+  // passed (userTier !== undefined).
+  const showPremiumBadge =
+    userTier !== undefined &&
+    !!story.isPremium &&
+    !story.isFree &&
+    !story.isComingSoon &&
+    !tierIsSubscriber(userTier);
 
   return (
     <Link
@@ -75,6 +99,19 @@ export function StoryCard({ story }: { story: Story }) {
               <SparkleIcon className="size-3" />
               Free
             </Badge>
+          </div>
+        )}
+
+        {/* PREMIUM pill — top-right, opposite the FREE one. Gold gradient to
+            sell the upgrade. Sits under the top tarja (HOT/COMING SOON) when
+            both apply. Click on the card still goes to the detail page; gate
+            happens at /watch and /read. */}
+        {showPremiumBadge && (
+          <div className={`absolute right-2 ${hot ? 'top-10' : 'top-2'}`}>
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gradient-to-r from-gold-bright to-gold text-bg-deep text-[10px] font-extrabold uppercase tracking-wider shadow-[0_2px_8px_rgba(212,175,111,0.45)]">
+              <Crown className="size-3" />
+              {tPaywall('badge')}
+            </span>
           </div>
         )}
       </div>

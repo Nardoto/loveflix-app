@@ -3,7 +3,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { Heart } from 'lucide-react';
 import { Link } from '@/lib/navigation';
 import { StoryCard } from '@/components/catalog/StoryCard';
-import { getUser } from '@/lib/auth-helpers';
+import { getUser, getSubscriptionTier } from '@/lib/auth-helpers';
 import { getFavoritesForUser } from '@/lib/data/favorites-server';
 
 // Per-user — força fresh a cada visita. revalidateTag('favorites') invalida
@@ -30,7 +30,10 @@ export default async function MyListPage({
     redirect(`/${locale}/login?returnTo=${encodeURIComponent(`/${locale}/list`)}`);
   }
 
-  const allFavs = await getFavoritesForUser(user.id);
+  const [allFavs, userTier] = await Promise.all([
+    getFavoritesForUser(user.id),
+    getSubscriptionTier(),
+  ]);
   const filter: Filter = FILTER_IDS.includes(rawFilter as Filter)
     ? (rawFilter as Filter)
     : 'all';
@@ -104,7 +107,7 @@ export default async function MyListPage({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8">
           {filtered.map((s) => (
-            <StoryCard key={s.id} story={s} />
+            <StoryCard key={s.id} story={s} userTier={userTier} />
           ))}
         </div>
       )}
