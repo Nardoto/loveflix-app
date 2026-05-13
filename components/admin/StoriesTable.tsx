@@ -32,9 +32,11 @@ import {
 } from 'lucide-react';
 import * as Dropdown from '@radix-ui/react-dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Pill } from '@/components/admin/AdminUI';
 import type { Story } from '@/lib/data/stories';
 import type { StoryMetrics } from '@/lib/data/stories-server';
+import { isStoryHot } from '@/lib/data/hot';
 import {
   bulkPublish,
   bulkUnpublish,
@@ -318,7 +320,7 @@ export function StoriesTable({
                 </th>
                 <th className="px-2 py-3">Vídeo</th>
                 <th className="px-3 py-3 hidden md:table-cell">Visibilidade</th>
-                <th className="px-3 py-3 hidden xl:table-cell">Restrições</th>
+                <th className="px-3 py-3 hidden xl:table-cell">Tipo</th>
                 <th className="px-3 py-3 hidden md:table-cell">
                   <SortHead label="Data" active={sortKey === 'date'} dir={sortDir} onClick={() => onSort('date')} />
                 </th>
@@ -419,8 +421,20 @@ export function StoriesTable({
                         )}
                       </td>
 
-                      <td className="px-3 py-3 text-text-mute text-[12px] hidden xl:table-cell">
-                        Nenhuma
+                      <td className="px-3 py-3 hidden xl:table-cell">
+                        <div className="flex flex-wrap gap-1">
+                          {s.isComingSoon && (
+                            <Badge variant="comingSoon">Em Breve</Badge>
+                          )}
+                          {isStoryHot(s) && <Badge variant="hot">Hot</Badge>}
+                          {s.isFree ? (
+                            <Badge variant="free">Grátis</Badge>
+                          ) : (
+                            !s.isComingSoon && (
+                              <Badge variant="exclusive">Premium</Badge>
+                            )
+                          )}
+                        </div>
                       </td>
 
                       <td className="px-3 py-3 hidden md:table-cell whitespace-nowrap">
