@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { FlameIcon } from '@/components/icons/FlameIcon';
 import { isStoryHot } from '@/lib/data/hot';
 import type { Story } from '@/lib/data/stories';
-import type { SubscriptionTier } from '@/lib/auth-helpers';
-import { storyRequiresUpgrade } from '@/lib/auth-helpers';
+import type { SubscriptionTier } from '@/lib/paywall';
+import { storyRequiresUpgrade } from '@/lib/paywall';
 
 const GENRE_LABELS: Record<Story['genre'], string> = {
   mafia: 'Mafia Romance',

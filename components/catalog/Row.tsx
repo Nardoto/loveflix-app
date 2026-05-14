@@ -9,7 +9,7 @@ import { useRef, useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { StoryCard } from './StoryCard';
 import type { Story } from '@/lib/data/stories';
-import type { SubscriptionTier } from '@/lib/auth-helpers';
+import type { SubscriptionTier } from '@/lib/paywall';
 
 type RowProps = {
   title: string;

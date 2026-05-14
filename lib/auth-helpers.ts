@@ -55,9 +55,19 @@ export async function requireAdmin() {
 // =====================================================================
 // Subscription tier — used by the paywall (premium stories gate watch /
 // listen / read for non-subscribers).
+//
+// As pure helpers (SubscriptionTier, tierIsSubscriber, storyRequiresUpgrade)
+// vivem em `lib/paywall.ts` pra serem importáveis de Client Components
+// sem arrastar next/headers junto. Re-exporto aqui pra não quebrar quem
+// já importava de auth-helpers (server-side).
 // =====================================================================
 
-export type SubscriptionTier = 'active' | 'trialing' | 'free';
+export {
+  tierIsSubscriber,
+  storyRequiresUpgrade,
+  type SubscriptionTier,
+} from '@/lib/paywall';
+import type { SubscriptionTier } from '@/lib/paywall';
 
 /**
  * Resolve the current user's subscription tier. Returns null for anonymous.
@@ -90,29 +100,4 @@ export async function getSubscriptionTier(): Promise<SubscriptionTier | null> {
 export async function isSubscriber(): Promise<boolean> {
   const tier = await getSubscriptionTier();
   return tier === 'active' || tier === 'trialing';
-}
-
-/** Pure helper for client components that already received a tier prop. */
-export function tierIsSubscriber(tier?: SubscriptionTier | null): boolean {
-  return tier === 'active' || tier === 'trialing';
-}
-
-/**
- * Paywall policy:
- *   Catálogo (capas, títulos, sinopses) é público — qualquer pessoa abre.
- *   Conteúdo (vídeo, áudio, ebook) por padrão exige assinatura ativa OU
- *   admin email. Duas exceções:
- *     - is_coming_soon: o CTA já é "Coming Soon"; sem media.
- *     - is_free: o admin marcou essa story como amostra grátis (teaser
- *       de marketing); abre pra qualquer um, inclusive anônimo. O token
- *       de mídia ganha um keyPrefix scoped pra essa story só, evitando
- *       que vaze o token e funcione em conteúdo pago.
- */
-export function storyRequiresUpgrade(
-  story: { isComingSoon?: boolean; isFree?: boolean },
-  userTier: SubscriptionTier | null | undefined,
-): boolean {
-  if (story.isComingSoon) return false;
-  if (story.isFree) return false;
-  return !tierIsSubscriber(userTier);
 }

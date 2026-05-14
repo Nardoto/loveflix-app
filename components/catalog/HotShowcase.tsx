@@ -2,7 +2,7 @@ import { Link } from '@/lib/navigation';
 import { StoryCard } from './StoryCard';
 import { FlameIcon } from '@/components/icons/FlameIcon';
 import type { Story } from '@/lib/data/stories';
-import type { SubscriptionTier } from '@/lib/auth-helpers';
+import type { SubscriptionTier } from '@/lib/paywall';
 
 /**
  * HOT row — the spiciest stories with red/orange treatment instead of the
