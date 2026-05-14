@@ -46,6 +46,13 @@ function useFavToggle({ storySlug, initial, loginReturnTo }: Props) {
         window.location.href = `/login?returnTo=${encodeURIComponent(loginReturnTo)}`;
         return;
       }
+      // Diagnóstico temporário: surface o erro com alert pra capturar a
+      // mensagem real do Postgres (a tabela favorites tá vazia em prod, o
+      // que sugere que todo clique tá falhando silencioso). Quando achar a
+      // causa, remover esse alert.
+      if (typeof window !== 'undefined') {
+        window.alert(`Falha ao salvar na lista: ${res.error}`);
+      }
       // Revert the optimistic flip on real failures.
       setIsFav(!next);
     });
