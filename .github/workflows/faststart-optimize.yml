@@ -1,0 +1,83 @@
+# Roda `ffmpeg -movflags +faststart` em vídeos do bucket R2 alluretv-media.
+# Dois gatilhos:
+#   1) repository_dispatch — disparado pelo Next.js logo após
+#      /api/upload/complete terminar. Recebe a key do vídeo recém-upado
+#      e otimiza só esse arquivo (rápido, ~2-4 min).
+#   2) schedule (1× por hora) — rede de segurança. Varre o catálogo,
+#      processa o que ficou pra trás. Idempotente: pula os já marcados
+#      com metadata custom faststart=1.
+#
+# Por que ffmpeg vai no runner Ubuntu: já vem pré-instalado, zero setup.
+# Por que aqui e não em Vercel/Worker: ffmpeg precisa de tempo de CPU
+# e disco; runtimes serverless cortam em ~60s e não têm ffmpeg embarcado.
+
+name: faststart-optimize
+
+on:
+  repository_dispatch:
+    types: [optimize-video]
+  schedule:
+    # Cron em UTC. */60 * * * * é inválido — usa "0 * * * *" pra "a cada hora".
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    # Permite acionar manualmente pela aba Actions do GitHub.
+    inputs:
+      key:
+        description: 'R2 key específica (opcional). Vazio = varre catálogo todo.'
+        required: false
+        type: string
+
+# Cancela runs do schedule se um manual/dispatch já está rodando — evita
+# rodar o sweep e a otimização single-key ao mesmo tempo no mesmo arquivo.
+concurrency:
+  group: faststart-optimize
+  cancel-in-progress: false
+
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    # 30 min teto. Pra single key dá folga gigante; pra sweep de 100 vídeos
+    # cobre ~80% dos casos. Se um dia o catálogo crescer muito, sobe esse
+    # número ou parteciona em jobs paralelos por shard.
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install ffmpeg
+        # ubuntu-latest geralmente já tem, mas garantimos sem custo.
+        run: |
+          if ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -version | head -1
+
+      - name: Install deps
+        run: npm ci --no-audit --no-fund
+
+      - name: Run optimize-videos.mjs
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          # Bucket name é opcional; o script tem default 'alluretv-media'.
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          # Chave vem do dispatch (upload novo) OU do workflow_dispatch manual.
+          # No schedule (cron) fica vazio → script roda em modo sweep.
+          DISPATCH_KEY: ${{ github.event.client_payload.key || inputs.key }}
+        run: |
+          if [ -n "$DISPATCH_KEY" ]; then
+            echo "Single-key mode: $DISPATCH_KEY"
+            node scripts/optimize-videos.mjs --key="$DISPATCH_KEY"
+          else
+            echo "Sweep mode: catálogo inteiro"
+            node scripts/optimize-videos.mjs
+          fi
