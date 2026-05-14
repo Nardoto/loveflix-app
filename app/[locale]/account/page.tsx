@@ -1,6 +1,8 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { redirect } from 'next/navigation';
 import { headers, cookies } from 'next/headers';
+// Nota: cookies().set() NÃO é permitido em Server Component no Next 16.
+// A escrita do `paywall-from` vive em middleware.ts; aqui só lemos.
 import Image from 'next/image';
 import { Heart, Globe, BellRing, LogOut, ArrowRight, Crown } from 'lucide-react';
 import { Link } from '@/lib/navigation';
@@ -53,24 +55,19 @@ export default async function AccountPage({
 
   // Paywall return-to flow:
   // 1) Premium gate redireciona pra /account?upgrade=required&from=/s/<slug>
-  //    → gravamos `from` em cookie de 1h (Stripe Checkout pode demorar).
+  //    → middleware.ts grava `from` em cookie de 1h.
   // 2) Stripe success_url volta pra /account?upgrade=success
-  //    → lemos o cookie, validamos que é path interno (anti open-redirect),
-  //    apagamos o cookie e redirecionamos a usuária direto pra story.
+  //    → aqui lemos o cookie, validamos que é path interno (anti open-redirect)
+  //    e redirecionamos a usuária direto pra story. O cookie expira sozinho
+  //    em 1h (não dá pra apagar daqui — só Server Action / Route Handler).
   const cookieStore = await cookies();
   const upgradeRequired = upgrade === 'required';
-  if (upgradeRequired && from && from.startsWith('/')) {
-    cookieStore.set('paywall-from', from, {
-      httpOnly: false,
-      sameSite: 'lax',
-      maxAge: 60 * 60,
-      path: '/',
-    });
-  }
+  // `from` é puramente informacional aqui — o cookie já foi gravado pela
+  // middleware. Mantemos a ref pra silenciar o linter sobre o param não usado.
+  void from;
   if (upgrade === 'success') {
     const saved = cookieStore.get('paywall-from')?.value;
     if (saved && saved.startsWith('/')) {
-      cookieStore.set('paywall-from', '', { maxAge: 0, path: '/' });
       redirect(saved);
     }
   }

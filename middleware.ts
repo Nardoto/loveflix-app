@@ -27,6 +27,27 @@ export async function middleware(request: NextRequest) {
       if (!supaResponse.headers.has(key)) supaResponse.headers.set(key, value);
     });
   }
+
+  // 3) Paywall return-to cookie. /watch e /read redirecionam pra
+  // /account?upgrade=required&from=/<locale>/s/<slug>. Em Next 16 não dá
+  // pra chamar cookies().set() dentro de uma Server Component (a page
+  // batia 500), então o cookie é escrito aqui na middleware. O page só
+  // lê o cookie quando upgrade=success pra mandar a usuária de volta.
+  const path = request.nextUrl.pathname;
+  const isAccount = path === '/account' || /^\/(en|de|fr|es)\/account$/.test(path);
+  if (isAccount) {
+    const upgrade = request.nextUrl.searchParams.get('upgrade');
+    const from = request.nextUrl.searchParams.get('from');
+    if (upgrade === 'required' && from && from.startsWith('/')) {
+      supaResponse.cookies.set('paywall-from', from, {
+        httpOnly: false,
+        sameSite: 'lax',
+        maxAge: 60 * 60,
+        path: '/',
+      });
+    }
+  }
+
   return supaResponse;
 }
 
