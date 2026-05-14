@@ -6,7 +6,7 @@ import { getStoryBySlug } from '@/lib/data/stories-server';
 import { getStoryScript, listEbookImageKeys, type Locale } from '@/lib/data/scripts-server';
 import { ebookPages } from '@/lib/data/ebook';
 import { groupIntoChapters } from '@/lib/data/chapters';
-import { getUser, isSubscriber } from '@/lib/auth-helpers';
+import { getUser, getSubscriptionTier, storyRequiresUpgrade } from '@/lib/auth-helpers';
 import { signMediaToken } from '@/lib/media-token';
 
 export const dynamic = 'force-dynamic';
@@ -24,15 +24,15 @@ export default async function ReadPage({
   const story = await getStoryBySlug(slug);
   if (!story) notFound();
 
-  // Auth gate — same rule as /watch: catalog is public, content is gated.
-  const user = await getUser();
-  if (!user) {
-    redirect(`/${locale}/login?returnTo=${encodeURIComponent(`/${locale}/s/${slug}/read`)}`);
-  }
+  // Paywall unificado — story.isFree libera leitura pra qualquer um.
+  // Quando requires upgrade: anon → login, logado free → /account.
+  const [user, userTier] = await Promise.all([getUser(), getSubscriptionTier()]);
+  const needsUpgrade = storyRequiresUpgrade(story, userTier);
 
-  // Paywall global — TODO ebook exige assinatura.
-  const sub = await isSubscriber();
-  if (!sub) {
+  if (needsUpgrade) {
+    if (!user) {
+      redirect(`/${locale}/login?returnTo=${encodeURIComponent(`/${locale}/s/${slug}/read`)}`);
+    }
     const from = `/${locale}/s/${slug}`;
     redirect(`/${locale}/account?upgrade=required&from=${encodeURIComponent(from)}`);
   }
@@ -46,9 +46,12 @@ export default async function ReadPage({
 
   if (script) {
     // Assina token de mídia (mesmo padrão de /api/media/sign-token).
+    // Free story + anon: usa userId sintético + keyPrefix scoped pra essa
+    // story só (matching o que /api/media/sign-token devolve).
     const token = await signMediaToken({
-      userId: user.id,
-      tier: 'active', // já passamos pelo paywall + isSubscriber
+      userId: user?.id ?? `anon:${slug}`,
+      tier: 'active', // já passamos pelo paywall
+      keyPrefix: story.isFree ? `stories/${slug}/` : undefined,
       expirySeconds: 7200,
     });
     const mediaDomain = process.env.NEXT_PUBLIC_MEDIA_DOMAIN ?? '';
