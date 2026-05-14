@@ -19,18 +19,29 @@ export const dynamic = 'force-dynamic';
  * pra fechar o vazamento de token entre stories).
  */
 export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const debug = url.searchParams.get('debug') === '1';
   const user = await getUser();
   if (!user) {
     // Permite anônimo APENAS se a chamada é pra uma story grátis.
     // Sem slug, mantemos o 401 histórico.
-    const url = new URL(request.url);
     const slug = url.searchParams.get('slug');
     if (!slug) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Not authenticated', reason: debug ? 'no-slug' : undefined },
+        { status: 401 },
+      );
     }
-    const freeStory = await loadFreeStory(slug);
-    if (!freeStory) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    const probe = await loadFreeStoryDetailed(slug);
+    if (!probe.isFree) {
+      return NextResponse.json(
+        {
+          error: 'Not authenticated',
+          reason: debug ? probe.reason : undefined,
+          detail: debug ? probe.detail : undefined,
+        },
+        { status: 401 },
+      );
     }
     // Anônimo em story free: assina token específico daquela story.
     const token = await signMediaToken({
@@ -42,14 +53,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ token, tier: 'active', expiresIn: 7200 });
   }
 
-  const url = new URL(request.url);
   const slug = url.searchParams.get('slug');
 
   // Logado em story free: também assina bypass scoped (pra não depender
   // da subscription do usuário pra liberar a amostra).
   if (slug) {
-    const freeStory = await loadFreeStory(slug);
-    if (freeStory) {
+    const probe = await loadFreeStoryDetailed(slug);
+    if (probe.isFree) {
       const token = await signMediaToken({
         userId: user.id,
         tier: 'active',
@@ -87,21 +97,39 @@ export async function GET(request: Request) {
   return NextResponse.json({ token, tier, expiresIn: expirySeconds });
 }
 
+type FreeProbe = {
+  isFree: boolean;
+  reason: 'ok' | 'env-missing' | 'exception' | 'not-found' | 'not-free';
+  detail?: string;
+};
+
 /**
- * Resolve uma story por slug e devolve true se `is_free=true`. Usa
- * service role pra não depender de RLS (read é público de qualquer
- * forma). Falhas viram null pra não vazar paywall por erro de leitura.
+ * Resolve uma story por slug e devolve isFree + diagnóstico pra debug.
+ * Usa service role pra não depender de RLS. Falhas detalhadas vêm em
+ * `reason` (só vazadas no response quando ?debug=1).
  */
-async function loadFreeStory(slug: string): Promise<boolean> {
+async function loadFreeStoryDetailed(slug: string): Promise<FreeProbe> {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return { isFree: false, reason: 'env-missing' };
+  }
   try {
     const sb = createServiceClient();
-    const { data } = await sb
+    const { data, error } = await sb
       .from('stories')
       .select('is_free')
       .eq('slug', slug)
       .maybeSingle();
-    return !!data?.is_free;
-  } catch {
-    return false;
+    if (error) {
+      return { isFree: false, reason: 'exception', detail: error.message };
+    }
+    if (!data) {
+      return { isFree: false, reason: 'not-found' };
+    }
+    if (!data.is_free) {
+      return { isFree: false, reason: 'not-free' };
+    }
+    return { isFree: true, reason: 'ok' };
+  } catch (err) {
+    return { isFree: false, reason: 'exception', detail: String(err) };
   }
 }
