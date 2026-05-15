@@ -17,7 +17,7 @@ export default async function PrivacyPage({
   setRequestLocale(locale);
 
   return (
-    <LegalLayout title="Privacy Policy" lastUpdated="May 6, 2026">
+    <LegalLayout title="Privacy Policy" lastUpdated="May 14, 2026">
       <p>
         AllureTV (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;) operates the
         website <strong>alluretv.net</strong> and its associated mobile
@@ -89,6 +89,35 @@ export default async function PrivacyPage({
           remembers if you chose English / Deutsch / Français / Español).
         </li>
       </ul>
+
+      <h3>1.5 Age verification data</h3>
+      <p>
+        Because AllureTV is intended for adults, we collect and retain:
+      </p>
+      <ul>
+        <li>
+          Your date of birth (required to confirm you are 18 or older).
+        </li>
+        <li>
+          The timestamp at which you accepted these Terms and the version of
+          the Terms you accepted.
+        </li>
+        <li>
+          The country code derived from your IP address at the time of
+          verification (used for compliance with local age-assurance laws).
+        </li>
+        <li>
+          A hashed audit log entry (hashed IP and user-agent — never raw —
+          plus the verification result) kept for compliance and fraud
+          prevention.
+        </li>
+      </ul>
+      <p>
+        Legal basis: compliance with our legal obligation to restrict adult
+        content to adults (GDPR Art. 6(1)(c); LGPD Art. 7º, II). Age
+        verification is valid for two years, after which you will be asked to
+        re-verify.
+      </p>
 
       <h2>2. How we use your information</h2>
       <ul>

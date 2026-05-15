@@ -17,7 +17,7 @@ export default async function TermsPage({
   setRequestLocale(locale);
 
   return (
-    <LegalLayout title="Terms of Service" lastUpdated="May 6, 2026">
+    <LegalLayout title="Terms of Service" lastUpdated="May 14, 2026">
       <p>
         These Terms of Service (&quot;Terms&quot;) form a binding agreement
         between you and AllureTV, governing your access to and use of the
@@ -36,9 +36,11 @@ export default async function TermsPage({
       <div className="callout">
         <p>
           <strong>Adults only.</strong> The Service contains sensual romantic
-          content intended for users aged <strong>18 or older</strong>. By
-          accessing the Service you certify that you are of legal age in your
-          jurisdiction.
+          content intended for users aged <strong>18 or older</strong>. Access
+          to the player and ebook reader requires you to complete an
+          age-verification step confirming your date of birth.
+          Misrepresenting your age is grounds for immediate termination and
+          may be a criminal offense under your local law.
         </p>
       </div>
 
@@ -148,6 +150,17 @@ export default async function TermsPage({
         transfers ownership to you.
       </p>
 
+      <h2>5.5 AI-Generated content</h2>
+      <p>
+        Some content on AllureTV — including cover artwork, narration voices,
+        and ambient audio — is created or enhanced using artificial
+        intelligence under AllureTV&apos;s editorial direction. It is not
+        intended to depict any real, identifiable person. If you believe a
+        piece of AI-generated content depicts you or someone you represent
+        without consent, contact us at the address in section 12 and we will
+        review and remove it as appropriate.
+      </p>
+
       <h2>6. DMCA / copyright complaints</h2>
       <p>
         If you believe content on the Service infringes your copyright, send a
@@ -165,6 +178,12 @@ export default async function TermsPage({
         We may suspend, modify, or discontinue any feature at any time, with or
         without notice. Scheduled maintenance and emergency fixes are part of
         normal operation.
+      </p>
+      <p>
+        We may restrict access from jurisdictions where the Service does not
+        yet comply with local age-assurance laws. Where this happens, visitors
+        from those locations may be shown an information page instead of the
+        catalog.
       </p>
 
       <h2>8. Disclaimers</h2>
