@@ -318,5 +318,81 @@
     "errorNotAuth": "Votre session a expiré. Veuillez vous reconnecter.",
     "errorUnknown": "Impossible de vérifier votre âge maintenant. Réessayez.",
     "disclaimer": "Votre date de naissance est utilisée uniquement pour vérifier votre majorité. Nous ne la partageons avec personne."
+  },
+  "consent": {
+    "banner": {
+      "title": "Votre vie privée, votre choix",
+      "body": "Nous utilisons des cookies essentiels pour vous maintenir connectée et mémoriser votre langue. Avec votre consentement, nous utilisons aussi PostHog pour comprendre comment les visiteurs utilisent le site et l'améliorer.",
+      "acceptAll": "Tout accepter",
+      "essentialOnly": "Essentiels uniquement",
+      "customize": "Personnaliser",
+      "learnMore": "En savoir plus"
+    },
+    "modal": {
+      "title": "Préférences de cookies",
+      "intro": "Choisissez quels cookies vous autorisez. Vous pouvez modifier ce choix à tout moment via le lien du pied de page.",
+      "essential": {
+        "label": "Strictement nécessaires",
+        "desc": "Requis pour la connexion, la langue, le contrôle d'âge et mémoriser votre choix. Le site ne fonctionne pas sans eux.",
+        "always": "Toujours actifs"
+      },
+      "analytics": {
+        "label": "Analytique",
+        "desc": "Pages vues anonymes et événements produit envoyés à PostHog. Nous aide à voir quelles histoires vous aimez."
+      },
+      "session": {
+        "label": "Enregistrement de session",
+        "desc": "Enregistre la souris, le défilement et les clics (les champs de texte sont masqués) pour déboguer les parcours confus. À activer uniquement si vous êtes d'accord."
+      },
+      "save": "Enregistrer les préférences",
+      "cancel": "Annuler"
+    },
+    "footer": {
+      "preferences": "Préférences de cookies"
+    },
+    "cookies": {
+      "pageTitle": "Politique relative aux cookies",
+      "intro": "Cette page liste chaque cookie utilisé par AllureTV, ce qu'il fait et combien de temps il reste sur votre appareil.",
+      "whatAre": {
+        "title": "Que sont les cookies ?",
+        "p1": "Les cookies sont de petits fichiers qu'un site web stocke sur votre appareil pour se souvenir de choses entre les visites — que vous êtes connectée, la langue choisie, que vous avez confirmé votre âge.",
+        "p2": "Nous classons les cookies en trois catégories. Les cookies strictement nécessaires sont toujours actifs car le site ne peut pas fonctionner sans eux. L'analytique et l'enregistrement de session ne s'exécutent qu'après avoir cliqué sur Accepter."
+      },
+      "table": {
+        "name": "Nom",
+        "purpose": "Finalité",
+        "category": "Catégorie",
+        "duration": "Durée",
+        "provider": "Fournisseur",
+        "categories": {
+          "essential": "Essentiel",
+          "analytics": "Analytique",
+          "session": "Enregistrement de session"
+        },
+        "rows": {
+          "allure_consent": "Mémorise vos choix de cookies",
+          "supabase_auth": "Vous maintient connectée",
+          "next_locale": "Mémorise votre préférence de langue",
+          "paywall_from": "Vous ramène à l'histoire après l'abonnement",
+          "age_verified": "Confirme que vous avez passé le contrôle d'âge",
+          "ph_id": "Identifiant anonyme pour l'analyse produit",
+          "ph_session": "Tampon pour la fonction d'enregistrement de session"
+        },
+        "durations": {
+          "session": "Session du navigateur",
+          "oneHour": "1 heure",
+          "sevenDays": "7 jours",
+          "sixMonths": "6 mois",
+          "oneYear": "1 an",
+          "twoYears": "2 ans"
+        }
+      },
+      "managing": {
+        "title": "Gérer vos préférences",
+        "body": "Vous pouvez modifier votre choix à tout moment. Le refus efface immédiatement les cookies PostHog et arrête toute capture.",
+        "cta": "Ouvrir les préférences de cookies"
+      },
+      "contact": "Des questions sur les cookies ? Écrivez-nous à <contact>hello@alluretv.net</contact>. Retour à la <privacy>politique de confidentialité</privacy>."
+    }
   }
 }

@@ -4,11 +4,14 @@ import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { locales, type Locale } from '@/lib/i18n';
 import { PostHogProvider } from '@/lib/posthog';
+import { getServerConsent } from '@/lib/consent-server';
 import { TopBar } from '@/components/layout/TopBar';
 import { BottomTabBar } from '@/components/layout/BottomTabBar';
 import { SearchProvider } from '@/components/layout/SearchProvider';
 import { PWASupport } from '@/components/layout/PWASupport';
 import { InstallProvider } from '@/components/layout/InstallProvider';
+import { ConsentRoot } from '@/components/consent/ConsentRoot';
+import { CookiePreferencesLink } from '@/components/consent/CookiePreferencesLink';
 import { getUser } from '@/lib/auth-helpers';
 
 // Public-site layout. Nests inside the root <html>/<body> from app/layout.tsx
@@ -31,6 +34,7 @@ export default async function LocaleLayout({
 
   setRequestLocale(locale);
   const messages = await getMessages();
+  const consent = await getServerConsent();
   // Resolve current user once per request and pass down — avoids hitting
   // Supabase from inside the client TopBar component.
   const user = await getUser();
@@ -50,7 +54,7 @@ export default async function LocaleLayout({
 
   return (
     <NextIntlClientProvider messages={messages}>
-      <PostHogProvider>
+      <PostHogProvider initialConsent={consent}>
         <SearchProvider>
           <InstallProvider>
             <TopBar user={userMeta} />
@@ -87,6 +91,15 @@ export default async function LocaleLayout({
                 </a>
                 <span className="text-text-mute/40">·</span>
                 <a
+                  href={`/${locale}/cookies`}
+                  className="hover:text-rose-bright transition-colors"
+                >
+                  Cookies
+                </a>
+                <span className="text-text-mute/40">·</span>
+                <CookiePreferencesLink className="hover:text-rose-bright transition-colors" />
+                <span className="text-text-mute/40">·</span>
+                <a
                   href="mailto:rededecanaisanonimo@gmail.com"
                   className="hover:text-rose-bright transition-colors"
                 >
@@ -99,6 +112,7 @@ export default async function LocaleLayout({
             </footer>
             <BottomTabBar />
             <PWASupport />
+            <ConsentRoot />
           </InstallProvider>
         </SearchProvider>
       </PostHogProvider>

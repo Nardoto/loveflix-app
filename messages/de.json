@@ -318,5 +318,81 @@
     "errorNotAuth": "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.",
     "errorUnknown": "Wir konnten dein Alter gerade nicht überprüfen. Versuche es erneut.",
     "disclaimer": "Dein Geburtsdatum wird ausschließlich zur Altersüberprüfung verwendet. Wir geben es nicht an Dritte weiter."
+  },
+  "consent": {
+    "banner": {
+      "title": "Deine Privatsphäre, deine Wahl",
+      "body": "Wir verwenden notwendige Cookies, damit du angemeldet bleibst und deine Sprache gespeichert wird. Mit deiner Zustimmung nutzen wir auch PostHog, um zu verstehen, wie Besucher die Seite verwenden und sie zu verbessern.",
+      "acceptAll": "Alle akzeptieren",
+      "essentialOnly": "Nur notwendige",
+      "customize": "Anpassen",
+      "learnMore": "Mehr erfahren"
+    },
+    "modal": {
+      "title": "Cookie-Einstellungen",
+      "intro": "Wähle, welche Cookies du erlaubst. Du kannst das jederzeit über den Link im Footer ändern.",
+      "essential": {
+        "label": "Unbedingt erforderlich",
+        "desc": "Erforderlich für Anmeldung, Sprache, Altersprüfung und das Speichern deiner Wahl. Die Seite funktioniert ohne diese nicht.",
+        "always": "Immer an"
+      },
+      "analytics": {
+        "label": "Analyse",
+        "desc": "Anonyme Seitenaufrufe und Produktereignisse an PostHog. Hilft uns zu erkennen, welche Geschichten du liebst."
+      },
+      "session": {
+        "label": "Sitzungsaufzeichnung",
+        "desc": "Zeichnet Maus, Scrolls und Klicks auf (Texteingaben werden maskiert), damit wir verwirrende Abläufe debuggen können. Nur aktivieren, wenn du damit einverstanden bist."
+      },
+      "save": "Einstellungen speichern",
+      "cancel": "Abbrechen"
+    },
+    "footer": {
+      "preferences": "Cookie-Einstellungen"
+    },
+    "cookies": {
+      "pageTitle": "Cookie-Richtlinie",
+      "intro": "Diese Seite listet jeden Cookie auf, den AllureTV verwendet, was er tut und wie lange er auf deinem Gerät bleibt.",
+      "whatAre": {
+        "title": "Was sind Cookies?",
+        "p1": "Cookies sind kleine Dateien, die eine Website auf deinem Gerät speichert, um sich zwischen Besuchen Dinge zu merken – dass du angemeldet bist, welche Sprache du gewählt hast, dass du dein Alter bestätigt hast.",
+        "p2": "Wir teilen Cookies in drei Kategorien ein. Unbedingt erforderliche Cookies sind immer aktiv, weil die Seite ohne sie nicht funktioniert. Analyse und Sitzungsaufzeichnung laufen nur, nachdem du Akzeptieren geklickt hast."
+      },
+      "table": {
+        "name": "Name",
+        "purpose": "Zweck",
+        "category": "Kategorie",
+        "duration": "Dauer",
+        "provider": "Anbieter",
+        "categories": {
+          "essential": "Notwendig",
+          "analytics": "Analyse",
+          "session": "Sitzungsaufzeichnung"
+        },
+        "rows": {
+          "allure_consent": "Speichert deine Cookie-Auswahl",
+          "supabase_auth": "Hält dich angemeldet",
+          "next_locale": "Merkt sich deine Sprachwahl",
+          "paywall_from": "Bringt dich nach dem Upgrade zur Geschichte zurück",
+          "age_verified": "Bestätigt, dass du die Altersprüfung bestanden hast",
+          "ph_id": "Anonyme Kennung für Produktanalyse",
+          "ph_session": "Puffer für die Sitzungsaufzeichnungsfunktion"
+        },
+        "durations": {
+          "session": "Browser-Sitzung",
+          "oneHour": "1 Stunde",
+          "sevenDays": "7 Tage",
+          "sixMonths": "6 Monate",
+          "oneYear": "1 Jahr",
+          "twoYears": "2 Jahre"
+        }
+      },
+      "managing": {
+        "title": "Einstellungen verwalten",
+        "body": "Du kannst deine Wahl jederzeit ändern. Ein Opt-out löscht PostHog-Cookies sofort und stoppt weitere Erfassung.",
+        "cta": "Cookie-Einstellungen öffnen"
+      },
+      "contact": "Fragen zu Cookies? Schreib uns an <contact>hello@alluretv.net</contact>. Zurück zur <privacy>Datenschutzerklärung</privacy>."
+    }
   }
 }

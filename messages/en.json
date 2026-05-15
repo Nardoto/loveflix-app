@@ -318,5 +318,81 @@
     "errorNotAuth": "Your session expired. Please sign in again.",
     "errorUnknown": "We couldn't verify your age right now. Try again.",
     "disclaimer": "Your date of birth is used only to verify that you are an adult. We do not share it with third parties."
+  },
+  "consent": {
+    "banner": {
+      "title": "Your privacy, your call",
+      "body": "We use essential cookies to keep you signed in and remember your language. With your consent we also use PostHog to understand how visitors use the site so we can improve it.",
+      "acceptAll": "Accept all",
+      "essentialOnly": "Essential only",
+      "customize": "Customize",
+      "learnMore": "Learn more"
+    },
+    "modal": {
+      "title": "Cookie preferences",
+      "intro": "Choose which cookies you allow. You can change this at any time from the footer link.",
+      "essential": {
+        "label": "Strictly necessary",
+        "desc": "Required for sign-in, language, age gate and remembering your choice. The site does not work without these.",
+        "always": "Always on"
+      },
+      "analytics": {
+        "label": "Analytics",
+        "desc": "Anonymous pageviews and product events sent to PostHog. Helps us see which stories you love."
+      },
+      "session": {
+        "label": "Session replay",
+        "desc": "Records mouse, scroll and clicks (text inputs are masked) so we can debug confusing flows. Only enable if you're OK with this."
+      },
+      "save": "Save preferences",
+      "cancel": "Cancel"
+    },
+    "footer": {
+      "preferences": "Cookie preferences"
+    },
+    "cookies": {
+      "pageTitle": "Cookie Policy",
+      "intro": "This page lists every cookie AllureTV uses, what each one does, and how long it stays on your device.",
+      "whatAre": {
+        "title": "What are cookies?",
+        "p1": "Cookies are small files a website stores on your device so it can remember things between visits — that you are signed in, what language you chose, that you confirmed your age.",
+        "p2": "We split cookies into three categories. Strictly necessary cookies are always on because the site cannot work without them. Analytics and session replay only run after you click Accept."
+      },
+      "table": {
+        "name": "Name",
+        "purpose": "Purpose",
+        "category": "Category",
+        "duration": "Duration",
+        "provider": "Provider",
+        "categories": {
+          "essential": "Essential",
+          "analytics": "Analytics",
+          "session": "Session replay"
+        },
+        "rows": {
+          "allure_consent": "Stores your cookie choices",
+          "supabase_auth": "Keeps you signed in",
+          "next_locale": "Remembers your language preference",
+          "paywall_from": "Returns you to the story after upgrading",
+          "age_verified": "Confirms you passed the adult content gate",
+          "ph_id": "Anonymous identifier for product analytics",
+          "ph_session": "Buffer for the session recording feature"
+        },
+        "durations": {
+          "session": "Browser session",
+          "oneHour": "1 hour",
+          "sevenDays": "7 days",
+          "sixMonths": "6 months",
+          "oneYear": "1 year",
+          "twoYears": "2 years"
+        }
+      },
+      "managing": {
+        "title": "Managing your preferences",
+        "body": "You can change your choice at any time. Opting out clears PostHog cookies immediately and stops further capture.",
+        "cta": "Open cookie preferences"
+      },
+      "contact": "Questions about cookies? Email us at <contact>hello@alluretv.net</contact>. Back to the <privacy>Privacy Policy</privacy>."
+    }
   }
 }

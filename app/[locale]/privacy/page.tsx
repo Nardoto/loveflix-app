@@ -1,5 +1,6 @@
 import { setRequestLocale } from 'next-intl/server';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { LegalLayout } from '@/components/legal/LegalLayout';
 
 export const metadata: Metadata = {
@@ -17,7 +18,7 @@ export default async function PrivacyPage({
   setRequestLocale(locale);
 
   return (
-    <LegalLayout title="Privacy Policy" lastUpdated="May 14, 2026">
+    <LegalLayout title="Privacy Policy" lastUpdated="May 15, 2026">
       <p>
         AllureTV (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;) operates the
         website <strong>alluretv.net</strong> and its associated mobile
@@ -89,6 +90,13 @@ export default async function PrivacyPage({
           remembers if you chose English / Deutsch / Français / Español).
         </li>
       </ul>
+      <p>
+        <strong>Consent for analytics cookies.</strong> We do not enable
+        PostHog analytics or session recording until you click <em>Accept</em>{' '}
+        on the cookie banner. You can change your choice at any time via the{' '}
+        <em>Cookie preferences</em> link in the footer. See our{' '}
+        <Link href={`/${locale}/cookies`}>Cookie Policy</Link> for the full list.
+      </p>
 
       <h3>1.5 Age verification data</h3>
       <p>
