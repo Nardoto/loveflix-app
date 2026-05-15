@@ -40,7 +40,7 @@ export default async function AdminLayout({
   return (
     <div className="flex min-h-screen">
       <AdminSidebar user={userMeta} />
-      <main className="flex-1 min-w-0 px-6 md:px-10 py-7 md:py-8 pb-20 max-w-[1280px]">
+      <main className="flex-1 min-w-0 px-6 md:px-10 py-7 md:py-8 pb-20">
         {children}
       </main>
     </div>
