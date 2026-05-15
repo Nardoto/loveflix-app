@@ -20,7 +20,10 @@ import { getUser, getSubscriptionTier, storyRequiresUpgrade } from '@/lib/auth-h
 import { StoryComments } from '@/components/story/StoryComments';
 import { MediaTokenPrefetch } from '@/components/player/MediaTokenPrefetch';
 import { FavoriteAddButton } from '@/components/story/FavoriteToggle';
+import { EbookImageCarousel } from '@/components/story/EbookImageCarousel';
 import { isFavorite } from '@/lib/data/favorites-server';
+import { listEbookImageKeys } from '@/lib/data/scripts-server';
+import { signMediaToken } from '@/lib/media-token';
 import { isStoryHot } from '@/lib/data/hot';
 import { FlameIcon } from '@/components/icons/FlameIcon';
 import { SparkleIcon } from '@/components/icons/SparkleIcon';
@@ -63,6 +66,28 @@ export default async function StoryDetailPage({
   const needsUpgrade = storyRequiresUpgrade(story, userTier);
   const upgradeHref =
     `/account?upgrade=required&from=/${locale}/s/${story.slug}` as const;
+
+  // Galeria de ilustrações do ebook — exibida como carrossel auto-play
+  // quando o admin subiu imagens. Mesmo padrão de signing do /read: token
+  // scoped pra essa story quando isFree. Anonymous/free user em story
+  // premium continua bloqueado pelo gate visual (não renderiza o carousel
+  // se needsUpgrade).
+  const ebookImageCount = story.ebookImageCount ?? 0;
+  let ebookImageUrls: string[] = [];
+  if (!needsUpgrade && ebookImageCount > 0) {
+    const mediaDomain = process.env.NEXT_PUBLIC_MEDIA_DOMAIN ?? '';
+    if (mediaDomain) {
+      const token = await signMediaToken({
+        userId: currentUser?.id ?? `anon:${slug}`,
+        tier: 'active', // já passamos pelo paywall acima
+        keyPrefix: story.isFree ? `stories/${slug}/` : undefined,
+        expirySeconds: 7200,
+      });
+      ebookImageUrls = listEbookImageKeys(slug, ebookImageCount).map(
+        (k) => `https://${mediaDomain}/${k}?token=${token}`,
+      );
+    }
+  }
 
   // "More like this" — same genre, different stories.
   const related = (await getStoriesByGenre(story.genre))
@@ -247,6 +272,18 @@ export default async function StoryDetailPage({
           )}
         </div>
       </section>
+
+      {/* Carrossel de ilustrações — só renderiza se admin já subiu imagens.
+          Posicionado entre o hero e os tropes pra dar uma prévia visual
+          da história antes dos detalhes secundários. */}
+      {ebookImageUrls.length > 0 && (
+        <section className="px-5 md:px-10 lg:px-14 mt-12 md:mt-16 max-w-5xl">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-text-mute mb-3">
+            {tStory('illustrationsTitle')}
+          </h2>
+          <EbookImageCarousel imageUrls={ebookImageUrls} />
+        </section>
+      )}
 
       {/* Tropes / details */}
       <section className="px-5 md:px-10 lg:px-14 mt-12 md:mt-16 max-w-5xl">
