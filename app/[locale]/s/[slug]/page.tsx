@@ -9,7 +9,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-import { Play, Headphones, BookOpen, Star, Clock, Clock3, Languages, ArrowLeft, Download, Crown } from 'lucide-react';
+import { Play, Headphones, BookOpen, Star, Clock, Clock3, Languages, ArrowLeft, Crown } from 'lucide-react';
 import { Link } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,9 +43,6 @@ export default async function StoryDetailPage({
   const hasVideo = !!(story.videoSrc || story.videoKey);
   const hasAudio = !!(story.audioByLocale || story.audioKeyByLocale);
   const hasEbook = !!story.hasEbook;
-  const ebookDownloadUrl = story.ebookKey
-    ? `https://${process.env.NEXT_PUBLIC_MEDIA_DOMAIN}/${story.ebookKey}`
-    : null;
   const hasAnyMedia = hasVideo || hasAudio || hasEbook;
 
   // Comments + aggregate rating. Tries Supabase first; falls back to seeded
@@ -215,26 +212,14 @@ export default async function StoryDetailPage({
                   </Button>
                 )}
 
-                {hasEbook && ebookDownloadUrl ? (
-                  <Button asChild size="lg" variant="glass">
-                    <a
-                      href={ebookDownloadUrl}
-                      download
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Download />
-                      {tStory('downloadPdf')}
-                    </a>
-                  </Button>
-                ) : hasEbook ? (
+                {hasEbook && (
                   <Button asChild size="lg" variant="glass">
                     <Link href={`/s/${story.slug}/read` as never}>
                       <BookOpen />
                       {tStory('read')}
                     </Link>
                   </Button>
-                ) : null}
+                )}
               </>
             )}
 
