@@ -61,7 +61,10 @@ try {
 const ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
 const ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
 const SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
-const BUCKET = process.env.R2_BUCKET_NAME ?? 'alluretv-media';
+// `||` em vez de `??` porque no GitHub Actions o ${{ secrets.X }} vira
+// string vazia quando o secret não existe — e `??` deixaria passar
+// `""` como valor "definido", quebrando o cliente S3 com bucket vazio.
+const BUCKET = process.env.R2_BUCKET_NAME || 'alluretv-media';
 
 if (!ACCOUNT_ID || !ACCESS_KEY_ID || !SECRET_ACCESS_KEY) {
   console.error('✗ R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY missing in .env.local');
