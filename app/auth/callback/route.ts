@@ -40,6 +40,36 @@ export async function GET(request: Request) {
         ),
       );
     }
+
+    // Whitelist: only redirect to same-origin paths.
+    const target = returnTo.startsWith('/') ? returnTo : '/';
+
+    // Age gate: if the freshly authenticated user has not yet verified age,
+    // route them through /verify-age and preserve their original destination.
+    // We pick the locale prefix from `target` so the verify-age page lands
+    // in the same language they started in.
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData?.user?.id;
+    if (userId) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('age_verified_at, age_verified_expires_at')
+        .eq('id', userId)
+        .maybeSingle();
+      const verified =
+        profile?.age_verified_at &&
+        (!profile.age_verified_expires_at ||
+          new Date(profile.age_verified_expires_at).getTime() > Date.now());
+      if (!verified) {
+        const localeMatch = target.match(/^\/(en|de|fr|es)(?:\/|$)/);
+        const locale = localeMatch?.[1] ?? 'en';
+        const verifyUrl = new URL(`/${locale}/verify-age`, url.origin);
+        verifyUrl.searchParams.set('returnTo', target);
+        return NextResponse.redirect(verifyUrl);
+      }
+    }
+
+    return NextResponse.redirect(new URL(target, url.origin));
   } catch (e) {
     return NextResponse.redirect(
       new URL(
@@ -50,8 +80,4 @@ export async function GET(request: Request) {
       ),
     );
   }
-
-  // Whitelist: only redirect to same-origin paths.
-  const target = returnTo.startsWith('/') ? returnTo : '/';
-  return NextResponse.redirect(new URL(target, url.origin));
 }
