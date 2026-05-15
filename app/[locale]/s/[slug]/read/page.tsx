@@ -74,9 +74,19 @@ export default async function ReadPage({
     );
   }
 
-  // Prioridade 2: PDF legado — manda pra download/preview nativo do browser.
+  // Prioridade 2: PDF legado — manda pra preview nativo do browser com
+  // token assinado (mesmo padrão da prioridade 1). Sem token o worker
+  // de mídia responde 401 "Missing token".
   if (story.ebookKey) {
-    redirect(`https://${process.env.NEXT_PUBLIC_MEDIA_DOMAIN}/${story.ebookKey}`);
+    const token = await signMediaToken({
+      userId: user?.id ?? `anon:${slug}`,
+      tier: 'active', // já passamos pelo paywall acima
+      keyPrefix: story.isFree ? `stories/${slug}/` : undefined,
+      expirySeconds: 7200,
+    });
+    redirect(
+      `https://${process.env.NEXT_PUBLIC_MEDIA_DOMAIN}/${story.ebookKey}?token=${token}`,
+    );
   }
 
   // Prioridade 3: ebook hardcoded compat (stories antigas com has_ebook=true
