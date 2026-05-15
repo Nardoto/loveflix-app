@@ -1,18 +1,72 @@
 -- ================================================================
 -- AllureTV — Age Verification (Fase 0)
 -- ================================================================
--- Adiciona colunas de DOB / age_verified em profiles, função RPC pra
--- self-declaration (validada server-side, >= 18), tabela de audit, e
--- endurece RLS de books/ebook_pages pra exigir age_verified além de
--- subscription. Compatível com qualquer caminho futuro (Yoti, Segpay,
--- etc) — esta migration só implementa o subset comum.
+-- Self-contained: a migration 0001_init.sql nunca foi aplicada neste
+-- projeto (o app usa o schema da 0005 em diante). Esta migration cria
+-- public.profiles (que ainda não existe) com o trigger de auto-criação
+-- no signup E faz backfill pra usuários já existentes em auth.users,
+-- depois adiciona as colunas de age verification, RPC, audit log e
+-- helper boolean.
 --
--- Idempotente: usa `if not exists` em coluna, `or replace` em função,
--- `drop policy if exists` antes de recriar.
+-- NÃO mexe em books/ebook_pages porque essas tabelas não existem neste
+-- banco — o catálogo opera direto sobre stories/story_audio. O gate de
+-- "só assinante vê conteúdo pago" é feito no Worker (`worker-media/`)
+-- via JWT, não em RLS de tabela.
+--
+-- Idempotente: usa `if not exists` em tabela/coluna, `or replace` em
+-- função, `drop policy if exists` antes de recriar.
 -- ================================================================
 
 -- ----------------------------------------------------------------
--- Colunas em profiles
+-- public.profiles — extends auth.users
+-- ----------------------------------------------------------------
+create table if not exists public.profiles (
+  id uuid primary key references auth.users on delete cascade,
+  email text,
+  full_name text,
+  preferred_language text default 'en' check (preferred_language in ('en','de','fr','es')),
+  role text default 'user' check (role in ('user','admin')),
+  created_at timestamptz default now()
+);
+
+-- Auto-create profile no signup (handle_new_user trigger)
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, email, full_name)
+  values (new.id, new.email, new.raw_user_meta_data->>'full_name')
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- Backfill: cria profiles pra todos auth.users existentes (idempotente
+-- via on conflict). Necessário porque o app rodou meses sem profiles —
+-- sem isso, usuários existentes não conseguiriam declarar idade.
+insert into public.profiles (id, email)
+select id, email from auth.users
+on conflict (id) do nothing;
+
+-- RLS em profiles
+alter table public.profiles enable row level security;
+
+drop policy if exists "profiles_select_own" on public.profiles;
+create policy "profiles_select_own" on public.profiles
+  for select using (auth.uid() = id);
+
+drop policy if exists "profiles_update_own" on public.profiles;
+create policy "profiles_update_own" on public.profiles
+  for update using (auth.uid() = id);
+
+grant select, update on public.profiles to authenticated;
+
+-- ----------------------------------------------------------------
+-- Age verification: colunas em profiles
 -- ----------------------------------------------------------------
 alter table public.profiles
   add column if not exists date_of_birth date,
@@ -68,7 +122,7 @@ grant execute on function public.verify_age_self(date, text, text, text)
   to authenticated;
 
 -- ----------------------------------------------------------------
--- Helper boolean (reusado em RLS)
+-- Helper boolean: lib/age e middleware podem reusar
 -- ----------------------------------------------------------------
 create or replace function public.user_is_age_verified(uid uuid)
 returns boolean language sql stable as $$
@@ -81,7 +135,7 @@ returns boolean language sql stable as $$
 $$;
 
 -- ----------------------------------------------------------------
--- Audit table (LGPD/GDPR: IP hashed, não raw)
+-- Audit table (LGPD/GDPR: IP/UA hasheados, não raw)
 -- ----------------------------------------------------------------
 create table if not exists public.age_verification_events (
   id uuid primary key default gen_random_uuid(),
@@ -101,39 +155,20 @@ create index if not exists idx_age_events_user
 
 alter table public.age_verification_events enable row level security;
 
--- Só admin lê. Service role escreve via webhook/action.
+-- Service role escreve via server action. Admin lê via ADMIN_EMAILS no
+-- código (não via profiles.role), então sem policy de SELECT — o
+-- service-role bypassa RLS.
 drop policy if exists "age_events_admin_select" on public.age_verification_events;
-create policy "age_events_admin_select" on public.age_verification_events
-  for select using (
-    exists(select 1 from public.profiles where id = auth.uid() and role = 'admin')
-  );
 
-grant select on public.age_verification_events to authenticated;
 grant insert, select on public.age_verification_events to service_role;
 
--- ----------------------------------------------------------------
--- Endurece RLS: books e ebook_pages agora exigem age_verified
--- (além de free/subscription). Admin continua tendo acesso total.
--- ----------------------------------------------------------------
-drop policy if exists "books_select" on public.books;
-create policy "books_select" on public.books
-  for select using (
-    is_free = true
-    or exists(select 1 from public.stories where id = story_id and is_free = true)
-    or (
-      public.user_has_access(auth.uid())
-      and public.user_is_age_verified(auth.uid())
-    )
-    or exists(select 1 from public.profiles where id = auth.uid() and role = 'admin')
-  );
-
-drop policy if exists "ebook_pages_select" on public.ebook_pages;
-create policy "ebook_pages_select" on public.ebook_pages
-  for select using (
-    exists(select 1 from public.stories where id = story_id and is_free = true)
-    or (
-      public.user_has_access(auth.uid())
-      and public.user_is_age_verified(auth.uid())
-    )
-    or exists(select 1 from public.profiles where id = auth.uid() and role = 'admin')
-  );
+-- ================================================================
+-- Notas pro futuro
+-- ================================================================
+-- O endurecimento de RLS em tabelas de conteúdo (exigir age_verified
+-- além de subscription) NÃO está incluído aqui porque o app não usa
+-- public.books / public.ebook_pages. O gate de conteúdo pago é feito no
+-- Cloudflare Worker (worker-media/) via JWT tier — o middleware do
+-- Next.js (matcher em /watch e /read) é quem barra usuário sem
+-- age_verified antes mesmo do request chegar no Worker.
+-- ================================================================
