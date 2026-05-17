@@ -128,7 +128,6 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
   const [videoKey, setVideoKey] = useState<string | null>(null);
   const [videoFilename, setVideoFilename] = useState<string | null>(null);
   const [audioKeys, setAudioKeys] = useState<Partial<Record<'en' | 'de' | 'fr' | 'es', string>>>({});
-  const [ebookKey, setEbookKey] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -188,7 +187,6 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
       hasEbook: meta.hasEbook,
       coverKey,
       videoKey: videoKey ?? undefined,
-      ebookKey: ebookKey ?? undefined,
       audioKeyByLocale: Object.fromEntries(
         Object.entries(audioKeys).filter(([, v]) => !!v),
       ),
@@ -256,7 +254,6 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
               coverKey={coverKey}
               videoKey={videoKey}
               audioKeys={audioKeys}
-              ebookKey={ebookKey}
               onCoverUploaded={(key, file) => {
                 setCoverKey(key);
                 if (file) setCoverPreviewUrl(URL.createObjectURL(file));
@@ -268,10 +265,6 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
               onAudioUploaded={(locale, key) =>
                 setAudioKeys((prev) => ({ ...prev, [locale]: key }))
               }
-              onEbookUploaded={(key) => {
-                setEbookKey(key);
-                if (!meta.hasEbook) setMeta((m) => ({ ...m, hasEbook: true }));
-              }}
               onCoverClear={() => {
                 setCoverKey(null);
                 setCoverPreviewUrl(null);
@@ -287,7 +280,6 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
                   return next;
                 })
               }
-              onEbookClear={() => setEbookKey(null)}
             />
           )}
           {step === 'review' && (
@@ -472,30 +464,24 @@ function MediaStep({
   coverKey,
   videoKey,
   audioKeys,
-  ebookKey,
   onCoverUploaded,
   onVideoUploaded,
   onAudioUploaded,
-  onEbookUploaded,
   onCoverClear,
   onVideoClear,
   onAudioClear,
-  onEbookClear,
 }: {
   slug: string;
   isComingSoon: boolean;
   coverKey: string | null;
   videoKey: string | null;
   audioKeys: Partial<Record<'en' | 'de' | 'fr' | 'es', string>>;
-  ebookKey: string | null;
   onCoverUploaded: (key: string, file?: File) => void;
   onVideoUploaded: (key: string, file?: File) => void;
   onAudioUploaded: (locale: 'en' | 'de' | 'fr' | 'es', key: string) => void;
-  onEbookUploaded: (key: string) => void;
   onCoverClear: () => void;
   onVideoClear: () => void;
   onAudioClear: (locale: 'en' | 'de' | 'fr' | 'es') => void;
-  onEbookClear: () => void;
 }) {
   return (
     <div className="space-y-6">
@@ -550,20 +536,23 @@ function MediaStep({
         </div>
       </Section>
 
-      <Section
-        title="Ebook (PDF)"
-        hint="Opcional. Sobe quando o PDF estiver pronto — usuárias com a story na lista vão poder baixar."
-      >
-        <UploadSlot
-          slug={slug}
-          kind="ebook"
-          accept="application/pdf"
-          existing={ebookKey}
-          onUploaded={(key) => onEbookUploaded(key)}
-          onClear={onEbookClear}
-          label="Escolher PDF"
-        />
-      </Section>
+      <div className="rounded-xl border border-rose-bright/20 bg-rose/[0.04] p-5 flex gap-3 items-start">
+        <span className="size-10 rounded-lg bg-rose/15 grid place-items-center text-rose-bright shrink-0">
+          <BookOpen className="size-5" />
+        </span>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-[13px] font-bold text-white mb-1">
+            Ebook (texto + ilustrações)
+          </h3>
+          <p className="text-[12px] text-text-dim leading-relaxed">
+            Configurado depois que a story for salva. Publique primeiro e
+            depois entre em <strong className="text-white">Editar</strong> —
+            lá você sobe a galeria de ilustrações e escreve o roteiro em
+            cada idioma. O reader bonito (com fontes, sépia/noite, etc) é
+            gerado automaticamente a partir desse conteúdo.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
