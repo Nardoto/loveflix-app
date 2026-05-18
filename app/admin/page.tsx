@@ -4,6 +4,8 @@ import { Plus, RefreshCw, Upload, FileText, MessageSquare, CreditCard } from 'lu
 import { getAllStories } from '@/lib/data/stories-server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { Button } from '@/components/ui/button';
+import { PRICE_IDS } from '@/lib/stripe';
+import { getFxToUsd } from '@/lib/fx';
 import {
   PageHead,
   Stat,
@@ -19,6 +21,19 @@ const SUPABASE_CONFIGURED = !!(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// Mirrors the price-cents map in /admin/subscriptions so MRR math stays
+// consistent across pages — if you change one, change the other.
+const PRICE_CENTS: Record<string, { cents: number; currency: 'usd' | 'brl' | 'eur' }> = {};
+if (PRICE_IDS.usd) PRICE_CENTS[PRICE_IDS.usd] = { cents: 1499, currency: 'usd' };
+if (PRICE_IDS.brl) PRICE_CENTS[PRICE_IDS.brl] = { cents: 7990, currency: 'brl' };
+if (PRICE_IDS.eur) PRICE_CENTS[PRICE_IDS.eur] = { cents: 1399, currency: 'eur' };
+
+const FMT_USD = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+});
+
 async function loadStats() {
   const allStories = await getAllStories();
   const totalStories = allStories.length;
@@ -29,28 +44,56 @@ async function loadStats() {
 
   let usersCount = 0;
   let recentComments = 0;
+  let mrrUsd = 0;
+  let activeSubs = 0;
 
   if (SUPABASE_CONFIGURED) {
     try {
       const sb = createServiceClient();
-      const [{ count: u }, { count: c }] = await Promise.all([
-        sb.from('comment_user_meta').select('*', { count: 'exact', head: true }),
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      // Run the cheap counts and the FX fetch in parallel with the auth list.
+      const [usersList, commentsRes, subsRes, fx] = await Promise.all([
+        // Total registered users = everything in auth.users, not just
+        // people who commented (which is what comment_user_meta tracks).
+        sb.auth.admin.listUsers({ perPage: 500 }),
         sb
           .from('story_comments')
           .select('*', { count: 'exact', head: true })
-          .gte(
-            'created_at',
-            new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          ),
+          .gte('created_at', sevenDaysAgo),
+        sb
+          .from('subscriptions')
+          .select('status, price_id, cancel_at_period_end'),
+        getFxToUsd(),
       ]);
-      usersCount = u ?? 0;
-      recentComments = c ?? 0;
+      usersCount = usersList.data?.users?.length ?? 0;
+      recentComments = commentsRes.count ?? 0;
+
+      let mrrCentsUsd = 0;
+      for (const s of (subsRes.data ?? []) as Array<{
+        status: string;
+        price_id: string | null;
+        cancel_at_period_end: boolean | null;
+      }>) {
+        if (s.status !== 'active') continue;
+        activeSubs += 1;
+        const meta = s.price_id ? PRICE_CENTS[s.price_id] : undefined;
+        if (meta) mrrCentsUsd += meta.cents * fx[meta.currency];
+      }
+      mrrUsd = Math.round(mrrCentsUsd) / 100;
     } catch {
       // Schema not run yet — keep zeros.
     }
   }
 
-  return { totalStories, livePublished, comingSoon, usersCount, recentComments };
+  return {
+    totalStories,
+    livePublished,
+    comingSoon,
+    usersCount,
+    recentComments,
+    mrrUsd,
+    activeSubs,
+  };
 }
 
 async function loadRecentStories(limit = 5) {
@@ -122,9 +165,15 @@ export default async function AdminDashboardPage() {
         />
         <Stat
           label="MRR estimado"
-          value="$0"
-          delta="Stripe pendente"
-          deltaTone="neutral"
+          value={FMT_USD.format(stats.mrrUsd)}
+          delta={
+            SUPABASE_CONFIGURED
+              ? stats.activeSubs > 0
+                ? `${stats.activeSubs} ${stats.activeSubs === 1 ? 'assinatura ativa' : 'assinaturas ativas'}`
+                : 'sem assinaturas ativas'
+              : 'aguardando setup'
+          }
+          deltaTone={stats.mrrUsd > 0 ? 'up' : 'neutral'}
         />
         <Stat
           label="Comentários (7d)"
