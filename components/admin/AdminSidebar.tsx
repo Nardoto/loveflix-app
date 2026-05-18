@@ -7,6 +7,7 @@ import {
   LayoutGrid,
   Film,
   MessageSquare,
+  Megaphone,
   Users,
   CreditCard,
   BarChart3,
@@ -29,6 +30,7 @@ const NAV_OPS: NavItem[] = [
   { href: '/admin', label: 'Dashboard', icon: LayoutGrid },
   { href: '/admin/stories', label: 'Stories', icon: Film },
   { href: '/admin/comments', label: 'Comentários', icon: MessageSquare },
+  { href: '/admin/announcements', label: 'Anúncios', icon: Megaphone },
   { href: '/admin/users', label: 'Usuários', icon: Users },
   { href: '/admin/subscriptions', label: 'Assinaturas', icon: CreditCard },
 ];

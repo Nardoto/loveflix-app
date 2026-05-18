@@ -320,6 +320,29 @@
     "errorUnknown": "We couldn't verify your age right now. Try again.",
     "disclaimer": "Your date of birth is used only to verify that you are an adult. We do not share it with third parties."
   },
+  "notifications": {
+    "title": "Notifications",
+    "pageTitle": "Notifications",
+    "pageSubtitle": "Replies, likes and platform updates.",
+    "navLabel": "Notifications",
+    "bellAria": "Notifications, {count} unread",
+    "loading": "Loading…",
+    "empty": "No notifications yet",
+    "emptyHint": "We'll let you know when someone replies, likes your comment, or there's news from AllureTV.",
+    "markAllAsRead": "Mark all as read",
+    "viewAll": "View all",
+    "signInRequired": "Sign in to see your notifications.",
+    "justNow": "just now",
+    "minutesAgo": "{n}m ago",
+    "hoursAgo": "{n}h ago",
+    "daysAgo": "{n}d ago",
+    "messages": {
+      "replyOfficial": "<strong>AllureTV Team</strong> replied to your comment on {story}",
+      "replyUser": "<strong>{actor}</strong> replied to your comment on {story}",
+      "commentLikeOne": "<strong>{actor}</strong> liked your comment on {story}",
+      "commentLikeMany": "<strong>{actor}</strong> and {others} others liked your comment on {story}"
+    }
+  },
   "consent": {
     "banner": {
       "title": "Your privacy, your call",

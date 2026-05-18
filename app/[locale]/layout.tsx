@@ -12,6 +12,7 @@ import { PWASupport } from '@/components/layout/PWASupport';
 import { InstallProvider } from '@/components/layout/InstallProvider';
 import { ConsentRoot } from '@/components/consent/ConsentRoot';
 import { CookiePreferencesLink } from '@/components/consent/CookiePreferencesLink';
+import { NotificationProvider } from '@/components/notifications/NotificationProvider';
 import { getUser } from '@/lib/auth-helpers';
 
 // Public-site layout. Nests inside the root <html>/<body> from app/layout.tsx
@@ -52,15 +53,28 @@ export default async function LocaleLayout({
       }
     : null;
 
+  // The NotificationProvider wires up the bell — only mount it when a user
+  // is signed in. When anonymous, useNotifications() returns null and the
+  // bell renders nothing.
+  const tree = (
+    <>
+      <TopBar user={userMeta} />
+      {/* pb-20 reserves room for the bottom tab bar on mobile so
+          the last row isn't hidden behind it. */}
+      <main className="min-h-screen pb-20 lg:pb-0">{children}</main>
+    </>
+  );
+
   return (
     <NextIntlClientProvider messages={messages}>
       <PostHogProvider initialConsent={consent}>
         <SearchProvider>
           <InstallProvider>
-            <TopBar user={userMeta} />
-            {/* pb-20 reserves room for the bottom tab bar on mobile so
-                the last row isn't hidden behind it. */}
-            <main className="min-h-screen pb-20 lg:pb-0">{children}</main>
+            {user ? (
+              <NotificationProvider userId={user.id}>{tree}</NotificationProvider>
+            ) : (
+              tree
+            )}
             <footer className="mt-24 py-12 px-4 md:px-10 text-center text-xs text-text-mute pb-24 lg:pb-12">
               <div className="inline-flex flex-col items-center mb-4">
                 <span className="font-serif text-2xl md:text-3xl font-black italic tracking-tight leading-none">

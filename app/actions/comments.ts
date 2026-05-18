@@ -12,8 +12,31 @@
 // comment" prompt instead of trying again. There is no anonymous sign-in.
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getStoryBySlug } from '@/lib/data/stories-server';
 import type { User } from '@supabase/supabase-js';
+
+const PREVIEW_LEN = 140;
+function preview(body: string): string {
+  const t = body.trim().replace(/\s+/g, ' ');
+  return t.length <= PREVIEW_LEN ? t : t.slice(0, PREVIEW_LEN - 1) + '…';
+}
+
+function actorIdentity(user: User): {
+  displayName: string;
+  avatarUrl: string | null;
+} {
+  const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const displayName =
+    (meta.full_name as string | undefined) ||
+    (meta.name as string | undefined) ||
+    (user.email ? user.email.split('@')[0] : 'Someone');
+  const avatarUrl =
+    (meta.avatar_url as string | undefined) ||
+    (meta.picture as string | undefined) ||
+    null;
+  return { displayName, avatarUrl };
+}
 
 type Result<T = void> =
   | { ok: true; data: T }
@@ -163,6 +186,34 @@ export async function toggleLike(input: {
     .insert({ comment_id: input.commentId, user_id: user.id });
 
   if (insErr) return { ok: false, error: insErr.message };
+
+  // Notification: grouped like-bucket via RPC. Skip self-like.
+  // Best-effort.
+  try {
+    const { data: parent } = await supabase
+      .from('story_comments')
+      .select('user_id, body, story_slug')
+      .eq('id', input.commentId)
+      .single();
+
+    if (parent && parent.user_id !== user.id) {
+      const sb = createServiceClient();
+      const story = await getStoryBySlug(parent.story_slug ?? input.storySlug);
+      const actor = actorIdentity(user);
+      await sb.rpc('enqueue_like_notification', {
+        p_recipient_id: parent.user_id,
+        p_parent_id: input.commentId,
+        p_story_slug: parent.story_slug ?? input.storySlug,
+        p_story_title: story?.title ?? input.storySlug,
+        p_parent_body_preview: preview(parent.body ?? ''),
+        p_actor_display_name: actor.displayName,
+        p_actor_avatar_url: actor.avatarUrl,
+      });
+    }
+  } catch {
+    /* swallow */
+  }
+
   revalidatePath(`/[locale]/s/${input.storySlug}`, 'page');
   return { ok: true, data: { liked: true } };
 }
@@ -197,6 +248,38 @@ export async function postReply(input: {
 
   if (error || !data) {
     return { ok: false, error: error?.message ?? 'Failed to post reply' };
+  }
+
+  // Notification: avisar o autor do comentário pai. Skip self-reply.
+  // Best-effort — falha aqui não derruba a reply.
+  try {
+    const { data: parent } = await supabase
+      .from('story_comments')
+      .select('user_id, body, story_slug')
+      .eq('id', input.parentId)
+      .single();
+
+    if (parent && parent.user_id !== user.id) {
+      const sb = createServiceClient();
+      const story = await getStoryBySlug(parent.story_slug ?? input.storySlug);
+      const actor = actorIdentity(user);
+      await sb.from('notifications').insert({
+        user_id: parent.user_id,
+        type: 'reply_user',
+        payload: {
+          story_slug: parent.story_slug ?? input.storySlug,
+          story_title: story?.title ?? input.storySlug,
+          parent_comment_id: input.parentId,
+          parent_body_preview: preview(parent.body ?? ''),
+          reply_id: data.id,
+          reply_body_preview: preview(text),
+          actor_display_name: actor.displayName,
+          actor_avatar_url: actor.avatarUrl,
+        },
+      });
+    }
+  } catch {
+    /* swallow */
   }
 
   revalidatePath(`/[locale]/s/${input.storySlug}`, 'page');

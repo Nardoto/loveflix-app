@@ -4,8 +4,20 @@
 
 import 'server-only';
 import { createServiceClient } from '@/lib/supabase/server';
+import { getUser } from '@/lib/auth-helpers';
 import type { Story } from './stories';
 import { getAllStories } from './stories-server';
+
+/**
+ * Conveniência pra Server Components que listam stories: retorna o Set de
+ * slugs favoritados pelo usuário logado, ou um Set vazio se anônimo. Usado
+ * pra inicializar o botão "+ My List" dentro do HoverCard de cada card.
+ */
+export async function getCurrentUserFavoriteSlugs(): Promise<Set<string>> {
+  const user = await getUser();
+  if (!user) return new Set();
+  return getFavoriteSlugs(user.id);
+}
 
 /** Retorna os slugs favoritados pelo usuário. Set pra lookup O(1) na UI. */
 export async function getFavoriteSlugs(userId: string): Promise<Set<string>> {

@@ -6,6 +6,7 @@ import { hotStories, hotByGenre } from '@/lib/data/hot';
 import { filterByLocale } from '@/lib/data/locale-filter';
 import type { Story } from '@/lib/data/stories';
 import { getSubscriptionTier, type SubscriptionTier } from '@/lib/auth-helpers';
+import { getCurrentUserFavoriteSlugs } from '@/lib/data/favorites-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +22,10 @@ export default async function HotPage({
   const featured = localeHot[0];
   const hotByGenreInLocale = (g: Story['genre']) =>
     filterByLocale(hotByGenre(g), locale);
-  const userTier = await getSubscriptionTier();
+  const [userTier, favoriteSlugs] = await Promise.all([
+    getSubscriptionTier(),
+    getCurrentUserFavoriteSlugs(),
+  ]);
 
   return (
     <>
@@ -71,12 +75,12 @@ export default async function HotPage({
         </div>
       </section>
 
-      <SubRow title="Hot Mafia" highlight="Mafia" stories={hotByGenreInLocale('mafia')} userTier={userTier} />
-      <SubRow title="Hot Forbidden" highlight="Forbidden" stories={hotByGenreInLocale('forbidden')} userTier={userTier} />
-      <SubRow title="Hot Secret Baby" highlight="Secret" stories={hotByGenreInLocale('secret_baby')} userTier={userTier} />
-      <SubRow title="Hot Billionaire" highlight="Billionaire" stories={hotByGenreInLocale('billionaire')} userTier={userTier} />
-      <SubRow title="Hot Arranged" highlight="Arranged" stories={hotByGenreInLocale('arranged')} userTier={userTier} />
-      <SubRow title="Hot Second Chance" highlight="Second" stories={hotByGenreInLocale('second_chance')} userTier={userTier} />
+      <SubRow title="Hot Mafia" highlight="Mafia" stories={hotByGenreInLocale('mafia')} userTier={userTier} favoriteSlugs={favoriteSlugs} />
+      <SubRow title="Hot Forbidden" highlight="Forbidden" stories={hotByGenreInLocale('forbidden')} userTier={userTier} favoriteSlugs={favoriteSlugs} />
+      <SubRow title="Hot Secret Baby" highlight="Secret" stories={hotByGenreInLocale('secret_baby')} userTier={userTier} favoriteSlugs={favoriteSlugs} />
+      <SubRow title="Hot Billionaire" highlight="Billionaire" stories={hotByGenreInLocale('billionaire')} userTier={userTier} favoriteSlugs={favoriteSlugs} />
+      <SubRow title="Hot Arranged" highlight="Arranged" stories={hotByGenreInLocale('arranged')} userTier={userTier} favoriteSlugs={favoriteSlugs} />
+      <SubRow title="Hot Second Chance" highlight="Second" stories={hotByGenreInLocale('second_chance')} userTier={userTier} favoriteSlugs={favoriteSlugs} />
     </>
   );
 }
@@ -86,14 +90,16 @@ function SubRow({
   highlight,
   stories,
   userTier,
+  favoriteSlugs,
 }: {
   title: string;
   highlight: string;
   stories: ReturnType<typeof hotByGenre>;
   userTier?: SubscriptionTier | null;
+  favoriteSlugs?: ReadonlySet<string>;
 }) {
   if (stories.length === 0) return null;
-  return <Row title={title} highlight={highlight} stories={stories} userTier={userTier} />;
+  return <Row title={title} highlight={highlight} stories={stories} userTier={userTier} favoriteSlugs={favoriteSlugs} />;
 }
 
 function Stat({ value }: { value: string }) {

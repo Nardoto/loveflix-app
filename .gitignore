@@ -48,3 +48,9 @@ next-env.d.ts
 /qr-output
 
 .vercel
+
+# supabase CLI cache (project ref + linked metadata stay local)
+supabase/.temp/
+
+# IDE workspace files
+*.code-workspace

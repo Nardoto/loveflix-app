@@ -21,7 +21,7 @@ import { StoryComments } from '@/components/story/StoryComments';
 import { MediaTokenPrefetch } from '@/components/player/MediaTokenPrefetch';
 import { FavoriteAddButton } from '@/components/story/FavoriteToggle';
 import { EbookImageCarousel } from '@/components/story/EbookImageCarousel';
-import { isFavorite } from '@/lib/data/favorites-server';
+import { getFavoriteSlugs } from '@/lib/data/favorites-server';
 import { listEbookImageKeys } from '@/lib/data/scripts-server';
 import { signMediaToken } from '@/lib/media-token';
 import { isStoryHot } from '@/lib/data/hot';
@@ -57,7 +57,12 @@ export default async function StoryDetailPage({
 
   // Favorito é per-user — só consulta se a usuária está logada. Para
   // anônimos, o botão fica como "+" e o click leva pro login.
-  const isFav = currentUser ? await isFavorite(currentUser.id, slug) : false;
+  // Uma única query traz todos os slugs favoritados; usamos pra alimentar
+  // tanto o botão dessa página quanto o hover-card da row "more like this".
+  const favoriteSlugs = currentUser
+    ? await getFavoriteSlugs(currentUser.id)
+    : new Set<string>();
+  const isFav = favoriteSlugs.has(slug);
 
   // Paywall global: qualquer não-assinante (anônimo incluído) cai no CTA
   // de upgrade quando tenta watch/listen/download. Coming Soon segue
@@ -334,7 +339,7 @@ export default async function StoryDetailPage({
       />
 
       {related.length > 0 && (
-        <Row title={tStory('moreLikeThis')} highlight={tStory('moreLikeThisHighlight')} stories={related} userTier={userTier} />
+        <Row title={tStory('moreLikeThis')} highlight={tStory('moreLikeThisHighlight')} stories={related} userTier={userTier} favoriteSlugs={favoriteSlugs} />
       )}
     </>
   );

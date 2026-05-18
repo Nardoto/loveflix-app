@@ -11,9 +11,11 @@ import type { SubscriptionTier } from '@/lib/paywall';
 export function HotShowcase({
   stories,
   userTier,
+  favoriteSlugs,
 }: {
   stories: Story[];
   userTier?: SubscriptionTier | null;
+  favoriteSlugs?: ReadonlySet<string>;
 }) {
   if (!stories.length) return null;
 
@@ -45,7 +47,12 @@ export function HotShowcase({
 
       <div className="row-track flex gap-2.5 md:gap-3 overflow-x-auto -mx-4 md:-mx-10 px-4 md:px-10 snap-x snap-mandatory scroll-smooth">
         {stories.map((s) => (
-          <StoryCard key={s.id} story={s} userTier={userTier} />
+          <StoryCard
+            key={s.id}
+            story={s}
+            userTier={userTier}
+            isFavorite={favoriteSlugs?.has(s.slug) ?? false}
+          />
         ))}
       </div>
     </section>

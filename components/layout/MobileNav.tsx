@@ -5,12 +5,13 @@
 // the open state lifted up there since the trigger lives in TopBar.
 
 import { useEffect } from 'react';
-import { X, Home, Heart, Diamond, User, Download } from 'lucide-react';
+import { X, Home, Heart, Diamond, User, Download, Bell } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/lib/navigation';
 import { FlameIcon } from '@/components/icons/FlameIcon';
 import { cn } from '@/lib/utils';
 import { useInstall } from './InstallProvider';
+import { useNotifications } from '@/components/notifications/NotificationProvider';
 
 const INSTALL_LABELS: Record<string, string> = {
   en: 'Install app',
@@ -24,6 +25,7 @@ type NavItem = {
   icon: React.ReactNode;
   label: string;
   accent?: 'rose' | 'orange' | 'gold';
+  badge?: number;
 };
 
 export function MobileNav({
@@ -34,8 +36,10 @@ export function MobileNav({
   onClose: () => void;
 }) {
   const t = useTranslations('nav');
+  const tNotif = useTranslations('notifications');
   const locale = useLocale();
   const { canInstall, triggerInstall } = useInstall();
+  const notif = useNotifications();
 
   // Lock body scroll while the drawer is open + close on Escape.
   useEffect(() => {
@@ -66,6 +70,16 @@ export function MobileNav({
       label: t('genres'),
     },
     { href: '/list', icon: <Heart className="size-5" />, label: t('myList') },
+    ...(notif
+      ? [
+          {
+            href: '/notifications',
+            icon: <Bell className="size-5" />,
+            label: tNotif('navLabel'),
+            badge: notif.unreadCount > 0 ? notif.unreadCount : undefined,
+          } as NavItem,
+        ]
+      : []),
     {
       href: '/account',
       icon: <User className="size-5" />,
@@ -133,7 +147,12 @@ export function MobileNav({
               >
                 {item.icon}
               </span>
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.badge != null && (
+                <span className="bg-rose text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none min-w-[20px] text-center">
+                  {item.badge > 99 ? '99+' : item.badge}
+                </span>
+              )}
             </Link>
           ))}
 

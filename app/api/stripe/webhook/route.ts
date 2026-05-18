@@ -8,6 +8,7 @@
 //           customer.subscription.deleted
 //           invoice.payment_succeeded
 //           invoice.payment_failed
+//           transfer.created               (Stripe Connect revenue share)
 //
 // Verification uses the signing secret (STRIPE_WEBHOOK_SECRET, whsec_...).
 // Stripe REQUIRES the raw request body — Next.js gives us that via .text().
@@ -16,6 +17,23 @@ import { NextResponse, type NextRequest } from 'next/server';
 import type Stripe from 'stripe';
 import { stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/server';
+import {
+  triggerWelcomeFromCheckout,
+  triggerPaymentFailedFromInvoice,
+  triggerCancellationFromSubscription,
+  triggerRenewalFromInvoice,
+} from '@/lib/email/triggers';
+
+// Email sends NEVER throw to the webhook caller — log + move on. The
+// subscription state mirror has already been written by the time we get here,
+// so a Resend hiccup must not return 5xx and trigger Stripe retries.
+async function safeEmail(label: string, fn: () => Promise<unknown>): Promise<void> {
+  try {
+    await fn();
+  } catch (err) {
+    console.error(`[stripe webhook] email trigger ${label} failed:`, err);
+  }
+}
 
 export const runtime = 'nodejs'; // Edge runtime can't use the Stripe SDK
 export const dynamic = 'force-dynamic';
@@ -48,20 +66,48 @@ export async function POST(req: NextRequest) {
 
   try {
     switch (event.type) {
-      case 'checkout.session.completed':
-        await onCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        await onCheckoutCompleted(session);
+        await safeEmail('welcome', () => triggerWelcomeFromCheckout(session));
         break;
+      }
 
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
-      case 'customer.subscription.deleted':
-        await onSubscriptionEvent(event.data.object as Stripe.Subscription);
+      case 'customer.subscription.deleted': {
+        const sub = event.data.object as Stripe.Subscription;
+        await onSubscriptionEvent(sub);
+        if (event.type === 'customer.subscription.deleted') {
+          await safeEmail('cancellation', () => triggerCancellationFromSubscription(sub));
+        }
         break;
+      }
 
       case 'invoice.payment_succeeded':
-      case 'invoice.payment_failed':
-        await onInvoiceEvent(event.data.object as Stripe.Invoice);
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as Stripe.Invoice;
+        await onInvoiceEvent(invoice);
+        if (event.type === 'invoice.payment_failed') {
+          await safeEmail('payment_failed', () => triggerPaymentFailedFromInvoice(invoice));
+        } else {
+          await safeEmail('renewal', () => triggerRenewalFromInvoice(invoice));
+        }
         break;
+      }
+
+      case 'transfer.created': {
+        // Fires when Stripe Connect moves the destination share to the
+        // connected account. We don't persist anything — the destination
+        // Stripe Dashboard is the source of truth. Logging here just makes
+        // splits observable in the Vercel function log.
+        const transfer = event.data.object as Stripe.Transfer;
+        const amount = (transfer.amount / 100).toFixed(2);
+        console.log(
+          `[stripe webhook] transfer.created: ${transfer.currency.toUpperCase()} ${amount} → ${transfer.destination}`,
+        );
+        break;
+      }
 
       default:
         // Other events are ignored on purpose — log and 200 OK so Stripe

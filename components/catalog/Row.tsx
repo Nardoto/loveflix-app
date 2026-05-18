@@ -16,9 +16,11 @@ type RowProps = {
   highlight?: string; // word inside title to render in italic rose
   stories: Story[];
   userTier?: SubscriptionTier | null;
+  /** Slugs the current viewer has in their My List (for hover-card init). */
+  favoriteSlugs?: ReadonlySet<string>;
 };
 
-export function Row({ title, highlight, stories, userTier }: RowProps) {
+export function Row({ title, highlight, stories, userTier, favoriteSlugs }: RowProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -81,7 +83,12 @@ export function Row({ title, highlight, stories, userTier }: RowProps) {
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           {stories.map((story) => (
-            <StoryCard key={story.id} story={story} userTier={userTier} />
+            <StoryCard
+              key={story.id}
+              story={story}
+              userTier={userTier}
+              isFavorite={favoriteSlugs?.has(story.slug) ?? false}
+            />
           ))}
         </div>
 

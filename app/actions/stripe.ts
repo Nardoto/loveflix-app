@@ -10,7 +10,7 @@
 // own subscriptions row).
 
 import { headers } from 'next/headers';
-import { stripe, PRICE_IDS, pickCurrency } from '@/lib/stripe';
+import { stripe, PRICE_IDS, pickCurrency, getRevenueShareData } from '@/lib/stripe';
 import { getUser } from '@/lib/auth-helpers';
 import { createServiceClient } from '@/lib/supabase/server';
 
@@ -96,6 +96,11 @@ export async function createCheckoutSession(opts?: {
     customerId = undefined;
   }
 
+  // Stripe Connect revenue split — when configured, every recurring invoice
+  // is split between the platform account and the destination (see lib/stripe.ts).
+  // Returns null if the envs aren't set, in which case the platform keeps 100%.
+  const revenueShare = getRevenueShareData();
+
   try {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -107,9 +112,11 @@ export async function createCheckoutSession(opts?: {
       customer: customerId,
       customer_email: customerId ? undefined : user.email ?? undefined,
       // Stamp metadata on the subscription so customer.subscription.* events
-      // can resolve user_id without a DB lookup.
+      // can resolve user_id without a DB lookup. For Subscription mode the
+      // Connect split goes inside subscription_data, not at the session root.
       subscription_data: {
         metadata: { user_id: user.id },
+        ...(revenueShare ?? {}),
       },
       allow_promotion_codes: true,
       success_url: `${origin}/account?upgrade=success`,

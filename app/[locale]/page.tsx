@@ -8,6 +8,7 @@ import { isStoryHot } from '@/lib/data/hot';
 import { filterByLocale, isAvailableInLocale } from '@/lib/data/locale-filter';
 import { storyHasGenre } from '@/lib/data/genre-helpers';
 import { getSubscriptionTier } from '@/lib/auth-helpers';
+import { getCurrentUserFavoriteSlugs } from '@/lib/data/favorites-server';
 
 // Renderiza a home a cada request (sem cache de CDN nem de browser).
 // O catálogo em si continua cacheado em unstable_cache(stories, 60s)
@@ -32,9 +33,10 @@ export default async function HomePage({
   // Read from Supabase (with hardcoded fallback when the table is empty —
   // a fresh deploy still renders a non-blank home).
   // Tier consultado em paralelo — alimenta tarja PREMIUM e botões locked.
-  const [all, userTier] = await Promise.all([
+  const [all, userTier, favoriteSlugs] = await Promise.all([
     getAllStories(),
     getSubscriptionTier(),
+    getCurrentUserFavoriteSlugs(),
   ]);
   // Reproduce the legacy split: `stories` excluded the two flagships +
   // placeholders. After migration both sets are mixed; we just filter on
@@ -80,20 +82,21 @@ export default async function HomePage({
         }}
       />
 
-      <HotShowcase stories={localeHot} userTier={userTier} />
+      <HotShowcase stories={localeHot} userTier={userTier} favoriteSlugs={favoriteSlugs} />
 
-      <Row title={t('trending')} highlight={tHl('trending')} stories={trendingRow} userTier={userTier} />
-      <Row title={t('free')} highlight={tHl('free')} stories={freeRow} userTier={userTier} />
+      <Row title={t('trending')} highlight={tHl('trending')} stories={trendingRow} userTier={userTier} favoriteSlugs={favoriteSlugs} />
+      <Row title={t('free')} highlight={tHl('free')} stories={freeRow} userTier={userTier} favoriteSlugs={favoriteSlugs} />
       <Row
         title={t('billionaire')}
         highlight={tHl('billionaire')}
         stories={billionaireRow}
         userTier={userTier}
+        favoriteSlugs={favoriteSlugs}
       />
-      <Row title={t('mafia')} highlight={tHl('mafia')} stories={mafiaRow} userTier={userTier} />
-      <Row title={t('forbidden')} highlight={tHl('forbidden')} stories={forbiddenRow} userTier={userTier} />
-      <Row title={t('secretBaby')} highlight={tHl('secret')} stories={secretBabyRow} userTier={userTier} />
-      <Row title={t('mood')} highlight={tHl('mood')} stories={moodRow} userTier={userTier} />
+      <Row title={t('mafia')} highlight={tHl('mafia')} stories={mafiaRow} userTier={userTier} favoriteSlugs={favoriteSlugs} />
+      <Row title={t('forbidden')} highlight={tHl('forbidden')} stories={forbiddenRow} userTier={userTier} favoriteSlugs={favoriteSlugs} />
+      <Row title={t('secretBaby')} highlight={tHl('secret')} stories={secretBabyRow} userTier={userTier} favoriteSlugs={favoriteSlugs} />
+      <Row title={t('mood')} highlight={tHl('mood')} stories={moodRow} userTier={userTier} favoriteSlugs={favoriteSlugs} />
     </>
   );
 }

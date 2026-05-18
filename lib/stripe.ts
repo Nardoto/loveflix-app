@@ -105,3 +105,33 @@ export function pickCurrency(opts: {
 // Backwards-compat: legacy code that imports PRICE_ID_MONTHLY still works
 // (it now resolves to the USD price specifically).
 export const PRICE_ID_MONTHLY = PRICE_IDS.usd;
+
+
+// ===========================================================================
+// STRIPE CONNECT — REVENUE SHARE
+// ===========================================================================
+// Every subscription created on this platform account routes a fixed share
+// to a connected Express account via `application_fee_percent` +
+// `transfer_data.destination`. The platform keeps APPLICATION_FEE_PERCENT;
+// the remainder lands in the destination account automatically when the
+// invoice settles. If either env var is missing the helper returns null and
+// the checkout proceeds without a split (100% to the platform).
+
+export type RevenueShareData = {
+  application_fee_percent: number;
+  transfer_data: { destination: string };
+};
+
+export function getRevenueShareData(): RevenueShareData | null {
+  const destination = process.env.STRIPE_CONNECT_DESTINATION_ID;
+  const feeRaw = process.env.STRIPE_CONNECT_PLATFORM_FEE_PERCENT;
+  if (!destination || !feeRaw) return null;
+
+  const fee = Number.parseFloat(feeRaw);
+  if (!Number.isFinite(fee) || fee <= 0 || fee >= 100) return null;
+
+  return {
+    application_fee_percent: fee,
+    transfer_data: { destination },
+  };
+}

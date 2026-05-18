@@ -320,6 +320,29 @@
     "errorUnknown": "Wir konnten dein Alter gerade nicht überprüfen. Versuche es erneut.",
     "disclaimer": "Dein Geburtsdatum wird ausschließlich zur Altersüberprüfung verwendet. Wir geben es nicht an Dritte weiter."
   },
+  "notifications": {
+    "title": "Benachrichtigungen",
+    "pageTitle": "Benachrichtigungen",
+    "pageSubtitle": "Antworten, Likes und Plattform-Updates.",
+    "navLabel": "Benachrichtigungen",
+    "bellAria": "Benachrichtigungen, {count} ungelesen",
+    "loading": "Lädt…",
+    "empty": "Noch keine Benachrichtigungen",
+    "emptyHint": "Wir sagen Bescheid, wenn jemand antwortet, deinen Kommentar liked oder es Neuigkeiten von AllureTV gibt.",
+    "markAllAsRead": "Alle als gelesen markieren",
+    "viewAll": "Alle anzeigen",
+    "signInRequired": "Melde dich an, um deine Benachrichtigungen zu sehen.",
+    "justNow": "gerade eben",
+    "minutesAgo": "vor {n} Min.",
+    "hoursAgo": "vor {n} Std.",
+    "daysAgo": "vor {n} T.",
+    "messages": {
+      "replyOfficial": "<strong>AllureTV Team</strong> hat auf deinen Kommentar zu {story} geantwortet",
+      "replyUser": "<strong>{actor}</strong> hat auf deinen Kommentar zu {story} geantwortet",
+      "commentLikeOne": "<strong>{actor}</strong> hat deinen Kommentar zu {story} geliked",
+      "commentLikeMany": "<strong>{actor}</strong> und {others} weitere haben deinen Kommentar zu {story} geliked"
+    }
+  },
   "consent": {
     "banner": {
       "title": "Deine Privatsphäre, deine Wahl",

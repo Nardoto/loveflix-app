@@ -7,6 +7,7 @@ import { allStories, type Story } from '@/lib/data/stories';
 import { filterByLocale } from '@/lib/data/locale-filter';
 import { storyHasGenre } from '@/lib/data/genre-helpers';
 import { getSubscriptionTier } from '@/lib/auth-helpers';
+import { getCurrentUserFavoriteSlugs } from '@/lib/data/favorites-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,7 +84,10 @@ export default async function GenreDetailPage({
   const avgMin = Math.round(totalMin / list.length);
 
   const hot = list.filter((s) => s.isHot);
-  const userTier = await getSubscriptionTier();
+  const [userTier, favoriteSlugs] = await Promise.all([
+    getSubscriptionTier(),
+    getCurrentUserFavoriteSlugs(),
+  ]);
 
   return (
     <>
@@ -121,10 +125,10 @@ export default async function GenreDetailPage({
         </div>
       </section>
 
-      <Row title={`All ${meta.label}`} highlight="All" stories={list} userTier={userTier} />
+      <Row title={`All ${meta.label}`} highlight="All" stories={list} userTier={userTier} favoriteSlugs={favoriteSlugs} />
 
       {hot.length >= 2 && (
-        <Row title="Hot in this genre" highlight="Hot" stories={hot} userTier={userTier} />
+        <Row title="Hot in this genre" highlight="Hot" stories={hot} userTier={userTier} favoriteSlugs={favoriteSlugs} />
       )}
     </>
   );

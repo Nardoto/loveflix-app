@@ -320,6 +320,29 @@
     "errorUnknown": "No pudimos verificar tu edad ahora. Inténtalo de nuevo.",
     "disclaimer": "Tu fecha de nacimiento se usa únicamente para verificar tu mayoría de edad. No la compartimos con terceros."
   },
+  "notifications": {
+    "title": "Notificaciones",
+    "pageTitle": "Notificaciones",
+    "pageSubtitle": "Respuestas, me gusta y novedades de la plataforma.",
+    "navLabel": "Notificaciones",
+    "bellAria": "Notificaciones, {count} sin leer",
+    "loading": "Cargando…",
+    "empty": "Aún no hay notificaciones",
+    "emptyHint": "Te avisaremos cuando alguien responda, le dé me gusta a tu comentario o haya novedades de AllureTV.",
+    "markAllAsRead": "Marcar todo como leído",
+    "viewAll": "Ver todo",
+    "signInRequired": "Inicia sesión para ver tus notificaciones.",
+    "justNow": "ahora mismo",
+    "minutesAgo": "hace {n} min",
+    "hoursAgo": "hace {n} h",
+    "daysAgo": "hace {n} d",
+    "messages": {
+      "replyOfficial": "<strong>AllureTV Team</strong> respondió a tu comentario en {story}",
+      "replyUser": "<strong>{actor}</strong> respondió a tu comentario en {story}",
+      "commentLikeOne": "<strong>{actor}</strong> le dio me gusta a tu comentario en {story}",
+      "commentLikeMany": "<strong>{actor}</strong> y {others} más le dieron me gusta a tu comentario en {story}"
+    }
+  },
   "consent": {
     "banner": {
       "title": "Tu privacidad, tu decisión",

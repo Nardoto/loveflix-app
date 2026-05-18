@@ -19,6 +19,7 @@ import { MobileNav } from './MobileNav';
 import { useSearch } from './SearchProvider';
 import { InstallAppMenuItem } from './InstallAppMenuItem';
 import { signOut } from '@/app/actions/auth';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 export type TopBarUser = {
   email: string | null;
@@ -122,6 +123,10 @@ export function TopBar({ user }: { user?: TopBarUser } = {}) {
             >
               <Search />
             </Button>
+
+            {/* Bell renders nothing when there's no NotificationProvider
+                in scope (anonymous session). */}
+            <NotificationBell />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
