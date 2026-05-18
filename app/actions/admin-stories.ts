@@ -100,6 +100,15 @@ const CreateInput = z.object({
   audioKeyByLocale: z
     .partialRecord(z.enum(['en', 'de', 'fr', 'es']), z.string().min(1))
     .optional(),
+  // Quando o wizard de criação já subiu imagens da galeria de ebook
+  // (uploads vão diretos pro R2 antes do submit), o caller informa
+  // quantas — o server propaga pra stories.ebook_image_count.
+  ebookImageCount: z.number().int().min(0).max(500).optional(),
+  // Roteiro markdown por idioma. Vazio = sem roteiro pra aquele idioma.
+  // O server faz upsert em story_scripts apenas pras locales preenchidas.
+  scripts: z
+    .partialRecord(z.enum(['en', 'de', 'fr', 'es']), z.string().max(250_000))
+    .optional(),
 });
 
 export type CreateStoryInput = z.input<typeof CreateInput>;
@@ -128,6 +137,16 @@ export async function createStory(
     new Set<string>([v.genre, ...(v.genres ?? [])]),
   );
 
+  // Filtra scripts: só conta as locales que vieram com conteúdo não-vazio.
+  const nonEmptyScripts = Object.entries(v.scripts ?? {}).filter(
+    ([, content]) => (content ?? '').trim().length > 0,
+  );
+  const imageCount = v.ebookImageCount ?? 0;
+  // has_ebook é true se: admin marcou o toggle, ou subiu PDF, ou subiu
+  // imagens da galeria, ou escreveu pelo menos 1 script.
+  const computedHasEbook =
+    v.hasEbook || !!v.ebookKey || imageCount > 0 || nonEmptyScripts.length > 0;
+
   const insertRow = {
     id,
     slug: v.slug,
@@ -144,11 +163,10 @@ export async function createStory(
     is_coming_soon: v.isComingSoon,
     age_rating: v.ageRating,
     total_minutes: v.totalMinutes,
-    // Se subiu o PDF, força has_ebook=true (consistência); caso contrário,
-    // respeita o toggle do admin.
-    has_ebook: v.hasEbook || !!v.ebookKey,
+    has_ebook: computedHasEbook,
     video_key: v.videoKey ?? null,
     ebook_key: v.ebookKey ?? null,
+    ebook_image_count: imageCount,
     author_id: v.authorId ?? null,
     published_at: v.isComingSoon ? null : new Date().toISOString(),
   };
@@ -173,6 +191,32 @@ export async function createStory(
       // Non-fatal: the story is created; the operator can retry uploading
       // audio from the edit page. Surface the warning anyway.
       return { ok: false, error: `Story criada, mas áudios falharam: ${aErr.message}` };
+    }
+  }
+
+  // Scripts por idioma (story_scripts). Upsert pra cada locale preenchida.
+  // Mesma lógica do updateStoryScript em scripts.ts: word_count derivado,
+  // RLS service_role escreve sem problema.
+  if (nonEmptyScripts.length) {
+    const scriptRows = nonEmptyScripts.map(([locale, content]) => {
+      const text = content as string;
+      const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+      return {
+        story_id: id,
+        locale,
+        content: text,
+        word_count: wordCount,
+      };
+    });
+    const { error: sErr } = await sb
+      .from('story_scripts')
+      .upsert(scriptRows, { onConflict: 'story_id,locale' });
+    if (sErr) {
+      // Non-fatal igual aos áudios — operador pode reescrever no editor.
+      return {
+        ok: false,
+        error: `Story criada, mas roteiros falharam: ${sErr.message}`,
+      };
     }
   }
 

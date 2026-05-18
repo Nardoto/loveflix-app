@@ -37,6 +37,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useMultipartUpload, type UploadKind } from '@/lib/upload/useMultipartUpload';
 import { createStory } from '@/app/actions/admin-stories';
+import { PendingEbookSection } from './PendingEbookSection';
 
 type Genre =
   | 'mafia'
@@ -99,12 +100,15 @@ type Meta = {
   hasEbook: boolean;
 };
 
-type StepId = 'meta' | 'media' | 'review';
+type StepId = 'meta' | 'media' | 'ebook' | 'review';
 const STEPS: Array<{ id: StepId; label: string }> = [
   { id: 'meta', label: 'Detalhes' },
   { id: 'media', label: 'Mídia' },
+  { id: 'ebook', label: 'Ebook' },
   { id: 'review', label: 'Revisão' },
 ];
+
+type Locale = 'en' | 'de' | 'fr' | 'es';
 
 export function NewStoryForm({ authors }: { authors: Author[] }) {
   const router = useRouter();
@@ -128,10 +132,19 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
   const [videoKey, setVideoKey] = useState<string | null>(null);
   const [videoFilename, setVideoFilename] = useState<string | null>(null);
   const [audioKeys, setAudioKeys] = useState<Partial<Record<'en' | 'de' | 'fr' | 'es', string>>>({});
+  const [ebookImagePreviews, setEbookImagePreviews] = useState<string[]>([]);
+  const [scripts, setScripts] = useState<Partial<Record<Locale, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const stepIndex = STEPS.findIndex((s) => s.id === step);
+
+  // Considera "tem ebook" se a operadora subiu pelo menos 1 imagem OU
+  // escreveu pelo menos 1 roteiro. Libera a Step Mídia mesmo sem
+  // vídeo/áudio quando a story é só ebook.
+  const hasEbookContent =
+    ebookImagePreviews.length > 0 ||
+    Object.values(scripts).some((s) => (s ?? '').trim().length > 0);
 
   const canAdvance = useMemo(() => {
     switch (step) {
@@ -144,11 +157,15 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
       case 'media':
         if (!coverKey) return false;
         if (meta.isComingSoon) return true;
+        // Vídeo + áudio só são obrigatórios se a story NÃO é só ebook.
+        if (hasEbookContent) return true;
         return videoKey !== null && Object.keys(audioKeys).length > 0;
+      case 'ebook':
+        return true; // step opcional — avança livre
       case 'review':
         return true;
     }
-  }, [step, meta, coverKey, videoKey, audioKeys]);
+  }, [step, meta, coverKey, videoKey, audioKeys, hasEbookContent]);
 
   const next = () => {
     if (!canAdvance) return;
@@ -170,6 +187,11 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
         ? [meta.genre, meta.genreSecondary]
         : [meta.genre];
 
+    // Filtra scripts: só manda as locales com conteúdo de fato.
+    const cleanScripts = Object.fromEntries(
+      Object.entries(scripts).filter(([, v]) => (v ?? '').trim().length > 0),
+    ) as Partial<Record<Locale, string>>;
+
     const res = await createStory({
       slug: meta.slug,
       title: meta.title,
@@ -184,12 +206,14 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
       isPremium: meta.isPremium,
       isHot: meta.isHot,
       isComingSoon: meta.isComingSoon,
-      hasEbook: meta.hasEbook,
+      hasEbook: meta.hasEbook || hasEbookContent,
       coverKey,
       videoKey: videoKey ?? undefined,
       audioKeyByLocale: Object.fromEntries(
         Object.entries(audioKeys).filter(([, v]) => !!v),
       ),
+      ebookImageCount: ebookImagePreviews.length,
+      scripts: Object.keys(cleanScripts).length > 0 ? cleanScripts : undefined,
     });
     setSubmitting(false);
     if (res.ok) {
@@ -282,6 +306,15 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
               }
             />
           )}
+          {step === 'ebook' && (
+            <PendingEbookSection
+              slug={meta.slug}
+              imagePreviews={ebookImagePreviews}
+              setImagePreviews={setEbookImagePreviews}
+              scripts={scripts}
+              setScripts={setScripts}
+            />
+          )}
           {step === 'review' && (
             <ReviewStep
               meta={meta}
@@ -289,6 +322,12 @@ export function NewStoryForm({ authors }: { authors: Author[] }) {
               coverPreviewUrl={coverPreviewUrl}
               hasVideo={!!videoKey}
               audioLocales={Object.keys(audioKeys) as Array<'en' | 'de' | 'fr' | 'es'>}
+              ebookImageCount={ebookImagePreviews.length}
+              scriptLocales={
+                Object.entries(scripts)
+                  .filter(([, v]) => (v ?? '').trim().length > 0)
+                  .map(([k]) => k) as Locale[]
+              }
               error={submitError}
             />
           )}
@@ -567,6 +606,8 @@ function ReviewStep({
   coverPreviewUrl,
   hasVideo,
   audioLocales,
+  ebookImageCount,
+  scriptLocales,
   error,
 }: {
   meta: Meta;
@@ -574,8 +615,11 @@ function ReviewStep({
   coverPreviewUrl: string | null;
   hasVideo: boolean;
   audioLocales: Array<'en' | 'de' | 'fr' | 'es'>;
+  ebookImageCount: number;
+  scriptLocales: Array<'en' | 'de' | 'fr' | 'es'>;
   error: string | null;
 }) {
+  const hasEbookContent = ebookImageCount > 0 || scriptLocales.length > 0;
   return (
     <div className="space-y-6">
       <div>
@@ -609,14 +653,34 @@ function ReviewStep({
             value={hasVideo ? 'enviado' : meta.isComingSoon ? 'opcional (Coming Soon)' : 'faltando'}
           />
           <ChecklistItem
-            ok={meta.isComingSoon || audioLocales.length > 0}
+            ok={meta.isComingSoon || audioLocales.length > 0 || hasEbookContent}
             label="Áudios"
             value={
               audioLocales.length > 0
                 ? `${audioLocales.length}/4 idiomas (${audioLocales.map((l) => l.toUpperCase()).join(' · ')})`
                 : meta.isComingSoon
                   ? 'opcional (Coming Soon)'
-                  : 'faltando'
+                  : hasEbookContent
+                    ? 'opcional (só ebook)'
+                    : 'faltando'
+            }
+          />
+          <ChecklistItem
+            ok
+            label="Ilustrações"
+            value={
+              ebookImageCount > 0
+                ? `${ebookImageCount} ${ebookImageCount === 1 ? 'imagem' : 'imagens'}`
+                : '— (opcional)'
+            }
+          />
+          <ChecklistItem
+            ok
+            label="Roteiro"
+            value={
+              scriptLocales.length > 0
+                ? `${scriptLocales.length}/4 idiomas (${scriptLocales.map((l) => l.toUpperCase()).join(' · ')})`
+                : '— (opcional)'
             }
           />
         </ul>
