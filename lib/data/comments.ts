@@ -14,6 +14,18 @@
 
 import type { Story } from './stories';
 
+export type StoryReply = {
+  id: string;
+  user: string;
+  avatar: string;
+  date: string;
+  body: string;
+  /** Resposta oficial da plataforma (admin). Renderiza como "AllureTV Team"
+   * + badge dourado OFICIAL, ignorando user/avatar reais do admin. */
+  isCreatorReply: boolean;
+  userId?: string;
+};
+
 export type StoryComment = {
   id: string;
   user: string;
@@ -26,6 +38,9 @@ export type StoryComment = {
   // show Edit/Delete buttons (`c.userId === currentUserId`). Mock comments
   // leave this undefined so they're never editable.
   userId?: string;
+  /** Replies já persistidas no banco (server-side). O componente cliente
+   * concatena com replies otimistas do usuário atual. */
+  replies?: StoryReply[];
 };
 
 // ---------------------------------------------------------------------------

@@ -24,6 +24,7 @@ import type { Story } from './stories';
 import {
   generateCommentsForStory,
   type StoryComment,
+  type StoryReply,
   type CommentMeta,
 } from './comments';
 import { createClient } from '@/lib/supabase/server';
@@ -48,6 +49,39 @@ type RealCommentRow = {
   likes_count: number;
   replies_count: number;
 };
+
+// Shape da view story_comment_replies_with_meta (0015_creator_replies.sql).
+type ReplyRow = {
+  id: string;
+  parent_id: string;
+  user_id: string;
+  body: string;
+  created_at: string;
+  is_creator_reply: boolean;
+  display_name: string | null;
+  avatar_url: string | null;
+};
+
+function rowToReply(row: ReplyRow): StoryReply {
+  // is_creator_reply: o frontend faz override do display name/avatar
+  // (AllureTV Team + /logo/mark.jpg). Aqui só passamos a flag — não
+  // adianta hardcodear o nome no server pq cada locale poderia querer
+  // formato próprio (no fim usamos o mesmo nome em todas as locales,
+  // mas a decisão de overriding fica no componente cliente).
+  const idx = hashCode(row.user_id);
+  const fallbackAvatar =
+    `https://randomuser.me/api/portraits/women/${ANON_AVATAR_INDEXES[idx % ANON_AVATAR_INDEXES.length]}.jpg`;
+  const fallbackName = `${ANON_NAMES[idx % ANON_NAMES.length]} #${(idx % 9999).toString().padStart(4, '0')}`;
+  return {
+    id: row.id,
+    user: row.display_name || fallbackName,
+    avatar: row.avatar_url || fallbackAvatar,
+    date: relativeDate(row.created_at),
+    body: row.body,
+    isCreatorReply: !!row.is_creator_reply,
+    userId: row.user_id,
+  };
+}
 
 function relativeDate(iso: string): string {
   const then = new Date(iso).getTime();
@@ -109,6 +143,7 @@ export async function getCommentsForStory(story: Story): Promise<CommentMeta> {
   }
 
   let real: RealCommentRow[] = [];
+  let realReplies: ReplyRow[] = [];
   let realRatedCount = 0;
   let realAvgRating = 0;
   try {
@@ -148,18 +183,46 @@ export async function getCommentsForStory(story: Story): Promise<CommentMeta> {
       realRatedCount = row.rated_count ?? 0;
       realAvgRating = Number(row.avg_rating ?? 0);
     }
+
+    // Busca replies das comments retornadas. Em batch — um único query
+    // com IN (...) em vez de N round-trips.
+    const parentIds = real.map((c) => c.id);
+    if (parentIds.length > 0) {
+      const repliesRes = await supabase
+        .from('story_comment_replies_with_meta')
+        .select('id, parent_id, user_id, body, created_at, is_creator_reply, display_name, avatar_url')
+        .in('parent_id', parentIds)
+        .order('created_at', { ascending: true });
+      if (!repliesRes.error && repliesRes.data) {
+        realReplies = repliesRes.data as ReplyRow[];
+      } else if (repliesRes.error) {
+        console.error('[comments-server] replies query failed:', repliesRes.error.message);
+      }
+    }
   } catch (err) {
     console.error('[comments-server] Supabase exception:', err);
   }
 
   const mock = generateCommentsForStory(story);
 
+  // Agrupa replies por parent_id pra poder anexar O(1) ao mapear.
+  const repliesByParent = new Map<string, StoryReply[]>();
+  for (const r of realReplies) {
+    const arr = repliesByParent.get(r.parent_id) ?? [];
+    arr.push(rowToReply(r));
+    repliesByParent.set(r.parent_id, arr);
+  }
+  const attachReplies = (c: StoryComment): StoryComment => {
+    const replies = repliesByParent.get(c.id);
+    return replies && replies.length > 0 ? { ...c, replies } : c;
+  };
+
   // Decide which list to show
   let comments: StoryComment[];
   if (real.length >= REAL_TAKES_OVER_THRESHOLD) {
-    comments = real.map(rowToComment);
+    comments = real.map(rowToComment).map(attachReplies);
   } else if (real.length > 0) {
-    const realMapped = real.map(rowToComment);
+    const realMapped = real.map(rowToComment).map(attachReplies);
     const realIds = new Set(realMapped.map((c) => c.id));
     const fillers = mock.comments.filter((c) => !realIds.has(c.id));
     comments = [...realMapped, ...fillers].slice(0, 8);

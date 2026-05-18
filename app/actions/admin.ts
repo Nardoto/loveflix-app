@@ -103,6 +103,10 @@ export async function adminPostReply(input: {
       parent_id: input.parentId,
       user_id: admin.id,
       body: text,
+      // Marca como reply oficial — frontend renderiza com identidade
+      // "AllureTV Team" + badge dourado OFICIAL, escondendo o display_name
+      // do admin individual. Migration 0015_creator_replies.sql.
+      is_creator_reply: true,
     });
     if (error) return { ok: false, error: error.message };
 

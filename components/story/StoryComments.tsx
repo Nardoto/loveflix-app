@@ -2,12 +2,12 @@
 
 import { useState, useTransition } from 'react';
 import Image from 'next/image';
-import { Star, Heart, MessageCircle, Send, Loader2, LogIn, Pencil, Trash2 } from 'lucide-react';
+import { Star, Heart, MessageCircle, Send, Loader2, LogIn, Pencil, Trash2, BadgeCheck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { StoryComment } from '@/lib/data/comments';
+import type { StoryComment, StoryReply } from '@/lib/data/comments';
 import {
   postComment,
   toggleLike as toggleLikeAction,
@@ -735,9 +735,13 @@ export function StoryComments({
                   )}
                 </footer>
 
-                {/* Reply box + inline replies */}
-                {replyState.open && (
+                {/* Replies persistidas do banco (todas as do mundo veem) +
+                    box de reply quando o viewer tá escrevendo. */}
+                {(c.replies?.length || replyState.open) && (
                   <div className="mt-4 pl-4 md:pl-6 border-l-2 border-rose/20 space-y-3">
+                    {(c.replies ?? []).map((r) => (
+                      <ReplyCard key={r.id} reply={r} />
+                    ))}
                     {replyState.items.map((r) => (
                       <div
                         key={r.id}
@@ -755,33 +759,35 @@ export function StoryComments({
                         </p>
                       </div>
                     ))}
-                    <div>
-                      <textarea
-                        value={replyState.draft}
-                        onChange={(e) => setReplyDraft(c.id, e.target.value)}
-                        placeholder={t('replyPlaceholder', { user: c.user })}
-                        rows={2}
-                        className="w-full bg-bg-deep rounded-xl px-3 py-2 text-sm text-text-soft placeholder:text-text-mute focus:outline-none focus:ring-2 focus:ring-rose/40 resize-none shadow-inner shadow-black/40"
-                      />
-                      <div className="flex justify-end mt-2">
-                        <Button
-                          variant="rose"
-                          size="sm"
-                          disabled={!replyState.draft.trim() || replyState.sending}
-                          onClick={() => submitReply(c.id)}
-                        >
-                          {replyState.sending ? (
-                            <>
-                              <Loader2 className="size-3.5 animate-spin" /> {t('sending')}
-                            </>
-                          ) : (
-                            <>
-                              <Send className="size-3.5" /> {t('reply')}
-                            </>
-                          )}
-                        </Button>
+                    {replyState.open && (
+                      <div>
+                        <textarea
+                          value={replyState.draft}
+                          onChange={(e) => setReplyDraft(c.id, e.target.value)}
+                          placeholder={t('replyPlaceholder', { user: c.user })}
+                          rows={2}
+                          className="w-full bg-bg-deep rounded-xl px-3 py-2 text-sm text-text-soft placeholder:text-text-mute focus:outline-none focus:ring-2 focus:ring-rose/40 resize-none shadow-inner shadow-black/40"
+                        />
+                        <div className="flex justify-end mt-2">
+                          <Button
+                            variant="rose"
+                            size="sm"
+                            disabled={!replyState.draft.trim() || replyState.sending}
+                            onClick={() => submitReply(c.id)}
+                          >
+                            {replyState.sending ? (
+                              <>
+                                <Loader2 className="size-3.5 animate-spin" /> {t('sending')}
+                              </>
+                            ) : (
+                              <>
+                                <Send className="size-3.5" /> {t('reply')}
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
               </article>
@@ -801,4 +807,53 @@ export function StoryComments({
 
 function optimisticEmpty() {
   return { open: true, draft: '', items: [] as LocalReply[], sending: false };
+}
+
+// Reply persistida do banco. Quando isCreatorReply=true, override identidade
+// pra "AllureTV Team" + avatar do logo + badge OFICIAL dourado, escondendo
+// o display_name/avatar do admin individual.
+function ReplyCard({ reply }: { reply: StoryReply }) {
+  const isOfficial = reply.isCreatorReply;
+  const displayName = isOfficial ? 'AllureTV Team' : reply.user;
+  const avatarSrc = isOfficial ? '/logo/mark.jpg' : reply.avatar;
+
+  return (
+    <div
+      className={cn(
+        'rounded-xl p-3 shadow-inner shadow-black/30',
+        isOfficial
+          ? 'bg-gradient-to-br from-gold/[0.10] to-bg-deep ring-1 ring-gold/30'
+          : 'bg-bg-deep',
+      )}
+    >
+      <div className="flex items-center gap-2 mb-1 flex-wrap">
+        <span className="relative grid place-items-center size-6 rounded-full bg-bg-card overflow-hidden ring-1 ring-white/10">
+          <Image
+            src={avatarSrc}
+            alt=""
+            fill
+            sizes="24px"
+            className="object-cover"
+            unoptimized
+          />
+        </span>
+        <span
+          className={cn(
+            'text-xs font-bold',
+            isOfficial ? 'text-gold-bright' : 'text-white',
+          )}
+        >
+          {displayName}
+        </span>
+        {isOfficial && (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gold text-bg-deep text-[9px] font-black tracking-wider uppercase">
+            <BadgeCheck className="size-2.5" strokeWidth={3} />
+            Oficial
+          </span>
+        )}
+        <span className="text-[10px] text-text-mute">· {reply.date}</span>
+      </div>
+      <p className="text-sm text-text-soft leading-relaxed">{reply.body}</p>
+    </div>
+  );
 }
